@@ -2840,6 +2840,12 @@ local LP67 = NS:AddGroup({
 	Side = "Left"
 })
 
+local Canvas = NS:AddGroup({
+    Name = "Canvas📜",
+    Info = "Canvas📜",
+    Side = "Right"
+})
+
 local CCOG = OG:AddGroup({
 	Name = "Customize🖌",
 	Info = "Customize🖌",
@@ -11570,6 +11576,318 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 	end
+})
+
+local WidthBox = Canvas:AddTextbox({
+    Default = "50",
+    Placeholder = "Width...",
+    Info = "Canvas width"
+})
+
+local HeightBox = Canvas:AddTextbox({
+    Default = "50",
+    Placeholder = "Height...",
+    Info = "Canvas height"
+})
+
+local buildMode = "SideToSide"
+local rotationAxis = "Z"
+
+Canvas:AddButton({
+    Name = "Side to Side",
+    Callback = function()
+        buildMode = "SideToSide"
+    end
+})
+
+Canvas:AddButton({
+    Name = "Bottom to Top",
+    Callback = function()
+        buildMode = "BottomToTop"
+    end
+})
+
+Canvas:AddButton({
+    Name = "Rotate X 90°",
+    Callback = function()
+        rotationAxis = "X"
+    end
+})
+
+Canvas:AddButton({
+    Name = "Rotate Y 90°",
+    Callback = function()
+        rotationAxis = "Y"
+    end
+})
+
+Canvas:AddButton({
+    Name = "Rotate Z 90°",
+    Callback = function()
+        rotationAxis = "Z"
+    end
+})
+
+local function StartCanvas()
+    if _G.CanvaRunning then
+        return
+    end
+
+    _G.CanvaRunning = true
+
+    task.spawn(function()
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+
+        local player = Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local hrp = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:WaitForChild("Humanoid")
+
+        local tool = character:FindFirstChild("Build") or player.Backpack:FindFirstChild("Build")
+
+        if not tool then
+            _G.CanvaRunning = false
+            return
+        end
+
+        tool.Parent = character
+
+        local event = tool:WaitForChild("Script"):WaitForChild("Event")
+        local bricksFolder = workspace:WaitForChild("Bricks"):WaitForChild(player.Name)
+
+        local WIDTH = math.clamp(math.floor(tonumber(WidthBox:Get()) or 50),1,500)
+        local HEIGHT = math.clamp(math.floor(tonumber(HeightBox:Get()) or 50),1,500)
+        local GRID = 1
+
+        local origin = hrp.Position
+
+        local center = Vector3.new(
+            origin.X,
+            origin.Y + ((HEIGHT - 1) * GRID) / 2,
+            origin.Z
+        )
+
+        local placed = {}
+
+        local oldWalkSpeed = humanoid.WalkSpeed
+        local oldJumpPower = humanoid.JumpPower
+        local oldAutoRotate = humanoid.AutoRotate
+        local oldPlatformStand = humanoid.PlatformStand
+
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 0
+        humanoid.AutoRotate = false
+        humanoid.PlatformStand = true
+
+        local function key(x,y)
+            return x .. ":" .. y
+        end
+
+        local function getRotation()
+            if rotationAxis == "X" then
+                return CFrame.Angles(math.rad(90),0,0)
+            elseif rotationAxis == "Y" then
+                return CFrame.Angles(0,math.rad(90),0)
+            else
+                return CFrame.Angles(0,0,math.rad(90))
+            end
+        end
+
+        local function positionFor(x,y)
+            local localX = (x - ((WIDTH - 1) / 2)) * GRID
+            local localY = (y - ((HEIGHT - 1) / 2)) * GRID
+
+            local offset = getRotation() * Vector3.new(
+                localX,
+                localY,
+                0
+            )
+
+            return center + offset
+        end
+
+        local function scanBricks()
+            table.clear(placed)
+
+            for _,obj in ipairs(bricksFolder:GetChildren()) do
+                if obj:IsA("BasePart") then
+                    local closestX
+                    local closestY
+                    local closestDistance = math.huge
+
+                    for x = 0,WIDTH - 1 do
+                        for y = 0,HEIGHT - 1 do
+                            local distance = (obj.Position - positionFor(x,y)).Magnitude
+
+                            if distance < closestDistance then
+                                closestDistance = distance
+                                closestX = x
+                                closestY = y
+                            end
+                        end
+                    end
+
+                    if closestDistance < 0.3 then
+                        placed[key(closestX,closestY)] = true
+                    end
+                end
+            end
+        end
+
+        local function place(x,y)
+            if not _G.CanvaRunning then
+                return false
+            end
+
+            local k = key(x,y)
+
+            if placed[k] then
+                return true
+            end
+
+            local position = positionFor(x,y)
+
+            hrp.CFrame = CFrame.new(position + Vector3.new(0,2,-3))
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+
+            task.wait(0.06)
+
+            if not _G.CanvaRunning then
+                return false
+            end
+
+            event:FireServer(
+                workspace.Terrain,
+                Enum.NormalId.Top,
+                position,
+                "detail"
+            )
+
+            task.wait(0.12)
+
+            scanBricks()
+
+            return placed[k] == true
+        end
+
+        _G.CanvaConnection = RunService.Heartbeat:Connect(function()
+            if not _G.CanvaRunning then
+                humanoid.WalkSpeed = oldWalkSpeed
+                humanoid.JumpPower = oldJumpPower
+                humanoid.AutoRotate = oldAutoRotate
+                humanoid.PlatformStand = oldPlatformStand
+
+                if _G.CanvaConnection then
+                    _G.CanvaConnection:Disconnect()
+                    _G.CanvaConnection = nil
+                end
+            end
+        end)
+
+        scanBricks()
+
+        if buildMode == "SideToSide" then
+            for y = 0,HEIGHT - 1 do
+                local direction = y % 2 == 0 and 1 or -1
+
+                if direction == 1 then
+                    for x = 0,WIDTH - 1 do
+                        if not _G.CanvaRunning then break end
+                        place(x,y)
+                    end
+                else
+                    for x = WIDTH - 1,0,-1 do
+                        if not _G.CanvaRunning then break end
+                        place(x,y)
+                    end
+                end
+            end
+        else
+            for x = 0,WIDTH - 1 do
+                local direction = x % 2 == 0 and 1 or -1
+
+                if direction == 1 then
+                    for y = 0,HEIGHT - 1 do
+                        if not _G.CanvaRunning then break end
+                        place(x,y)
+                    end
+                else
+                    for y = HEIGHT - 1,0,-1 do
+                        if not _G.CanvaRunning then break end
+                        place(x,y)
+                    end
+                end
+            end
+        end
+
+        for _ = 1,5 do
+            if not _G.CanvaRunning then
+                break
+            end
+
+            scanBricks()
+
+            local missing = {}
+
+            for x = 0,WIDTH - 1 do
+                for y = 0,HEIGHT - 1 do
+                    if not placed[key(x,y)] then
+                        missing[#missing + 1] = {
+                            x = x,
+                            y = y
+                        }
+                    end
+                end
+            end
+
+            if #missing == 0 then
+                break
+            end
+
+            for _,block in ipairs(missing) do
+                if not _G.CanvaRunning then
+                    break
+                end
+
+                place(block.x,block.y)
+            end
+        end
+
+        _G.CanvaRunning = false
+
+        if _G.CanvaConnection then
+            _G.CanvaConnection:Disconnect()
+            _G.CanvaConnection = nil
+        end
+
+        humanoid.WalkSpeed = oldWalkSpeed
+        humanoid.JumpPower = oldJumpPower
+        humanoid.AutoRotate = oldAutoRotate
+        humanoid.PlatformStand = oldPlatformStand
+    end)
+end
+
+Canvas:AddButton({
+    Name = "Start Canvas",
+    Info = "Start building the canvas",
+    Callback = function()
+        StartCanvas()
+    end
+})
+
+Canvas:AddButton({
+    Name = "Stop Canvas",
+    Info = "Stop building the canvas",
+    Callback = function()
+        _G.CanvaRunning = false
+
+        if _G.CanvaConnection then
+            _G.CanvaConnection:Disconnect()
+            _G.CanvaConnection = nil
+        end
+    end
 })
 
 return Library
