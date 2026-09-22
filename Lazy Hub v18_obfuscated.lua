@@ -11633,6 +11633,23 @@ local function StartCanvas()
         return
     end
 
+    if _G.CanvaConnection then
+        _G.CanvaConnection:Disconnect()
+        _G.CanvaConnection = nil
+    end
+
+    local WIDTH = math.clamp(
+        math.floor(tonumber(WidthBox:Get()) or 50),
+        1,
+        500
+    )
+
+    local HEIGHT = math.clamp(
+        math.floor(tonumber(HeightBox:Get()) or 50),
+        1,
+        500
+    )
+
     _G.CanvaRunning = true
 
     task.spawn(function()
@@ -11644,7 +11661,8 @@ local function StartCanvas()
         local hrp = character:WaitForChild("HumanoidRootPart")
         local humanoid = character:WaitForChild("Humanoid")
 
-        local tool = character:FindFirstChild("Build") or player.Backpack:FindFirstChild("Build")
+        local tool = character:FindFirstChild("Build")
+            or player.Backpack:FindFirstChild("Build")
 
         if not tool then
             _G.CanvaRunning = false
@@ -11653,13 +11671,12 @@ local function StartCanvas()
 
         tool.Parent = character
 
+        task.wait(0.4)
+
         local event = tool:WaitForChild("Script"):WaitForChild("Event")
         local bricksFolder = workspace:WaitForChild("Bricks"):WaitForChild(player.Name)
 
-        local WIDTH = math.clamp(math.floor(tonumber(WidthBox:Get()) or 50),1,500)
-        local HEIGHT = math.clamp(math.floor(tonumber(HeightBox:Get()) or 50),1,500)
         local GRID = 1
-
         local origin = hrp.Position
 
         local center = Vector3.new(
@@ -11680,6 +11697,54 @@ local function StartCanvas()
         humanoid.AutoRotate = false
         humanoid.PlatformStand = true
 
+        local stopped = false
+        local blocksSinceScan = 0
+
+        local function stop()
+            if stopped then
+                return
+            end
+
+            stopped = true
+            _G.CanvaRunning = false
+
+            humanoid.WalkSpeed = oldWalkSpeed
+            humanoid.JumpPower = oldJumpPower
+            humanoid.AutoRotate = oldAutoRotate
+            humanoid.PlatformStand = oldPlatformStand
+
+            if hrp.Parent then
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
+
+            if _G.CanvaConnection then
+                _G.CanvaConnection:Disconnect()
+                _G.CanvaConnection = nil
+            end
+        end
+
+        _G.CanvaConnection = RunService.Heartbeat:Connect(function()
+            if not _G.CanvaRunning then
+                stop()
+                return
+            end
+
+            if hrp.Parent then
+                hrp.AssemblyLinearVelocity = Vector3.zero
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
+        end)
+
+        local function running()
+            if not _G.CanvaRunning then
+                stop()
+                return false
+            end
+
+            return true
+        end
+
         local function key(x,y)
             return x .. ":" .. y
         end
@@ -11689,16 +11754,21 @@ local function StartCanvas()
                 return CFrame.Angles(math.rad(90),0,0)
             elseif rotationAxis == "Y" then
                 return CFrame.Angles(0,math.rad(90),0)
-            else
-                return CFrame.Angles(0,0,math.rad(90))
             end
+
+            return CFrame.Angles(0,0,math.rad(90))
         end
 
-        local function positionFor(x,y)
-            local localX = (x - ((WIDTH - 1) / 2)) * GRID
-            local localY = (y - ((HEIGHT - 1) / 2)) * GRID
+        local rotation = getRotation()
 
-            local offset = getRotation() * Vector3.new(
+        local function positionFor(x,y)
+            local localX =
+                (x - ((WIDTH - 1) / 2)) * GRID
+
+            local localY =
+                (y - ((HEIGHT - 1) / 2)) * GRID
+
+            local offset = rotation * Vector3.new(
                 localX,
                 localY,
                 0
@@ -11711,32 +11781,43 @@ local function StartCanvas()
             table.clear(placed)
 
             for _,obj in ipairs(bricksFolder:GetChildren()) do
-                if obj:IsA("BasePart") then
-                    local closestX
-                    local closestY
-                    local closestDistance = math.huge
+                if obj.Name == "Brick"
+                and obj:IsA("BasePart") then
 
-                    for x = 0,WIDTH - 1 do
-                        for y = 0,HEIGHT - 1 do
-                            local distance = (obj.Position - positionFor(x,y)).Magnitude
+                    local relative = obj.Position - center
 
-                            if distance < closestDistance then
-                                closestDistance = distance
-                                closestX = x
-                                closestY = y
-                            end
+                    local localPosition =
+                        rotation:Inverse() * relative
+
+                    local px = math.round(
+                        localPosition.X / GRID
+                        + ((WIDTH - 1) / 2)
+                    )
+
+                    local py = math.round(
+                        localPosition.Y / GRID
+                        + ((HEIGHT - 1) / 2)
+                    )
+
+                    if px >= 0
+                    and px < WIDTH
+                    and py >= 0
+                    and py < HEIGHT then
+
+                        local expected = positionFor(px,py)
+
+                        if (obj.Position - expected).Magnitude < 0.35 then
+                            placed[key(px,py)] = true
                         end
-                    end
-
-                    if closestDistance < 0.3 then
-                        placed[key(closestX,closestY)] = true
                     end
                 end
             end
+
+            blocksSinceScan = 0
         end
 
         local function place(x,y)
-            if not _G.CanvaRunning then
+            if not running() then
                 return false
             end
 
@@ -11748,13 +11829,16 @@ local function StartCanvas()
 
             local position = positionFor(x,y)
 
-            hrp.CFrame = CFrame.new(position + Vector3.new(0,2,-3))
+            hrp.CFrame = CFrame.new(
+                position + Vector3.new(0,2,-3)
+            )
+
             hrp.AssemblyLinearVelocity = Vector3.zero
             hrp.AssemblyAngularVelocity = Vector3.zero
 
-            task.wait(0.06)
+            task.wait(0.08)
 
-            if not _G.CanvaRunning then
+            if not running() then
                 return false
             end
 
@@ -11765,107 +11849,148 @@ local function StartCanvas()
                 "detail"
             )
 
-            task.wait(0.12)
+            placed[k] = true
+            blocksSinceScan += 1
 
-            scanBricks()
+            if blocksSinceScan >= 25 then
+                task.wait(0.15)
 
-            return placed[k] == true
-        end
-
-        _G.CanvaConnection = RunService.Heartbeat:Connect(function()
-            if not _G.CanvaRunning then
-                humanoid.WalkSpeed = oldWalkSpeed
-                humanoid.JumpPower = oldJumpPower
-                humanoid.AutoRotate = oldAutoRotate
-                humanoid.PlatformStand = oldPlatformStand
-
-                if _G.CanvaConnection then
-                    _G.CanvaConnection:Disconnect()
-                    _G.CanvaConnection = nil
+                if not running() then
+                    return false
                 end
+
+                scanBricks()
             end
-        end)
+
+            return true
+        end
 
         scanBricks()
 
+        local built = 0
+
         if buildMode == "SideToSide" then
+
             for y = 0,HEIGHT - 1 do
-                local direction = y % 2 == 0 and 1 or -1
-
-                if direction == 1 then
-                    for x = 0,WIDTH - 1 do
-                        if not _G.CanvaRunning then break end
-                        place(x,y)
-                    end
-                else
-                    for x = WIDTH - 1,0,-1 do
-                        if not _G.CanvaRunning then break end
-                        place(x,y)
-                    end
-                end
-            end
-        else
-            for x = 0,WIDTH - 1 do
-                local direction = x % 2 == 0 and 1 or -1
-
-                if direction == 1 then
-                    for y = 0,HEIGHT - 1 do
-                        if not _G.CanvaRunning then break end
-                        place(x,y)
-                    end
-                else
-                    for y = HEIGHT - 1,0,-1 do
-                        if not _G.CanvaRunning then break end
-                        place(x,y)
-                    end
-                end
-            end
-        end
-
-        for _ = 1,5 do
-            if not _G.CanvaRunning then
-                break
-            end
-
-            scanBricks()
-
-            local missing = {}
-
-            for x = 0,WIDTH - 1 do
-                for y = 0,HEIGHT - 1 do
-                    if not placed[key(x,y)] then
-                        missing[#missing + 1] = {
-                            x = x,
-                            y = y
-                        }
-                    end
-                end
-            end
-
-            if #missing == 0 then
-                break
-            end
-
-            for _,block in ipairs(missing) do
-                if not _G.CanvaRunning then
+                if not running() then
                     break
                 end
 
-                place(block.x,block.y)
+                local direction =
+                    (y % 2 == 0) and 1 or -1
+
+                if direction == 1 then
+
+                    for x = 0,WIDTH - 1 do
+                        if not running() then
+                            break
+                        end
+
+                        if place(x,y) then
+                            built += 1
+                        end
+                    end
+
+                else
+
+                    for x = WIDTH - 1,0,-1 do
+                        if not running() then
+                            break
+                        end
+
+                        if place(x,y) then
+                            built += 1
+                        end
+                    end
+                end
+
+                task.wait(0.15)
+            end
+
+        else
+
+            for x = 0,WIDTH - 1 do
+                if not running() then
+                    break
+                end
+
+                local direction =
+                    (x % 2 == 0) and 1 or -1
+
+                if direction == 1 then
+
+                    for y = 0,HEIGHT - 1 do
+                        if not running() then
+                            break
+                        end
+
+                        if place(x,y) then
+                            built += 1
+                        end
+                    end
+
+                else
+
+                    for y = HEIGHT - 1,0,-1 do
+                        if not running() then
+                            break
+                        end
+
+                        if place(x,y) then
+                            built += 1
+                        end
+                    end
+                end
+
+                task.wait(0.15)
             end
         end
 
-        _G.CanvaRunning = false
+        if running() then
+            scanBricks()
 
-        if _G.CanvaConnection then
-            _G.CanvaConnection:Disconnect()
-            _G.CanvaConnection = nil
+            for cycle = 1,3 do
+                if not running() then
+                    break
+                end
+
+                local missing = {}
+
+                for y = 0,HEIGHT - 1 do
+                    for x = 0,WIDTH - 1 do
+                        if not placed[key(x,y)] then
+                            missing[#missing + 1] = {
+                                x = x,
+                                y = y
+                            }
+                        end
+                    end
+                end
+
+                if #missing == 0 then
+                    break
+                end
+
+                for _,block in ipairs(missing) do
+                    if not running() then
+                        break
+                    end
+
+                    place(
+                        block.x,
+                        block.y
+                    )
+                end
+
+                task.wait(0.25)
+
+                if running() then
+                    scanBricks()
+                end
+            end
         end
 
-        humanoid.WalkSpeed = oldWalkSpeed
-        humanoid.JumpPower = oldJumpPower
-        humanoid.AutoRotate = oldAutoRotate
-        humanoid.PlatformStand = oldPlatformStand
+        stop()
     end)
 end
 
