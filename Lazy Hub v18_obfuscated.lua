@@ -225,16 +225,22 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
+local playerGui = safeWait(player, "PlayerGui", 15)
+if not playerGui then
+    return
+end
+
+-- Destruir GUI duplicada si existe
+local existingGui = playerGui:FindFirstChild("LegacyServiceGui")
+if existingGui then
+    existingGui:Destroy()
+end
+
+-- Crear nueva GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "LegacyServiceGui"
 gui.ResetOnSpawn = false
-
-local playerGui = safeWait(player, "PlayerGui", 15)
-if playerGui then
-    gui.Parent = playerGui
-else
-    return
-end
+gui.Parent = playerGui
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 0, 0, 0)
