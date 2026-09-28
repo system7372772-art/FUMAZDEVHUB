@@ -225,22 +225,16 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
-local playerGui = safeWait(player, "PlayerGui", 15)
-if not playerGui then
-    return
-end
-
--- Destruir GUI duplicada si existe
-local existingGui = playerGui:FindFirstChild("LegacyServiceGui")
-if existingGui then
-    existingGui:Destroy()
-end
-
--- Crear nueva GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "LegacyServiceGui"
 gui.ResetOnSpawn = false
-gui.Parent = playerGui
+
+local playerGui = safeWait(player, "PlayerGui", 15)
+if playerGui then
+    gui.Parent = playerGui
+else
+    return
+end
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 0, 0, 0)
@@ -2850,6 +2844,12 @@ local Canvas = NS:AddGroup({
     Name = "Canvas📜",
     Info = "Canvas📜",
     Side = "Right"
+})
+
+local Building67 = NS:AddGroup({
+    Name = "Building🏗",
+    Info = "Building🏗",
+    Side = "Left"
 })
 
 local CCOG = OG:AddGroup({
@@ -7746,1264 +7746,6 @@ AntisOG:AddToggle({
 })
 
 Extras:AddButton({
-	Name = "Open Autobuild / build saver interface",
-	Info = "this opens the auto build and build saver interface",
-	Callback = function()
-		local success,err = pcall(function()
-
-local localplr = game.Players.LocalPlayer
-local http = game:GetService("HttpService")
-local starterui = game:GetService("StarterGui")
-local UserInputService = game:GetService("UserInputService")
-
-local mult = 4
-local built = false
-local stopped = false
-local skipblock = false
-local on = true
-local ors = true
-local colorbool = false
-
-local childcube = nil
-local childcube2 = nil
-local oldprt = nil
-local tp = true
-local blocks = {}
-local cubehistory = {}
-local historynum = 0
-local historymax = 400
-local cubechild = nil
-local novel = false
-local resizewait = 0.4
-local wbs = false
-
-local historynum2 = 0
-local pinghistory = {}
-for i=1,5 do pinghistory[i] = 0 end
-
-local normalids = {}
-normalids[Enum.NormalId.Right] = {Vector3.new(1,0,0),"X"}
-normalids[Enum.NormalId.Top] = {Vector3.new(0,1,0),"Y"}
-normalids[Enum.NormalId.Back] = {Vector3.new(0,0,1),"Z"}
-normalids[Enum.NormalId.Left] = {Vector3.new(-1,0,0),"X"}
-normalids[Enum.NormalId.Bottom] = {Vector3.new(0,-1,0),"Y"}
-normalids[Enum.NormalId.Front] = {Vector3.new(0,0,-1),"Z"}
-
-local colors = {}
-colors["tan"] = Color3.fromRGB(188,155,93)
-colors["pink"] = Color3.fromRGB(255,0,255)
-colors["dark pink"] = Color3.fromRGB(160,0,160)
-local defaultcolor = Color3.fromRGB(192,192,192)
-
-local highlight = Instance.new("Highlight")
-highlight.Parent = game.CoreGui
-highlight.FillTransparency = 1
-highlight.OutlineTransparency = 0
-
-
-local materials = {}
-materials[Enum.Material.SmoothPlastic] = "smooth"
-materials[Enum.Material.Plastic] = "plastic"
-materials[Enum.Material.CeramicTiles] = "tiles"
-materials[Enum.Material.Brick] = "bricks"
-materials[Enum.Material.WoodPlanks] = "planks"
-materials[Enum.Material.Ice] = "ice"
-materials[Enum.Material.Grass] = "grass"
-materials[Enum.Material.Sand] = "sand"
-materials[Enum.Material.Snow] = "snow"
-materials[Enum.Material.Glass] = "glass"
-materials[Enum.Material.Wood] = "wood"
-materials[Enum.Material.Slate] = "stone"
-materials[Enum.Material.Pebble] = "pebble"
-materials[Enum.Material.Marble] = "marble"
-materials[Enum.Material.Granite] = "granite"
-materials[Enum.Material.DiamondPlate] = "steel"
-materials[Enum.Material.Metal] = "metal"
-materials[Enum.Material.Asphalt] = "asphalt"
-materials[Enum.Material.Concrete] = "concrete"
-materials[Enum.Material.Pavement] = "pavement"
-materials[Enum.Material.Neon] = "neon"
-
-local swappedmaterials = {}
-for i,v in pairs(materials) do
-	swappedmaterials[v] = i
-end
-
-
-if workspace.Bricks:FindFirstChild(localplr.Name) then
-	cubechild = workspace.Bricks[localplr.Name].ChildAdded:Connect(function(child)
-		childcube = child
-		historynum = historynum + 1
-		if historynum > historymax then
-			historynum = 1
-		end
-		cubehistory[historynum] = child
-		built = true
-	end)
-end
-
-
-function roundnum(num,m)
-	return math.round((num - 2) / m) * m + 2
-end
-
-function round(pos,m)
-	return Vector3.new(roundnum(pos.X,m or mult),roundnum(pos.Y,m or mult),roundnum(pos.Z,m or mult))
-end
-
-function snap(pos,m)
-	if m == nil then m = mult end
-	return pos
-end
-
-function validate(name)
-	local bannedsymbols = {}
-	bannedsymbols["\""] = "''"
-	bannedsymbols["*"] = "\u{2605}"
-	bannedsymbols[":"] = ";"
-	bannedsymbols["<"] = "\u{2264}"
-	bannedsymbols[">"] = "\u{2265}"
-	bannedsymbols["?"] = "\u{00BF}"
-	bannedsymbols["\\"] = ""
-	bannedsymbols["|"] = "I"
-	bannedsymbols["/"] = "\u{2215}"
-	
-	for i,v in pairs(bannedsymbols) do
-		name = name:gsub(i,v)
-	end
-	local s = string.find(name,"%.txt") or string.find(name,"%.json")
-	if s then
-		local addafter = string.sub(name,s)
-		name = string.sub(name,1,s-1)
-		name = name:gsub("%.","·")
-		name = name..addafter
-	else
-		name = name:gsub("%.","·")
-	end
-	return name
-end
-
-function listfilesfixed(directory)
-	local s,lf = pcall(function()
-		return listfiles(directory)
-	end)
-	if s then
-		for i,v in pairs(lf) do
-			if string.sub(v,1,2) == "./" then
-				v = string.sub(v,3)
-			end
-		end
-	end
-	return lf
-end
-
-function getfn(js,first)
-	local fn = listfilesfixed("TCOLSaves/")
-	if fn and typeof(fn) == "table" then
-		if not js then
-			for i,v in pairs(fn) do
-				fn[i] = v:gsub(".json","")
-			end
-		end
-		if not first then
-			for i,v in pairs(fn) do
-				fn[i] = v:gsub("TCOLSaves/","")
-			end
-		end
-	else
-		fn = {}
-	end
-	return fn
-end
-
-function createpartrepl(pos,bsize,col,mat,transp,anch,collide,sprays)
-	if typeof(pos) == "Vector3" then
-		pos = CFrame.new(pos)
-	end
-	local p = Instance.new("Part")
-	oldprt = p
-	p.Anchored = anch or true
-	p.CanCollide = collide or false
-	p.CastShadow = false
-	p.CanQuery = false
-	p.Color = col
-	p.Transparency = transp or .5
-	p.Material = mat
-	if bsize ~= nil then
-		pos = CFrame.new((pos.X + (bsize.X/2))-.5,(pos.Y + (bsize.Y/2))-.5,(pos.Z + (bsize.Z/2))-.5) * pos.Rotation
-	end
-	p.Size = bsize or Vector3.new(mult,mult,mult)
-	p.CFrame = pos
-	p.Parent = workspace
-	return p
-end
-
-function buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmaterial,sprays,anchored,collide)
-	task.wait(0.001)
-	if anchored == nil then anchored = true end
-	if collide == nil then collide = true end
-	
-	local needsresize = false
-	local s,e = pcall(function()
-		local s,e = pcall(function()
-			localplr.Backpack.Build.Parent = localplr.Character
-		end)
-		local oo = false
-		local c = 0
-		childcube = nil
-		
-		if bsize == nil then
-			bsize = "normal"
-			local success = pcall(function()
-				if localplr.PlayerGui:FindFirstChild("Build") then
-					local buildGui = localplr.PlayerGui.Build
-					if buildGui and buildGui:FindFirstChild("Button") then
-						bsize = buildGui.Button.Text
-					end
-				end
-			end)
-			if bsizev3 ~= nil and (bsizev3.X ~= mult or bsizev3.Y ~= mult or bsizev3.Z ~= mult) then
-				bsize = "detailed"
-			end
-		end
-		
-		local oldpos = pos
-		pos = snap(pos)
-		local args = {
-			[1] = workspace.Terrain,
-			[2] = Enum.NormalId.Top,
-			[3] = pos,
-			[4] = bsize or "normal"
-		}
-		
-		built = false
-		if localplr.Character:FindFirstChild("Build") then
-			local event = (localplr.Character.Build:FindFirstChild("origevent") and localplr.Character.Build.origevent:Invoke(unpack(args))) or localplr.Character.Build.Script.Event:FireServer(unpack(args))
-		end
-		
-		c = 0
-		repeat
-			c = c + 1
-			if localplr.Character and not localplr.Character:FindFirstChild("Build") and localplr.Backpack:FindFirstChild("Build") then
-				localplr.Backpack.Build.Parent = localplr.Character
-			end
-			if localplr.Character:FindFirstChild("Build") then
-				local event = (localplr.Character.Build:FindFirstChild("origevent") and localplr.Character.Build.origevent:Invoke(unpack(args))) or localplr.Character.Build.Script.Event:FireServer(unpack(args))
-			end
-			local s,e = pcall(function()
-				novel = true
-				if tp then
-					localplr.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
-				end
-			end)
-			task.wait(.1)
-		until (built == true and childcube) or stopped == true or skipblock == true or c > 200
-		novel = false
-		built = false
-		
-		if colorbool and childcube and typeof(color) == "Color3" and (color ~= defaultcolor or childcube.Color ~= color) and (localplr.Backpack:FindFirstChild("Paint") or localplr.Character:FindFirstChild("Paint")) then
-			local pos = (childcube and childcube.Position + childcube.Size/2) or pos
-			local args = {
-				[1] = childcube,
-				[2] = Enum.NormalId.Top,
-				[3] = pos,
-				[4] = "color",
-				[5] = color or nil,
-				[6] = "tiles",
-				[7] = ""
-			}
-			task.wait()
-			local success,err = pcall(function()
-				localplr.Backpack.Paint.Parent = localplr.Character
-			end)
-			if not childcube then
-				if oldprt then oldprt:Destroy() end
-				return
-			end
-			
-			highlight.Adornee = childcube
-			highlight.FillColor = childcube.Color
-			c = 0
-			local s,e = pcall(function()
-				repeat
-					c = c + 1
-					if localplr.Character and not localplr.Character:FindFirstChild("Paint") and localplr.Backpack:FindFirstChild("Paint") then
-						localplr.Backpack.Paint.Parent = localplr.Character
-					end
-					if localplr.Character and localplr.Character:FindFirstChild("Paint") then
-						local event = (localplr.Character.Paint:FindFirstChild("origevent") and localplr.Character.Paint.origevent:Invoke(unpack(args))) or localplr.Character.Paint.Script.Event:FireServer(unpack(args))
-					end
-					local s,e = pcall(function()
-						novel = true
-						if tp then
-							localplr.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
-						end
-					end)
-					task.wait(.2)
-				until not childcube or not childcube.Parent or childcube.Color == color or stopped == true or skipblock == true or c > 2000
-				novel = false
-			end)
-		end
-		
-		if childcube and texture and (localplr.Backpack:FindFirstChild("Paint") or localplr.Character:FindFirstChild("Paint")) then
-			local pos = (childcube and childcube.Position + childcube.Size/2) or pos
-			local args = {
-				[1] = childcube,
-				[2] = Enum.NormalId.Top,
-				[3] = pos,
-				[4] = "material",
-				[5] = nil,
-				[6] = texture,
-				[7] = ""
-			}
-			task.wait()
-			local success,err = pcall(function()
-				localplr.Backpack.Paint.Parent = localplr.Character
-			end)
-			if not childcube then
-				if oldprt then oldprt:Destroy() end
-				return
-			end
-			
-			highlight.Adornee = childcube
-			highlight.FillColor = childcube.Color
-			c = 0
-			local s,e = pcall(function()
-				repeat
-					c = c + 1
-					if localplr.Character and not localplr.Character:FindFirstChild("Paint") and localplr.Backpack:FindFirstChild("Paint") then
-						localplr.Backpack.Paint.Parent = localplr.Character
-					end
-					if localplr.Character and localplr.Character:FindFirstChild("Paint") then
-						local event = (localplr.Character.Paint:FindFirstChild("origevent") and localplr.Character.Paint.origevent:Invoke(unpack(args))) or localplr.Character.Paint.Script.Event:FireServer(unpack(args))
-					end
-					local s,e = pcall(function()
-						novel = true
-						if tp then
-							localplr.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
-						end
-					end)
-					task.wait(.2)
-				until not childcube or not childcube.Parent or childcube.Material == swappedmaterials[texture] or stopped == true or skipblock == true or c > 2000
-				novel = false
-			end)
-		end
-		
-		if childcube and bsizev3 and (bsizev3.X ~= mult or bsizev3.Y ~= mult or bsizev3.Z ~= mult) and (localplr.Character:FindFirstChild("Shape") or localplr.Backpack:FindFirstChild("Shape")) then
-			if not localplr.Character:FindFirstChild("Shape") and localplr.Backpack:FindFirstChild("Shape") then
-				localplr.Backpack.Shape.Parent = localplr.Character
-			end
-			
-			local args = {[1] = childcube, [2] = Enum.NormalId.Right, [3] = "", [4] = ""}
-			
-			if childcube and childcube.Size.X ~= bsizev3.X then
-				c = 0
-				repeat
-					c = c + 1
-					pos = (childcube and childcube.Position + childcube.Size/2) or pos
-					args[4] = nil
-					if childcube then
-						args[3] = pos
-						if childcube.Size.X > bsizev3.X then
-							args[4] = "decrease"
-						elseif childcube.Size.X < bsizev3.X then
-							args[4] = "increase"
-						end
-					end
-					if localplr.Character:FindFirstChild("Shape") then
-						local event = (localplr.Character.Shape:FindFirstChild("origevent") and localplr.Character.Shape.origevent:Invoke(unpack(args))) or localplr.Character.Shape.Script.Event:FireServer(unpack(args))
-					end
-					task.wait(resizewait)
-				until args[4] == nil or (args[4] == "decrease" and childcube and childcube.Size.X <= 1) or (childcube and childcube.Size.X == bsizev3.X) or stopped == true or skipblock == true or not childcube or c > (bsizev3.X*3)/resizewait
-			end
-			
-			args[2] = Enum.NormalId.Top
-			if childcube and childcube.Size.Y ~= bsizev3.Y then
-				c = 0
-				repeat
-					c = c + 1
-					pos = (childcube and childcube.Position + childcube.Size/2) or pos
-					args[4] = nil
-					if childcube then
-						args[3] = pos
-						if childcube.Size.Y > bsizev3.Y then
-							args[4] = "decrease"
-						elseif childcube.Size.Y < bsizev3.Y then
-							args[4] = "increase"
-						end
-					end
-					if localplr.Character:FindFirstChild("Shape") then
-						local event = (localplr.Character.Shape:FindFirstChild("origevent") and localplr.Character.Shape.origevent:Invoke(unpack(args))) or localplr.Character.Shape.Script.Event:FireServer(unpack(args))
-					end
-					task.wait(resizewait)
-				until args[4] == nil or (args[4] == "decrease" and childcube and childcube.Size.Y <= 1) or (childcube and childcube.Size.Y == bsizev3.Y) or stopped == true or skipblock == true or not childcube or c > (bsizev3.Y*3)/resizewait
-			end
-			
-			args[2] = Enum.NormalId.Back
-			if childcube and childcube.Size.Z ~= bsizev3.Z then
-				c = 0
-				repeat
-					c = c + 1
-					pos = (childcube and childcube.Position + childcube.Size/2) or pos
-					args[4] = nil
-					if childcube then
-						args[3] = pos
-						if childcube.Size.Z > bsizev3.Z then
-							args[4] = "decrease"
-						elseif childcube.Size.Z < bsizev3.Z then
-							args[4] = "increase"
-						end
-					end
-					if localplr.Character:FindFirstChild("Shape") then
-						local event = (localplr.Character.Shape:FindFirstChild("origevent") and localplr.Character.Shape.origevent:Invoke(unpack(args))) or localplr.Character.Shape.Script.Event:FireServer(unpack(args))
-					end
-					task.wait(resizewait)
-				until args[4] == nil or (args[4] == "decrease" and childcube and childcube.Size.Z <= 1) or (childcube and childcube.Size.Z == bsizev3.Z) or stopped == true or skipblock == true or not childcube or c > (bsizev3.Z*3)/resizewait
-			end
-		end
-		
-		highlight.Adornee = nil
-		skipblock = false
-	end)
-	if oldprt then oldprt:Destroy() end
-	novel = false
-	childcube = nil
-end
-
-function saveblock(bl)
-	local blockdata = {}
-	if bl:IsA("BasePart") then
-		local p = bl.Position
-		local pt = {bl.Position.X,bl.Position.Y,bl.Position.Z}
-		if (bl.CFrame - bl.Position) ~= CFrame.new() then
-			blockdata.p = {bl.CFrame:GetComponents()}
-		else
-			blockdata.p = pt
-		end
-		blockdata.c = {math.round(bl.Color.R*255),math.round(bl.Color.G*255),math.round(bl.Color.B*255)}
-		blockdata.a = bl.Anchored
-		blockdata.cc = bl.CanCollide
-		if bl.Size.X ~= mult or bl.Size.Y ~= mult or bl.Size.Z ~= mult then
-			blockdata.p[1] = (blockdata.p[1] - (bl.Size.X/2))+.5
-			blockdata.p[2] = (blockdata.p[2] - (bl.Size.Y/2))+.5
-			blockdata.p[3] = (blockdata.p[3] - (bl.Size.Z/2))+.5
-			blockdata.s = {bl.Size.X,bl.Size.Y,bl.Size.Z}
-		end
-		blockdata.m = materials[bl.Material]
-		blockdata.o = bl.Material.Name
-		blockdata.sp = {}
-		for i,v in pairs(bl:GetChildren()) do
-			if v.Name == "Spray" then
-				table.insert(blockdata.sp,{v.Face.Name,v.Image.Image,string.gsub(v.Label.Text,'"','\"')})
-			end
-		end
-	end
-	return blockdata
-end
-
-
-local files = listfilesfixed("")
-local s,e = pcall(function()
-	if (not table.find(files,"TCOLSaves/") and not table.find(files,"TCOLSaves")) then
-		if table.find(files,"thechosenonebuilds.txt") then
-			local builds = http:JSONDecode(readfile("thechosenonebuilds.txt"))
-			makefolder("TCOLSaves")
-			local i2 = 0
-			for i,v in pairs(builds) do
-				i = validate(i)
-				local s,e = pcall(function()
-					writefile("TCOLSaves/"..i..".json",http:JSONEncode(v))
-				end)
-				if not s then
-					i2 += 1
-					writefile("TCOLSaves/CheckFile_Named_'TCO"..tostring(i2).."'.json",http:JSONEncode(v))
-				end
-				task.wait()
-			end
-		else
-			makefolder("TCOLSaves")
-		end
-	end
-end)
-
-
-local function corner(obj, r)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, r or 8)
-	c.Parent = obj
-end
-
-local function stroke(obj, t)
-	local s = Instance.new("UIStroke")
-	s.Color = Color3.fromRGB(0,0,0)
-	s.Transparency = 0.4
-	s.Thickness = t or 1
-	s.Parent = obj
-end
-
-local function themeFrame(f)
-	f.BackgroundColor3 = Color3.fromRGB(20,20,20)
-	corner(f,10)
-	stroke(f,2)
-end
-
-local function themeButton(b)
-	b.BackgroundColor3 = Color3.fromRGB(35,35,35)
-	b.TextColor3 = Color3.fromRGB(255,255,255)
-	b.Font = Enum.Font.Gotham
-	b.BorderSizePixel = 0
-	corner(b,8)
-	stroke(b,1)
-end
-
-local function themeLabel(l)
-	l.BackgroundColor3 = Color3.fromRGB(18,18,18)
-	l.TextColor3 = Color3.fromRGB(255,255,255)
-	l.Font = Enum.Font.Gotham
-	l.BorderSizePixel = 0
-	corner(l,6)
-	stroke(l,1)
-end
-
-
-local playerGui = localplr:WaitForChild("PlayerGui")
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoBuildGUI"
-screenGui.Parent = playerGui
-screenGui.ResetOnSpawn = false
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 600, 0, 1100)
-mainFrame.Position = UDim2.new(0, 20, 0, 20)
-mainFrame.Parent = screenGui
-mainFrame.ClipsDescendants = true
-themeFrame(mainFrame)
-
-local dragging = false
-local dragStart
-local startPos
-
-mainFrame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = mainFrame.Position
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		local delta = input.Position - dragStart
-		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = false
-	end
-end)
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1,0,0,50)
-title.Text = "AUTOBUILD / SAVE BUILD"
-title.TextSize = 24
-title.Font = Enum.Font.GothamBold
-title.Parent = mainFrame
-themeLabel(title)
-
-local yPos = 60
-
-
-local saveSectionLabel = Instance.new("TextLabel")
-saveSectionLabel.Size = UDim2.new(1,-20,0,30)
-saveSectionLabel.Position = UDim2.new(0,10,0,yPos)
-saveSectionLabel.Text = "SAVE BUILD"
-saveSectionLabel.TextSize = 16
-saveSectionLabel.Font = Enum.Font.GothamBold
-saveSectionLabel.Parent = mainFrame
-themeLabel(saveSectionLabel)
-yPos = yPos + 40
-
-local saveBox = Instance.new("TextBox")
-saveBox.Size = UDim2.new(1,-20,0,35)
-saveBox.Position = UDim2.new(0,10,0,yPos)
-saveBox.PlaceholderText = "Enter build name here..."
-saveBox.Text = ""
-saveBox.TextSize = 14
-saveBox.ClearTextOnFocus = false
-saveBox.Parent = mainFrame
-themeButton(saveBox)
-yPos = yPos + 45
-
-local savebuildnames = {}
-local selectedBuild = nil
-
-local function updatedropdown()
-	local names = getfn()
-	table.sort(names,function(a,b)
-		return a:lower() < b:lower()
-	end)
-	writefile("thechosenonenames.txt",http:JSONEncode(savebuildnames))
-end
-
-local function button(text, x, y, width, callback)
-	local b = Instance.new("TextButton")
-	b.Size = width
-	b.Position = UDim2.new(x/600, 0, 0, y)
-	b.Text = text
-	b.TextSize = 12
-	b.Font = Enum.Font.GothamBold
-	b.Parent = mainFrame
-	themeButton(b)
-	b.MouseButton1Click:Connect(callback)
-	return b
-end
-
-local function buttonFull(text, y, callback)
-	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(1,-20,0,40)
-	b.Position = UDim2.new(0,10,0,y)
-	b.Text = text
-	b.TextSize = 13
-	b.Font = Enum.Font.GothamBold
-	b.Parent = mainFrame
-	themeButton(b)
-	b.MouseButton1Click:Connect(callback)
-	return b
-end
-
-local saveMode = "local"
-
-local saveLocalToggle = Instance.new("TextButton")
-saveLocalToggle.Size = UDim2.new(0.48,-12,0,40)
-saveLocalToggle.Position = UDim2.new(0,10,0,yPos)
-saveLocalToggle.Text = "Save Local: ON"
-saveLocalToggle.TextSize = 12
-saveLocalToggle.Font = Enum.Font.GothamBold
-saveLocalToggle.Parent = mainFrame
-themeButton(saveLocalToggle)
-
-local saveServerToggle = Instance.new("TextButton")
-saveServerToggle.Size = UDim2.new(0.48,-12,0,40)
-saveServerToggle.Position = UDim2.new(0.52,10,0,yPos)
-saveServerToggle.Text = "Save Server: OFF"
-saveServerToggle.TextSize = 12
-saveServerToggle.Font = Enum.Font.GothamBold
-saveServerToggle.Parent = mainFrame
-themeButton(saveServerToggle)
-
-saveLocalToggle.MouseButton1Click:Connect(function()
-	if saveMode ~= "local" then
-		saveMode = "local"
-		saveLocalToggle.Text = "Save Local: ON"
-		saveServerToggle.Text = "Save Server: OFF"
-	end
-end)
-
-saveServerToggle.MouseButton1Click:Connect(function()
-	if saveMode ~= "server" then
-		saveMode = "server"
-		saveServerToggle.Text = "Save Server: ON"
-		saveLocalToggle.Text = "Save Local: OFF"
-	end
-end)
-
-yPos = yPos + 50
-
-button("SAVE", 10, yPos, UDim2.new(0.31,-10,0,40), function()
-	if saveBox.Text == "" then
-		status.Text = "Status: Enter a name!"
-		return
-	end
-	
-	local builddata = {}
-	
-	if saveMode == "local" then
-		local folder = workspace:FindFirstChild("Bricks")
-		if not folder or not folder:FindFirstChild(localplr.Name) then
-			status.Text = "Status: No local builds found"
-			return
-		end
-		
-		for i,v in ipairs(folder[localplr.Name]:GetChildren()) do
-			if v:IsA("BasePart") then
-				table.insert(builddata, saveblock(v))
-			end
-		end
-	else
-		local folder = workspace:FindFirstChild("Bricks")
-		if folder then
-			for i,v in pairs(folder:GetChildren()) do
-				if v:IsA("Model") then
-					for i2,v2 in pairs(v:GetChildren()) do
-						if v2:IsA("BasePart") then
-							table.insert(builddata, saveblock(v2))
-						end
-					end
-				end
-			end
-		end
-	end
-	
-	if #builddata == 0 then
-		status.Text = "Status: No builds found"
-		return
-	end
-	
-	local name = validate(saveBox.Text)
-	if not savebuildnames[name] then savebuildnames[name] = 0 end
-	savebuildnames[name] = savebuildnames[name] + 1
-	local savename = name
-	if savebuildnames[name] > 1 then savename = name..tostring(savebuildnames[name]) end
-	
-	writefile("TCOLSaves/" .. savename .. ".json", http:JSONEncode(builddata))
-	updatedropdown()
-	refreshBuilds()
-	local modeText = saveMode == "local" and "Local" or "Server"
-	status.Text = "Status: " .. modeText .. " saved ✓"
-	saveBox.Text = ""
-end)
-
-button("EXPORT", 217, yPos, UDim2.new(0.31,-10,0,40), function()
-	if not selectedBuild or selectedBuild == "" then
-		return
-	end
-	
-	local allBuilds = getfn()
-	local buildExists = false
-	
-	for _, buildName in ipairs(allBuilds) do
-		if buildName == selectedBuild then
-			buildExists = true
-			break
-		end
-	end
-	
-	if not buildExists then
-		return
-	end
-	
-	local fullPath = "TCOLSaves/" .. selectedBuild .. ".json"
-	
-	if isfile(fullPath) then
-		local jsonContent = readfile(fullPath)
-		if jsonContent and jsonContent ~= "" then
-			if setclipboard then
-				pcall(function() setclipboard(jsonContent) end)
-			elseif toclipboard then
-				pcall(function() toclipboard(jsonContent) end)
-			elseif Clipboard and Clipboard.set then
-				pcall(function() Clipboard.set(jsonContent) end)
-			end
-		end
-	end
-end)
-
-button("IMPORT", 424, yPos, UDim2.new(0.31,-10,0,40), function()
-	local importGui = Instance.new("ScreenGui")
-	importGui.Name = "ImportBuildGUI"
-	importGui.Parent = playerGui
-	importGui.ResetOnSpawn = false
-	
-	local importFrame = Instance.new("Frame")
-	importFrame.Size = UDim2.new(0, 500, 0, 600)
-	importFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
-	importFrame.Parent = importGui
-	themeFrame(importFrame)
-	
-	local dragging2 = false
-	local dragStart2
-	local startPos2
-	
-	importFrame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging2 = true
-			dragStart2 = input.Position
-			startPos2 = importFrame.Position
-		end
-	end)
-	
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging2 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			local delta = input.Position - dragStart2
-			importFrame.Position = UDim2.new(startPos2.X.Scale, startPos2.X.Offset + delta.X, startPos2.Y.Scale, startPos2.Y.Offset + delta.Y)
-		end
-	end)
-	
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging2 = false
-		end
-	end)
-	
-	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Size = UDim2.new(1,0,0,50)
-	titleLabel.Text = "IMPORT BUILD"
-	titleLabel.TextSize = 20
-	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.Parent = importFrame
-	themeLabel(titleLabel)
-	
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1,-20,0,25)
-	nameLabel.Position = UDim2.new(0,10,0,60)
-	nameLabel.Text = "Build Name:"
-	nameLabel.TextSize = 12
-	nameLabel.Font = Enum.Font.Gotham
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.TextColor3 = Color3.fromRGB(255,255,255)
-	nameLabel.Parent = importFrame
-	
-	local nameBox = Instance.new("TextBox")
-	nameBox.Size = UDim2.new(1,-20,0,35)
-	nameBox.Position = UDim2.new(0,10,0,88)
-	nameBox.PlaceholderText = "Enter a name"
-	nameBox.Text = ""
-	nameBox.TextSize = 12
-	nameBox.Parent = importFrame
-	themeButton(nameBox)
-	
-	local jsonLabel = Instance.new("TextLabel")
-	jsonLabel.Size = UDim2.new(1,-20,0,25)
-	jsonLabel.Position = UDim2.new(0,10,0,130)
-	jsonLabel.Text = "JSON Code:"
-	jsonLabel.TextSize = 12
-	jsonLabel.Font = Enum.Font.Gotham
-	jsonLabel.BackgroundTransparency = 1
-	jsonLabel.TextColor3 = Color3.fromRGB(255,255,255)
-	jsonLabel.Parent = importFrame
-	
-	local jsonBox = Instance.new("TextBox")
-	jsonBox.Size = UDim2.new(1,-20,0,270)
-	jsonBox.Position = UDim2.new(0,10,0,158)
-	jsonBox.PlaceholderText = "Enter .Json code"
-	jsonBox.Text = ""
-	jsonBox.TextSize = 11
-	jsonBox.TextWrapped = true
-	jsonBox.TextXAlignment = Enum.TextXAlignment.Left
-	jsonBox.TextYAlignment = Enum.TextYAlignment.Top
-	jsonBox.ClearTextOnFocus = false
-	jsonBox.MultiLine = true
-	jsonBox.Parent = importFrame
-	themeButton(jsonBox)
-	
-	local confirmBtn = Instance.new("TextButton")
-	confirmBtn.Size = UDim2.new(0.48,-12,0,40)
-	confirmBtn.Position = UDim2.new(0,10,0,440)
-	confirmBtn.Text = "CONFIRM"
-	confirmBtn.TextSize = 12
-	confirmBtn.Font = Enum.Font.GothamBold
-	confirmBtn.Parent = importFrame
-	themeButton(confirmBtn)
-	
-	confirmBtn.MouseButton1Click:Connect(function()
-		if nameBox.Text == "" then
-			status.Text = "Status: Enter a name!"
-			return
-		end
-		
-		if jsonBox.Text == "" then
-			status.Text = "Status: Enter JSON code!"
-			return
-		end
-		
-		local isJsonValid = false
-		pcall(function()
-			local decodedData = http:JSONDecode(jsonBox.Text)
-			if decodedData and typeof(decodedData) == "table" then
-				isJsonValid = true
-			end
-		end)
-		
-		if not isJsonValid then
-			status.Text = "Status: Invalid JSON!"
-			return
-		end
-		
-		local name = validate(nameBox.Text)
-		if not savebuildnames[name] then savebuildnames[name] = 0 end
-		savebuildnames[name] = savebuildnames[name] + 1
-		local savename = name
-		if savebuildnames[name] > 1 then savename = name..tostring(savebuildnames[name]) end
-		
-		pcall(function()
-			writefile("TCOLSaves/" .. savename .. ".json", jsonBox.Text)
-			updatedropdown()
-			refreshBuilds()
-			status.Text = "Status: Imported ✓"
-		end)
-		
-		task.wait(0.3)
-		pcall(function() importGui:Destroy() end)
-	end)
-	
-	local cancelBtn = Instance.new("TextButton")
-	cancelBtn.Size = UDim2.new(0.48,-12,0,40)
-	cancelBtn.Position = UDim2.new(0.52,10,0,440)
-	cancelBtn.Text = "CANCEL"
-	cancelBtn.TextSize = 12
-	cancelBtn.Font = Enum.Font.GothamBold
-	cancelBtn.Parent = importFrame
-	themeButton(cancelBtn)
-	
-	cancelBtn.MouseButton1Click:Connect(function()
-		importGui:Destroy()
-	end)
-end)
-
-yPos = yPos + 50
-
-
-local listLabel = Instance.new("TextLabel")
-listLabel.Size = UDim2.new(1,-20,0,30)
-listLabel.Position = UDim2.new(0,10,0,yPos)
-listLabel.Text = "SAVED BUILDS"
-listLabel.TextSize = 16
-listLabel.Font = Enum.Font.GothamBold
-listLabel.Parent = mainFrame
-themeLabel(listLabel)
-yPos = yPos + 40
-
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1,-20,0,130)
-scroll.Position = UDim2.new(0,10,0,yPos)
-scroll.BackgroundColor3 = Color3.fromRGB(18,18,18)
-scroll.ScrollBarThickness = 8
-scroll.Parent = mainFrame
-corner(scroll,8)
-stroke(scroll,2)
-
-local listLayout = Instance.new("UIListLayout", scroll)
-listLayout.Padding = UDim.new(0, 5)
-
-local buildInfo = Instance.new("TextLabel")
-buildInfo.Size = UDim2.new(1,-20,0,30)
-buildInfo.Position = UDim2.new(0,10,0,yPos+140)
-buildInfo.Text = "No build selected"
-buildInfo.TextSize = 13
-buildInfo.Parent = mainFrame
-themeLabel(buildInfo)
-
-yPos = yPos + 180
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1,-20,0,30)
-status.Position = UDim2.new(0,10,0,yPos)
-status.Text = "Status: Ready"
-status.TextSize = 13
-status.Parent = mainFrame
-themeLabel(status)
-yPos = yPos + 40
-
-
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(0.25,-12,0,25)
-speedLabel.Position = UDim2.new(0,10,0,yPos)
-speedLabel.Text = "Speed:"
-speedLabel.TextSize = 12
-speedLabel.Parent = mainFrame
-themeLabel(speedLabel)
-
-local speedBox = Instance.new("TextBox")
-speedBox.Size = UDim2.new(0.25,-12,0,25)
-speedBox.Position = UDim2.new(0.25,5,0,yPos)
-speedBox.Text = "0.1"
-speedBox.TextSize = 11
-speedBox.Parent = mainFrame
-themeButton(speedBox)
-
-local buildSpeed = 0.1
-speedBox.FocusLost:Connect(function()
-	local n = tonumber(speedBox.Text)
-	if n then buildSpeed = math.clamp(n, 0.01, 5) else speedBox.Text = tostring(buildSpeed) end
-end)
-
-local histLabel = Instance.new("TextLabel")
-histLabel.Size = UDim2.new(0.25,-12,0,25)
-histLabel.Position = UDim2.new(0.5,10,0,yPos)
-histLabel.Text = "History:"
-histLabel.TextSize = 12
-histLabel.Parent = mainFrame
-themeLabel(histLabel)
-
-local histBox = Instance.new("TextBox")
-histBox.Size = UDim2.new(0.25,-12,0,25)
-histBox.Position = UDim2.new(0.75,5,0,yPos)
-histBox.Text = "400"
-histBox.TextSize = 11
-histBox.Parent = mainFrame
-themeButton(histBox)
-
-histBox.FocusLost:Connect(function()
-	local n = tonumber(histBox.Text)
-	if n then historymax = math.abs(n) else histBox.Text = tostring(historymax) end
-end)
-
-yPos = yPos + 35
-
-local resizeLabel = Instance.new("TextLabel")
-resizeLabel.Size = UDim2.new(0.25,-12,0,25)
-resizeLabel.Position = UDim2.new(0,10,0,yPos)
-resizeLabel.Text = "Resize Wait:"
-resizeLabel.TextSize = 11
-resizeLabel.Parent = mainFrame
-themeLabel(resizeLabel)
-
-local resizeBox = Instance.new("TextBox")
-resizeBox.Size = UDim2.new(0.25,-12,0,25)
-resizeBox.Position = UDim2.new(0.25,5,0,yPos)
-resizeBox.Text = "0.4"
-resizeBox.TextSize = 11
-resizeBox.Parent = mainFrame
-themeButton(resizeBox)
-
-resizeBox.FocusLost:Connect(function()
-	local n = tonumber(resizeBox.Text)
-	if n then resizewait = math.clamp(n, 0.01, 5) else resizeBox.Text = tostring(resizewait) end
-end)
-
-local tpToggle = Instance.new("TextButton")
-tpToggle.Size = UDim2.new(0.48,-12,0,25)
-tpToggle.Position = UDim2.new(0.52,10,0,yPos)
-tpToggle.Text = "TP: ON"
-tpToggle.TextSize = 11
-tpToggle.Parent = mainFrame
-themeButton(tpToggle)
-
-tpToggle.MouseButton1Click:Connect(function()
-	tp = not tp
-	tpToggle.Text = tp and "TP: ON" or "TP: OFF"
-end)
-
-yPos = yPos + 35
-
-local colorToggle = Instance.new("TextButton")
-colorToggle.Size = UDim2.new(1,-20,0,25)
-colorToggle.Position = UDim2.new(0,10,0,yPos)
-colorToggle.Text = "Color: ON"
-colorToggle.TextSize = 11
-colorToggle.Parent = mainFrame
-themeButton(colorToggle)
-
-colorbool = true
-
-colorToggle.MouseButton1Click:Connect(function()
-	colorbool = not colorbool
-	colorToggle.Text = colorbool and "Color: ON" or "Color: OFF"
-end)
-
-yPos = yPos + 35
-
-
-local function refreshBuilds()
-	for _,v in ipairs(scroll:GetChildren()) do
-		if v:IsA("TextButton") then v:Destroy() end
-	end
-	
-	local builds = getfn()
-	
-	for _, name in ipairs(builds) do
-		local b = Instance.new("TextButton")
-		b.Size = UDim2.new(1,-10,0,30)
-		b.Text = name
-		b.TextSize = 12
-		b.Parent = scroll
-		themeButton(b)
-		
-		local buildName = name
-		b.MouseButton1Click:Connect(function()
-			selectedBuild = buildName
-			buildInfo.Text = "Selected: " .. buildName
-		end)
-	end
-	
-	scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
-end
-
-refreshBuilds()
-
-local offset = Vector3.new(0,0,0)
-local prttable = nil
-
-
-buttonFull("LOAD BUILD", yPos, function()
-	if not selectedBuild then
-		status.Text = "Status: Select build!"
-		return
-	end
-	
-	stopped = false
-	
-	task.spawn(function()
-		local path = "TCOLSaves/" .. selectedBuild .. ".json"
-		if not isfile(path) then
-			status.Text = "Status: File not found"
-			return
-		end
-		
-		local data = http:JSONDecode(readfile(path))
-		if not data then return end
-		
-		status.Text = "Status: Loading..."
-		
-		local char = localplr.Character or localplr.CharacterAdded:Wait()
-		local bp = localplr:WaitForChild("Backpack")
-		
-		if bp:FindFirstChild("Build") then
-			bp:FindFirstChild("Build").Parent = char
-		end
-		
-		for i, b in ipairs(data) do
-			if stopped then break end
-			
-			local posses = (b.p or b.pos)
-			local pos = Vector3.new(posses[1], posses[2], posses[3]) + offset
-			local color = Color3.fromRGB(table.unpack(b.c or b.color))
-			local bsize = nil
-			if b.s or b.size then
-				bsize = Vector3.new(table.unpack(b.s or b.size))
-			end
-			
-			if char and char:FindFirstChild("HumanoidRootPart") then
-				char.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
-			end
-			
-			buildblock(pos, b.m or b.mat, color, nil, bsize, nil, b.o or b.origmat, b.sp or b.sprayed, b.a or b.anchored, b.cc or b.collide)
-			task.wait(buildSpeed)
-			
-			status.Text = "Status: Loading " .. tostring(i) .. "/" .. tostring(#data)
-		end
-		
-		status.Text = stopped and "Status: Stopped" or "Status: Done"
-	end)
-end)
-
-yPos = yPos + 50
-
-
-buttonFull("PAUSE / RESUME", yPos, function()
-end)
-
-yPos = yPos + 50
-
-buttonFull("STOP", yPos, function()
-	stopped = true
-	status.Text = "Status: Stopped"
-end)
-
-yPos = yPos + 50
-
-
-button("DELETE", 10, yPos, UDim2.new(0.33,-15,0,40), function()
-	if not selectedBuild then
-		status.Text = "Status: Select build!"
-		return
-	end
-	
-	local path = "TCOLSaves/" .. selectedBuild .. ".json"
-	if isfile(path) then
-		delfile(path)
-		refreshBuilds()
-		selectedBuild = nil
-		buildInfo.Text = "No build selected"
-		status.Text = "Status: Deleted"
-	end
-end)
-
-button("OPTIMIZE", 205, yPos, UDim2.new(0.33,-15,0,40), function()
-	if not selectedBuild then
-		status.Text = "Status: Select build!"
-		return
-	end
-	
-	local path = "TCOLSaves/" .. selectedBuild .. ".json"
-	if isfile(path) then
-		local data = http:JSONDecode(readfile(path))
-		for i,v in pairs(data) do
-			if v.pos then v.p = v.pos; v.pos = nil end
-			if v.size then v.s = v.size; v.size = nil end
-			if v.color then v.c = v.color; v.color = nil end
-			if v.material then v.m = v.material; v.material = nil end
-			if v.anchored then v.a = v.anchored; v.anchored = nil end
-			if v.collide then v.cc = v.collide; v.collide = nil end
-		end
-		writefile(path, http:JSONEncode(data))
-		status.Text = "Status: Optimized"
-	end
-end)
-
-button("OPTIMIZE ALL", 400, yPos, UDim2.new(0.33,-15,0,40), function()
-	local count = 0
-	for i,v in pairs(getfn()) do
-		local path = "TCOLSaves/" .. v .. ".json"
-		if isfile(path) then
-			local data = http:JSONDecode(readfile(path))
-			for i,b in pairs(data) do
-				if b.pos then b.p = b.pos; b.pos = nil end
-				if b.size then b.s = b.size; b.size = nil end
-				if b.color then b.c = b.color; b.color = nil end
-				if b.material then b.m = b.material; b.material = nil end
-				if b.anchored then b.a = b.anchored; b.anchored = nil end
-				if b.collide then b.cc = b.collide; b.collide = nil end
-			end
-			writefile(path, http:JSONEncode(data))
-			count = count + 1
-		end
-	end
-	status.Text = "Status: Optimized " .. tostring(count) .. " builds"
-end)
-
-yPos = yPos + 50
-
-button("SET OFFSET", 10, yPos, UDim2.new(0.48,-12,0,40), function()
-	local char = localplr.Character
-	if char and char:FindFirstChild("HumanoidRootPart") then
-		offset = round(workspace.Spawn.Position + char.HumanoidRootPart.Position)
-		status.Text = "Status: Offset set"
-	end
-end)
-
-button("RESET OFFSET", 302, yPos, UDim2.new(0.48,-12,0,40), function()
-	offset = Vector3.new(0,0,0)
-	status.Text = "Status: Offset reset"
-end)
-
-yPos = yPos + 50
-
-buttonFull("REFRESH", yPos, function()
-	refreshBuilds()
-	status.Text = "Status: Refreshed"
-end)
-
-yPos = yPos + 50
-
-
-local function cleanup()
-	on = false
-	stopped = true
-	skipblock = true
-	ors = false
-	if oldprt then oldprt:Destroy() end
-	if prttable then
-		for i,v in pairs(prttable) do
-			v:Destroy()
-		end
-	end
-	if cubechild then cubechild:Disconnect() end
-end
-
-game:GetService("CoreGui").TopbarCornerFrame.AncestryChanged:Connect(function()
-	if not screenGui.Parent then cleanup() end
-end)
-
-
-end)
-
-	end
-})
-
-Extras:AddButton({
 	Name = "Scrxptdev",
 	Info = "Another script maded by a collaborator[friend] of me(is in spanish only, no english translation)",
 	Callback = function()
@@ -12020,5 +10762,946 @@ Canvas:AddButton({
         end
     end
 })
+
+local _AB = {}
+
+Building67:AddTextbox({
+	Name = "Save Name",
+	Placeholder = "Enter build name to save...",
+	Text = "",
+	Callback = function(text)
+		_AB.currentSaveName = text
+	end
+})
+
+Building67:AddButton({
+	Name = "SAVE BUILD",
+	Info = "Saves current bricks with the name entered above",
+	Callback = function()
+		if _AB.doSave then _AB.doSave(_AB.currentSaveName or "") end
+	end
+})
+
+Building67:AddButton({
+	Name = "EXPORT SELECTED",
+	Info = "Copies selected build JSON to clipboard",
+	Callback = function()
+		if _AB.doExport then _AB.doExport() end
+	end
+})
+
+Building67:AddButton({
+	Name = "IMPORT JSON",
+	Info = "Opens window to paste and import JSON",
+	Callback = function()
+		if _AB.doImport then _AB.doImport() end
+	end
+})
+
+Building67:AddToggle({
+	Name = "Server Mode Save",
+	Info = "ON: Scans all server models. OFF: Only your local bricks.",
+	Default = false,
+	Callback = function(value)
+		_AB.saveMode = value and "server" or "local"
+	end
+})
+
+Building67:AddButton({
+	Name = "REFRESH BUILDS LIST",
+	Info = "Reloads saved builds creating dynamic buttons",
+	Callback = function()
+		if _AB.refreshBuilds then _AB.refreshBuilds() end
+	end
+})
+
+Building67:AddButton({
+	Name = "LOAD SELECTED BUILD",
+	Info = "Starts building the last clicked build from list",
+	Callback = function()
+		if _AB.loadSelected then _AB.loadSelected() end
+	end
+})
+
+Building67:AddButton({
+	Name = "STOP AUTOBUILD",
+	Info = "Stops current loading process immediately",
+	Callback = function()
+		_AB.stopped = true
+	end
+})
+
+Building67:AddToggle({
+	Name = "Teleport While Building",
+	Default = true,
+	Callback = function(value)
+		_AB.tp = value
+	end
+})
+
+Building67:AddToggle({
+	Name = "Apply Colors",
+	Default = true,
+	Callback = function(value)
+		_AB.colorbool = value
+	end
+})
+
+Building67:AddSlider({
+	Name = "Build Speed",
+	Min = 0.01,
+	Max = 5,
+	Step = 0.01,
+	Default = 0.1,
+	Callback = function(value)
+		_AB.buildSpeed = value
+	end
+})
+
+Building67:AddSlider({
+	Name = "Resize Wait",
+	Min = 0.01,
+	Max = 5,
+	Step = 0.01,
+	Default = 0.4,
+	Callback = function(value)
+		_AB.resizewait = value
+	end
+})
+
+Building67:AddSlider({
+	Name = "History Max",
+	Min = 10,
+	Max = 1000,
+	Step = 10,
+	Default = 400,
+	Callback = function(value)
+		_AB.historymax = math.floor(value)
+	end
+})
+
+Building67:AddButton({
+	Name = "SET OFFSET HERE",
+	Info = "Uses current position as origin for future loads",
+	Callback = function()
+		if _AB.setOffset then _AB.setOffset() end
+	end
+})
+
+Building67:AddButton({
+	Name = "RESET OFFSET",
+	Info = "Resets origin to (0,0,0)",
+	Callback = function()
+		_AB.offset = Vector3.new(0,0,0)
+	end
+})
+
+Building67:AddButton({
+	Name = "OPTIMIZE ALL SAVES",
+	Info = "Reduces size of all JSON files",
+	Callback = function()
+		if _AB.optimizeAll then _AB.optimizeAll() end
+	end
+})
+
+Building67:AddButton({
+	Name = "DELETE SELECTED SAVE",
+	Info = "Deletes file of the last clicked build",
+	Callback = function()
+		if _AB.deleteSelected then _AB.deleteSelected() end
+	end
+})
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+_AB.mult = 4
+_AB.built = false
+_AB.stopped = false
+_AB.skipblock = false
+_AB.on = true
+_AB.ors = true
+_AB.colorbool = true
+_AB.childcube = nil
+_AB.oldprt = nil
+_AB.tp = true
+_AB.blocks = {}
+_AB.cubehistory = {}
+_AB.historynum = 0
+_AB.historymax = 400
+_AB.cubechild = nil
+_AB.novel = false
+_AB.resizewait = 0.4
+_AB.wbs = false
+_AB.buildSpeed = 0.1
+_AB.offset = Vector3.new(0,0,0)
+_AB.selectedBuild = nil
+_AB.saveMode = "local"
+_AB.savebuildnames = {}
+_AB.currentSaveName = ""
+_AB.dynamicButtons = {}
+
+_AB.normalids = {}
+_AB.normalids[Enum.NormalId.Right] = {Vector3.new(1,0,0),"X"}
+_AB.normalids[Enum.NormalId.Top] = {Vector3.new(0,1,0),"Y"}
+_AB.normalids[Enum.NormalId.Back] = {Vector3.new(0,0,1),"Z"}
+_AB.normalids[Enum.NormalId.Left] = {Vector3.new(-1,0,0),"X"}
+_AB.normalids[Enum.NormalId.Bottom] = {Vector3.new(0,-1,0),"Y"}
+_AB.normalids[Enum.NormalId.Front] = {Vector3.new(0,0,-1),"Z"}
+
+_AB.colors = {}
+_AB.colors["tan"] = Color3.fromRGB(188,155,93)
+_AB.colors["pink"] = Color3.fromRGB(255,0,255)
+_AB.colors["dark pink"] = Color3.fromRGB(160,0,160)
+_AB.defaultcolor = Color3.fromRGB(192,192,192)
+
+_AB.highlight = Instance.new("Highlight")
+_AB.highlight.Parent = game.CoreGui
+_AB.highlight.FillTransparency = 1
+_AB.highlight.OutlineTransparency = 0
+
+_AB.materials = {}
+_AB.materials[Enum.Material.SmoothPlastic] = "smooth"
+_AB.materials[Enum.Material.Plastic] = "plastic"
+_AB.materials[Enum.Material.CeramicTiles] = "tiles"
+_AB.materials[Enum.Material.Brick] = "bricks"
+_AB.materials[Enum.Material.WoodPlanks] = "planks"
+_AB.materials[Enum.Material.Ice] = "ice"
+_AB.materials[Enum.Material.Grass] = "grass"
+_AB.materials[Enum.Material.Sand] = "sand"
+_AB.materials[Enum.Material.Snow] = "snow"
+_AB.materials[Enum.Material.Glass] = "glass"
+_AB.materials[Enum.Material.Wood] = "wood"
+_AB.materials[Enum.Material.Slate] = "stone"
+_AB.materials[Enum.Material.Pebble] = "pebble"
+_AB.materials[Enum.Material.Marble] = "marble"
+_AB.materials[Enum.Material.Granite] = "granite"
+_AB.materials[Enum.Material.DiamondPlate] = "steel"
+_AB.materials[Enum.Material.Metal] = "metal"
+_AB.materials[Enum.Material.Asphalt] = "asphalt"
+_AB.materials[Enum.Material.Concrete] = "concrete"
+_AB.materials[Enum.Material.Pavement] = "pavement"
+_AB.materials[Enum.Material.Neon] = "neon"
+
+_AB.swappedmaterials = {}
+for i,v in pairs(_AB.materials) do
+	_AB.swappedmaterials[v] = i
+end
+
+if workspace.Bricks and workspace.Bricks:FindFirstChild(LocalPlayer.Name) then
+	_AB.cubechild = workspace.Bricks[LocalPlayer.Name].ChildAdded:Connect(function(child)
+		_AB.childcube = child
+		_AB.historynum = _AB.historynum + 1
+		if _AB.historynum > _AB.historymax then
+			_AB.historynum = 1
+		end
+		_AB.cubehistory[_AB.historynum] = child
+		_AB.built = true
+	end)
+end
+
+function _AB.roundnum(num,m)
+	return math.round((num - 2) / m) * m + 2
+end
+
+function _AB.round(pos,m)
+	return Vector3.new(_AB.roundnum(pos.X,m or _AB.mult),_AB.roundnum(pos.Y,m or _AB.mult),_AB.roundnum(pos.Z,m or _AB.mult))
+end
+
+function _AB.snap(pos,m)
+	if m == nil then m = _AB.mult end
+	return pos
+end
+
+function _AB.validate(name)
+	local bannedsymbols = {}
+	bannedsymbols['"'] = "''"
+	bannedsymbols["*"] = "\u{2605}"
+	bannedsymbols[":"] = ";"
+	bannedsymbols["<"] = "\u{2264}"
+	bannedsymbols[">"] = "\u{2265}"
+	bannedsymbols["?"] = "\u{00BF}"
+	bannedsymbols["\\"] = ""
+	bannedsymbols["|"] = "I"
+	bannedsymbols["/"] = "\u{2215}"
+	
+	for i,v in pairs(bannedsymbols) do
+		name = name:gsub(i,v)
+	end
+	local s = string.find(name,"%.txt") or string.find(name,"%.json")
+	if s then
+		local addafter = string.sub(name,s)
+		name = string.sub(name,1,s-1)
+		name = name:gsub("%.","·")
+		name = name..addafter
+	else
+		name = name:gsub("%.","·")
+	end
+	return name
+end
+
+function _AB.listfilesfixed(directory)
+	local s,lf = pcall(function()
+		return listfiles(directory)
+	end)
+	if s then
+		for i,v in pairs(lf) do
+			if typeof(v) == "string" and string.sub(v,1,2) == "./" then
+				lf[i] = string.sub(v,3)
+			end
+		end
+	end
+	return lf or {}
+end
+
+function _AB.getfn(js,first)
+	local fn = _AB.listfilesfixed("TCOLSaves/")
+	if fn and typeof(fn) == "table" then
+		if not js then
+			for i,v in pairs(fn) do
+				if typeof(v) == "string" then
+					fn[i] = v:gsub(".json","")
+				end
+			end
+		end
+		if not first then
+			for i,v in pairs(fn) do
+				if typeof(v) == "string" then
+					fn[i] = v:gsub("TCOLSaves/","")
+				end
+			end
+		end
+	else
+		fn = {}
+	end
+	return fn
+end
+
+function _AB.createpartrepl(pos,bsize,col,mat,transp,anch,collide,sprays)
+	if typeof(pos) == "Vector3" then
+		pos = CFrame.new(pos)
+	end
+	local p = Instance.new("Part")
+	_AB.oldprt = p
+	p.Anchored = anch or true
+	p.CanCollide = collide or false
+	p.CastShadow = false
+	p.CanQuery = false
+	p.Color = col
+	p.Transparency = transp or .5
+	p.Material = mat
+	if bsize ~= nil then
+		pos = CFrame.new((pos.X + (bsize.X/2))-.5,(pos.Y + (bsize.Y/2))-.5,(pos.Z + (bsize.Z/2))-.5) * pos.Rotation
+	end
+	p.Size = bsize or Vector3.new(_AB.mult,_AB.mult,_AB.mult)
+	p.CFrame = pos
+	p.Parent = workspace
+	return p
+end
+
+function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmaterial,sprays,anchored,collide)
+	task.wait(0.001)
+	if anchored == nil then anchored = true end
+	if collide == nil then collide = true end
+	
+	local needsresize = false
+	local s,e = pcall(function()
+		local s,e = pcall(function()
+			if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
+				LocalPlayer.Backpack.Build.Parent = LocalPlayer.Character
+			end
+		end)
+		local oo = false
+		local c = 0
+		_AB.childcube = nil
+		
+		if bsize == nil then
+			bsize = "normal"
+			local success = pcall(function()
+				if LocalPlayer.PlayerGui:FindFirstChild("Build") then
+					local buildGui = LocalPlayer.PlayerGui.Build
+					if buildGui and buildGui:FindFirstChild("Button") then
+						bsize = buildGui.Button.Text
+					end
+				end
+			end)
+			if bsizev3 ~= nil and (bsizev3.X ~= _AB.mult or bsizev3.Y ~= _AB.mult or bsizev3.Z ~= _AB.mult) then
+				bsize = "detailed"
+			end
+		end
+		
+		local oldpos = pos
+		pos = _AB.snap(pos)
+		local args = {
+			[1] = workspace.Terrain,
+			[2] = Enum.NormalId.Top,
+			[3] = pos,
+			[4] = bsize or "normal"
+		}
+		
+		_AB.built = false
+		if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Build") then
+			local event = (LocalPlayer.Character.Build:FindFirstChild("origevent") and LocalPlayer.Character.Build.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Build.Script.Event:FireServer(unpack(args))
+		end
+		
+		c = 0
+		repeat
+			c = c + 1
+			if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Build") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
+				LocalPlayer.Backpack.Build.Parent = LocalPlayer.Character
+			end
+			if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Build") then
+				local event = (LocalPlayer.Character.Build:FindFirstChild("origevent") and LocalPlayer.Character.Build.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Build.Script.Event:FireServer(unpack(args))
+			end
+			local s,e = pcall(function()
+				_AB.novel = true
+				if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
+				end
+			end)
+			task.wait(.1)
+		until (_AB.built == true and _AB.childcube) or _AB.stopped == true or _AB.skipblock == true or c > 200
+		_AB.novel = false
+		_AB.built = false
+		
+		if _AB.colorbool and _AB.childcube and typeof(color) == "Color3" and (color ~= _AB.defaultcolor or _AB.childcube.Color ~= color) and (LocalPlayer.Backpack:FindFirstChild("Paint") or LocalPlayer.Character:FindFirstChild("Paint")) then
+			local pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+			local args = {
+				[1] = _AB.childcube,
+				[2] = Enum.NormalId.Top,
+				[3] = pos,
+				[4] = "color",
+				[5] = color or nil,
+				[6] = "tiles",
+				[7] = ""
+			}
+			task.wait()
+			local success,err = pcall(function()
+				if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
+					LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
+				end
+			end)
+			if not _AB.childcube then
+				if _AB.oldprt then _AB.oldprt:Destroy() end
+				return
+			end
+			
+			_AB.highlight.Adornee = _AB.childcube
+			_AB.highlight.FillColor = _AB.childcube.Color
+			c = 0
+			local s,e = pcall(function()
+				repeat
+					c = c + 1
+					if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Paint") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
+						LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
+					end
+					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Paint") then
+						local event = (LocalPlayer.Character.Paint:FindFirstChild("origevent") and LocalPlayer.Character.Paint.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Paint.Script.Event:FireServer(unpack(args))
+					end
+					local s,e = pcall(function()
+						_AB.novel = true
+						if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+							LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
+						end
+					end)
+					task.wait(.2)
+				until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Color == color or _AB.stopped == true or _AB.skipblock == true or c > 2000
+				_AB.novel = false
+			end)
+		end
+		
+		if _AB.childcube and texture and (LocalPlayer.Backpack:FindFirstChild("Paint") or LocalPlayer.Character:FindFirstChild("Paint")) then
+			local pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+			local args = {
+				[1] = _AB.childcube,
+				[2] = Enum.NormalId.Top,
+				[3] = pos,
+				[4] = "material",
+				[5] = nil,
+				[6] = texture,
+				[7] = ""
+			}
+			task.wait()
+			local success,err = pcall(function()
+				if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
+					LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
+				end
+			end)
+			if not _AB.childcube then
+				if _AB.oldprt then _AB.oldprt:Destroy() end
+				return
+			end
+			
+			_AB.highlight.Adornee = _AB.childcube
+			_AB.highlight.FillColor = _AB.childcube.Color
+			c = 0
+			local s,e = pcall(function()
+				repeat
+					c = c + 1
+					if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Paint") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
+						LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
+					end
+					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Paint") then
+						local event = (LocalPlayer.Character.Paint:FindFirstChild("origevent") and LocalPlayer.Character.Paint.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Paint.Script.Event:FireServer(unpack(args))
+					end
+					local s,e = pcall(function()
+						_AB.novel = true
+						if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+							LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
+						end
+					end)
+					task.wait(.2)
+				until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Material == _AB.swappedmaterials[texture] or _AB.stopped == true or _AB.skipblock == true or c > 2000
+				_AB.novel = false
+			end)
+		end
+		
+		if _AB.childcube and bsizev3 and (bsizev3.X ~= _AB.mult or bsizev3.Y ~= _AB.mult or bsizev3.Z ~= _AB.mult) and (LocalPlayer.Character:FindFirstChild("Shape") or LocalPlayer.Backpack:FindFirstChild("Shape")) then
+			if not LocalPlayer.Character:FindFirstChild("Shape") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Shape") then
+				LocalPlayer.Backpack.Shape.Parent = LocalPlayer.Character
+			end
+			
+			local args = {[1] = _AB.childcube, [2] = Enum.NormalId.Right, [3] = "", [4] = ""}
+			
+			if _AB.childcube and _AB.childcube.Size.X ~= bsizev3.X then
+				c = 0
+				repeat
+					c = c + 1
+					pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+					args[4] = nil
+					if _AB.childcube then
+						args[3] = pos
+						if _AB.childcube.Size.X > bsizev3.X then
+							args[4] = "decrease"
+						elseif _AB.childcube.Size.X < bsizev3.X then
+							args[4] = "increase"
+						end
+					end
+					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
+						local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
+					end
+					task.wait(_AB.resizewait)
+				until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.X <= 1) or (_AB.childcube and _AB.childcube.Size.X == bsizev3.X) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.X*3)/_AB.resizewait
+			end
+			
+			args[2] = Enum.NormalId.Top
+			if _AB.childcube and _AB.childcube.Size.Y ~= bsizev3.Y then
+				c = 0
+				repeat
+					c = c + 1
+					pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+					args[4] = nil
+					if _AB.childcube then
+						args[3] = pos
+						if _AB.childcube.Size.Y > bsizev3.Y then
+							args[4] = "decrease"
+						elseif _AB.childcube.Size.Y < bsizev3.Y then
+							args[4] = "increase"
+						end
+					end
+					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
+						local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
+					end
+					task.wait(_AB.resizewait)
+				until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.Y <= 1) or (_AB.childcube and _AB.childcube.Size.Y == bsizev3.Y) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.Y*3)/_AB.resizewait
+			end
+			
+			args[2] = Enum.NormalId.Back
+			if _AB.childcube and _AB.childcube.Size.Z ~= bsizev3.Z then
+				c = 0
+				repeat
+					c = c + 1
+					pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+					args[4] = nil
+					if _AB.childcube then
+						args[3] = pos
+						if _AB.childcube.Size.Z > bsizev3.Z then
+							args[4] = "decrease"
+						elseif _AB.childcube.Size.Z < bsizev3.Z then
+							args[4] = "increase"
+						end
+					end
+					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
+						local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
+					end
+					task.wait(_AB.resizewait)
+				until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.Z <= 1) or (_AB.childcube and _AB.childcube.Size.Z == bsizev3.Z) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.Z*3)/_AB.resizewait
+			end
+		end
+		
+		_AB.highlight.Adornee = nil
+		_AB.skipblock = false
+	end)
+	if _AB.oldprt then _AB.oldprt:Destroy() end
+	_AB.novel = false
+	_AB.childcube = nil
+end
+
+function _AB.saveblock(bl)
+	local blockdata = {}
+	if bl:IsA("BasePart") then
+		local p = bl.Position
+		local pt = {bl.Position.X,bl.Position.Y,bl.Position.Z}
+		if (bl.CFrame - bl.Position) ~= CFrame.new() then
+			blockdata.p = {bl.CFrame:GetComponents()}
+		else
+			blockdata.p = pt
+		end
+		blockdata.c = {math.round(bl.Color.R*255),math.round(bl.Color.G*255),math.round(bl.Color.B*255)}
+		blockdata.a = bl.Anchored
+		blockdata.cc = bl.CanCollide
+		if bl.Size.X ~= _AB.mult or bl.Size.Y ~= _AB.mult or bl.Size.Z ~= _AB.mult then
+			blockdata.p[1] = (blockdata.p[1] - (bl.Size.X/2))+.5
+			blockdata.p[2] = (blockdata.p[2] - (bl.Size.Y/2))+.5
+			blockdata.p[3] = (blockdata.p[3] - (bl.Size.Z/2))+.5
+			blockdata.s = {bl.Size.X,bl.Size.Y,bl.Size.Z}
+		end
+		blockdata.m = _AB.materials[bl.Material]
+		blockdata.o = bl.Material.Name
+		blockdata.sp = {}
+		for i,v in pairs(bl:GetChildren()) do
+			if v.Name == "Spray" then
+				table.insert(blockdata.sp,{v.Face.Name,v.Image.Image,string.gsub(v.Label.Text,'"','\"')})
+			end
+		end
+	end
+	return blockdata
+end
+
+pcall(function()
+	local files = _AB.listfilesfixed("")
+	if (not table.find(files,"TCOLSaves/") and not table.find(files,"TCOLSaves")) then
+		makefolder("TCOLSaves")
+	end
+end)
+
+_AB.refreshBuilds = function()
+	for _, btn in ipairs(_AB.dynamicButtons) do
+		btn:Destroy()
+	end
+	_AB.dynamicButtons = {}
+	
+	local builds = _AB.getfn()
+	table.sort(builds,function(a,b)
+		return a:lower() < b:lower()
+	end)
+	
+	for _, name in ipairs(builds) do
+		local b = Building67:AddButton({
+			Name = name,
+			Info = "Click to select this build",
+			Callback = function()
+				_AB.selectedBuild = name
+			end
+		})
+		table.insert(_AB.dynamicButtons, b)
+	end
+end
+
+_AB.doSave = function(text)
+	if text == "" then return end
+	
+	local builddata = {}
+	
+	if _AB.saveMode == "local" then
+		local folder = workspace:FindFirstChild("Bricks")
+		if not folder or not folder:FindFirstChild(LocalPlayer.Name) then
+			return
+		end
+		
+		for i,v in ipairs(folder[LocalPlayer.Name]:GetChildren()) do
+			if v:IsA("BasePart") then
+				table.insert(builddata, _AB.saveblock(v))
+			end
+		end
+	else
+		local folder = workspace:FindFirstChild("Bricks")
+		if folder then
+			for i,v in pairs(folder:GetChildren()) do
+				if v:IsA("Model") then
+					for i2,v2 in pairs(v:GetChildren()) do
+						if v2:IsA("BasePart") then
+							table.insert(builddata, _AB.saveblock(v2))
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	if #builddata == 0 then return end
+	
+	local name = _AB.validate(text)
+	if not _AB.savebuildnames[name] then _AB.savebuildnames[name] = 0 end
+	_AB.savebuildnames[name] = _AB.savebuildnames[name] + 1
+	local savename = name
+	if _AB.savebuildnames[name] > 1 then savename = name..tostring(_AB.savebuildnames[name]) end
+	
+	writefile("TCOLSaves/" .. savename .. ".json", HttpService:JSONEncode(builddata))
+	_AB.refreshBuilds()
+end
+
+_AB.doExport = function()
+	if not _AB.selectedBuild or _AB.selectedBuild == "" then return end
+	
+	local fullPath = "TCOLSaves/" .. _AB.selectedBuild .. ".json"
+	
+	if isfile(fullPath) then
+		local jsonContent = readfile(fullPath)
+		if jsonContent and jsonContent ~= "" then
+			if setclipboard then
+				pcall(function() setclipboard(jsonContent) end)
+			elseif toclipboard then
+				pcall(function() toclipboard(jsonContent) end)
+			elseif Clipboard and Clipboard.set then
+				pcall(function() Clipboard.set(jsonContent) end)
+			end
+		end
+	end
+end
+
+_AB.doImport = function()
+	local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+	local importGui = Instance.new("ScreenGui")
+	importGui.Name = "ImportBuildGUI_"..tick()
+	importGui.Parent = playerGui
+	importGui.ResetOnSpawn = false
+	
+	local importFrame = Instance.new("Frame")
+	importFrame.Size = UDim2.new(0, 500, 0, 600)
+	importFrame.Position = UDim2.new(0.5, -250, 0.5, -300)
+	importFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+	importFrame.BorderSizePixel = 0
+	importFrame.Parent = importGui
+	
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0,10)
+	corner.Parent = importFrame
+	
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(0,0,0)
+	stroke.Transparency = 0.4
+	stroke.Parent = importFrame
+	
+	local dragging2 = false
+	local dragStart2
+	local startPos2
+	
+	importFrame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging2 = true
+			dragStart2 = input.Position
+			startPos2 = importFrame.Position
+		end
+	end)
+	
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging2 and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart2
+			importFrame.Position = UDim2.new(startPos2.X.Scale, startPos2.X.Offset + delta.X, startPos2.Y.Scale, startPos2.Y.Offset + delta.Y)
+		end
+	end)
+	
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging2 = false
+		end
+	end)
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1,0,0,50)
+	titleLabel.Text = "IMPORT BUILD"
+	titleLabel.TextSize = 20
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.BackgroundColor3 = Color3.fromRGB(18,18,18)
+	titleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+	titleLabel.BorderSizePixel = 0
+	titleLabel.Parent = importFrame
+	
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Size = UDim2.new(1,-20,0,25)
+	nameLabel.Position = UDim2.new(0,10,0,60)
+	nameLabel.Text = "Build Name:"
+	nameLabel.TextSize = 12
+	nameLabel.Font = Enum.Font.Gotham
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.TextColor3 = Color3.fromRGB(255,255,255)
+	nameLabel.Parent = importFrame
+	
+	local nameBox = Instance.new("TextBox")
+	nameBox.Size = UDim2.new(1,-20,0,35)
+	nameBox.Position = UDim2.new(0,10,0,88)
+	nameBox.PlaceholderText = "Enter a name"
+	nameBox.Text = ""
+	nameBox.TextSize = 12
+	nameBox.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	nameBox.TextColor3 = Color3.fromRGB(255,255,255)
+	nameBox.Font = Enum.Font.Gotham
+	nameBox.BorderSizePixel = 0
+	nameBox.Parent = importFrame
+	
+	local jsonLabel = Instance.new("TextLabel")
+	jsonLabel.Size = UDim2.new(1,-20,0,25)
+	jsonLabel.Position = UDim2.new(0,10,0,130)
+	jsonLabel.Text = "JSON Code:"
+	jsonLabel.TextSize = 12
+	jsonLabel.Font = Enum.Font.Gotham
+	jsonLabel.BackgroundTransparency = 1
+	jsonLabel.TextColor3 = Color3.fromRGB(255,255,255)
+	jsonLabel.Parent = importFrame
+	
+	local jsonBox = Instance.new("TextBox")
+	jsonBox.Size = UDim2.new(1,-20,0,270)
+	jsonBox.Position = UDim2.new(0,10,0,158)
+	jsonBox.PlaceholderText = "Paste .Json code here"
+	jsonBox.Text = ""
+	jsonBox.TextSize = 11
+	jsonBox.TextWrapped = true
+	jsonBox.TextXAlignment = Enum.TextXAlignment.Left
+	jsonBox.TextYAlignment = Enum.TextYAlignment.Top
+	jsonBox.ClearTextOnFocus = false
+	jsonBox.MultiLine = true
+	jsonBox.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	jsonBox.TextColor3 = Color3.fromRGB(255,255,255)
+	jsonBox.Font = Enum.Font.Gotham
+	jsonBox.BorderSizePixel = 0
+	jsonBox.Parent = importFrame
+	
+	local confirmBtn = Instance.new("TextButton")
+	confirmBtn.Size = UDim2.new(0.48,-12,0,40)
+	confirmBtn.Position = UDim2.new(0,10,0,440)
+	confirmBtn.Text = "CONFIRM"
+	confirmBtn.TextSize = 12
+	confirmBtn.Font = Enum.Font.GothamBold
+	confirmBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	confirmBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	confirmBtn.BorderSizePixel = 0
+	confirmBtn.Parent = importFrame
+	
+	confirmBtn.MouseButton1Click:Connect(function()
+		if nameBox.Text == "" then return end
+		if jsonBox.Text == "" then return end
+		
+		local isJsonValid = false
+		pcall(function()
+			local decodedData = HttpService:JSONDecode(jsonBox.Text)
+			if decodedData and typeof(decodedData) == "table" then
+				isJsonValid = true
+			end
+		end)
+		
+		if not isJsonValid then return end
+		
+		local name = _AB.validate(nameBox.Text)
+		if not _AB.savebuildnames[name] then _AB.savebuildnames[name] = 0 end
+		_AB.savebuildnames[name] = _AB.savebuildnames[name] + 1
+		local savename = name
+		if _AB.savebuildnames[name] > 1 then savename = name..tostring(_AB.savebuildnames[name]) end
+		
+		pcall(function()
+			writefile("TCOLSaves/" .. savename .. ".json", jsonBox.Text)
+			_AB.refreshBuilds()
+		end)
+		
+		task.wait(0.3)
+		pcall(function() importGui:Destroy() end)
+	end)
+	
+	local cancelBtn = Instance.new("TextButton")
+	cancelBtn.Size = UDim2.new(0.48,-12,0,40)
+	cancelBtn.Position = UDim2.new(0.52,10,0,440)
+	cancelBtn.Text = "CANCEL"
+	cancelBtn.TextSize = 12
+	cancelBtn.Font = Enum.Font.GothamBold
+	cancelBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
+	cancelBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	cancelBtn.BorderSizePixel = 0
+	cancelBtn.Parent = importFrame
+	
+	cancelBtn.MouseButton1Click:Connect(function()
+		importGui:Destroy()
+	end)
+end
+
+_AB.loadSelected = function()
+	if not _AB.selectedBuild or _AB.selectedBuild == "" then return end
+	
+	_AB.stopped = false
+	
+	task.spawn(function()
+		local path = "TCOLSaves/" .. _AB.selectedBuild .. ".json"
+		if not isfile(path) then return end
+		
+		local data = HttpService:JSONDecode(readfile(path))
+		if not data then return end
+		
+		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local bp = LocalPlayer:WaitForChild("Backpack")
+		
+		if bp:FindFirstChild("Build") then
+			bp:FindFirstChild("Build").Parent = char
+		end
+		
+		for i, b in ipairs(data) do
+			if _AB.stopped then break end
+			
+			local posses = (b.p or b.pos)
+			local pos = Vector3.new(posses[1], posses[2], posses[3]) + _AB.offset
+			local color = Color3.fromRGB(table.unpack(b.c or b.color))
+			local bsize = nil
+			if b.s or b.size then
+				bsize = Vector3.new(table.unpack(b.s or b.size))
+			end
+			
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				char.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,3,0))
+			end
+			
+			_AB.buildblock(pos, b.m or b.mat, color, nil, bsize, nil, b.o or b.origmat, b.sp or b.sprayed, b.a or b.anchored, b.cc or b.collide)
+			task.wait(_AB.buildSpeed)
+		end
+	end)
+end
+
+_AB.setOffset = function()
+	local char = LocalPlayer.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		_AB.offset = _AB.round(workspace.Spawn.Position + char.HumanoidRootPart.Position)
+	end
+end
+
+_AB.optimizeAll = function()
+	for i,v in pairs(_AB.getfn()) do
+		local path = "TCOLSaves/" .. v .. ".json"
+		if isfile(path) then
+			local data = HttpService:JSONDecode(readfile(path))
+			for i,b in pairs(data) do
+				if b.pos then b.p = b.pos; b.pos = nil end
+				if b.size then b.s = b.size; b.size = nil end
+				if b.color then b.c = b.color; b.color = nil end
+				if b.material then b.m = b.material; b.material = nil end
+				if b.anchored then b.a = b.anchored; b.anchored = nil end
+				if b.collide then b.cc = b.collide; b.collide = nil end
+			end
+			writefile(path, HttpService:JSONEncode(data))
+		end
+	end
+end
+
+_AB.deleteSelected = function()
+	if not _AB.selectedBuild or _AB.selectedBuild == "" then return end
+	
+	local path = "TCOLSaves/" .. _AB.selectedBuild .. ".json"
+	if isfile(path) then
+		delfile(path)
+		_AB.selectedBuild = nil
+		_AB.refreshBuilds()
+	end
+end
+
+_AB.refreshBuilds()
 
 return Library
