@@ -2773,6 +2773,7 @@ end)
 local NS = Window:AddTab("📂Normal Server")
 local OG = Window:AddTab("💼OG Server")
 local Extra = Window:AddTab("🛒Extras")
+local Settings = Window:AddTab("⚙️Settings")
 
 local Main67 = NS:AddGroup({
 	Name = "Main🌐",
@@ -10935,13 +10936,19 @@ _AB.cubechild = nil
 _AB.novel = false
 _AB.resizewait = 0.4
 _AB.wbs = false
-_AB.buildSpeed = 0.1
+_AB.buildSpeed = 0.05
 _AB.offset = Vector3.new(0,0,0)
 _AB.selectedBuild = nil
 _AB.saveMode = "local"
 _AB.savebuildnames = {}
 _AB.currentSaveName = ""
 _AB.dynamicButtons = {}
+
+_AB.blockCache = {}
+_AB.lastPlacedBlock = nil
+_AB.lastBlockTime = 0
+_AB.maxParallel = 3
+_AB.batchSize = 5
 
 _AB.normalids = {}
 _AB.normalids[Enum.NormalId.Right] = {Vector3.new(1,0,0),"X"}
@@ -11101,239 +11108,289 @@ function _AB.createpartrepl(pos,bsize,col,mat,transp,anch,collide,sprays)
 	return p
 end
 
+function _AB.isAdjacentBlock(newPos, lastBlock)
+	if not lastBlock then return false end
+	local dist = (newPos - lastBlock.Position).Magnitude
+	local mult = _AB.mult
+	if dist <= mult * 2.5 then
+		if (lastBlock.Size - lastBlock.Size).Magnitude < 0.5 then
+			return true
+		end
+	end
+	return false
+end
+
+function _AB.updateBlockCache(newBlock)
+	if newBlock and newBlock.Parent then
+		_AB.lastPlacedBlock = newBlock
+		_AB.lastBlockTime = tick()
+		local key = math.floor(newBlock.Position.X) .. "," .. math.floor(newBlock.Position.Y) .. "," .. math.floor(newBlock.Position.Z)
+		_AB.blockCache[key] = {
+			block = newBlock,
+			time = _AB.lastBlockTime,
+			size = newBlock.Size,
+			material = newBlock.Material,
+			color = newBlock.Color
+		}
+	end
+end
+
+function _AB.getStackableBlock()
+	if not _AB.lastPlacedBlock or not _AB.lastPlacedBlock.Parent then
+		return nil
+	end
+	return _AB.lastPlacedBlock
+end
+
 function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmaterial,sprays,anchored,collide)
 	task.wait(0.001)
 	if anchored == nil then anchored = true end
 	if collide == nil then collide = true end
 	
-	local needsresize = false
-	local s,e = pcall(function()
-		local s,e = pcall(function()
-			if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
-				LocalPlayer.Backpack.Build.Parent = LocalPlayer.Character
+	local isStackable = _AB.isAdjacentBlock(pos, _AB.getStackableBlock())
+	
+	pcall(function()
+		if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
+			LocalPlayer.Backpack.Build.Parent = LocalPlayer.Character
+		end
+	end)
+	
+	_AB.childcube = nil
+	
+	if bsize == nil then
+		bsize = "normal"
+		pcall(function()
+			if LocalPlayer.PlayerGui:FindFirstChild("Build") then
+				local buildGui = LocalPlayer.PlayerGui.Build
+				if buildGui and buildGui:FindFirstChild("Button") then
+					bsize = buildGui.Button.Text
+				end
 			end
 		end)
-		local oo = false
-		local c = 0
-		_AB.childcube = nil
+		if bsizev3 ~= nil and (bsizev3.X ~= _AB.mult or bsizev3.Y ~= _AB.mult or bsizev3.Z ~= _AB.mult) then
+			bsize = "detailed"
+		end
+	end
+	
+	local oldpos = pos
+	pos = _AB.snap(pos)
+	local args = {
+		[1] = workspace.Terrain,
+		[2] = Enum.NormalId.Top,
+		[3] = pos,
+		[4] = bsize or "normal"
+	}
+	
+	_AB.built = false
+	local attempts = 0
+	local maxAttempts = isStackable and 50 or 100
+	
+	repeat
+		attempts = attempts + 1
 		
-		if bsize == nil then
-			bsize = "normal"
-			local success = pcall(function()
-				if LocalPlayer.PlayerGui:FindFirstChild("Build") then
-					local buildGui = LocalPlayer.PlayerGui.Build
-					if buildGui and buildGui:FindFirstChild("Button") then
-						bsize = buildGui.Button.Text
-					end
-				end
-			end)
-			if bsizev3 ~= nil and (bsizev3.X ~= _AB.mult or bsizev3.Y ~= _AB.mult or bsizev3.Z ~= _AB.mult) then
-				bsize = "detailed"
-			end
+		if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 6, 0))
 		end
 		
-		local oldpos = pos
-		pos = _AB.snap(pos)
-		local args = {
-			[1] = workspace.Terrain,
-			[2] = Enum.NormalId.Top,
-			[3] = pos,
-			[4] = bsize or "normal"
-		}
+		if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Build") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
+			LocalPlayer.Backpack.Build.Parent = LocalPlayer.Character
+		end
 		
-		_AB.built = false
 		if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Build") then
-			local event = (LocalPlayer.Character.Build:FindFirstChild("origevent") and LocalPlayer.Character.Build.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Build.Script.Event:FireServer(unpack(args))
+			pcall(function()
+				local event = LocalPlayer.Character.Build:FindFirstChild("origevent") 
+					and LocalPlayer.Character.Build.origevent:Invoke(unpack(args)) 
+					or LocalPlayer.Character.Build.Script.Event:FireServer(unpack(args))
+			end)
 		end
 		
-		c = 0
-		repeat
-			c = c + 1
-			if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Build") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
-				LocalPlayer.Backpack.Build.Parent = LocalPlayer.Character
-			end
-			if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Build") then
-				local event = (LocalPlayer.Character.Build:FindFirstChild("origevent") and LocalPlayer.Character.Build.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Build.Script.Event:FireServer(unpack(args))
-			end
-			local s,e = pcall(function()
-				_AB.novel = true
-				if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
-				end
-			end)
-			task.wait(.1)
-		until (_AB.built == true and _AB.childcube) or _AB.stopped == true or _AB.skipblock == true or c > 200
-		_AB.novel = false
-		_AB.built = false
+		task.wait(isStackable and 0.03 or 0.05)
 		
-		if _AB.colorbool and _AB.childcube and typeof(color) == "Color3" and (color ~= _AB.defaultcolor or _AB.childcube.Color ~= color) and (LocalPlayer.Backpack:FindFirstChild("Paint") or LocalPlayer.Character:FindFirstChild("Paint")) then
-			local pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
-			local args = {
+	until (_AB.built and _AB.childcube) or _AB.stopped or _AB.skipblock or attempts > maxAttempts
+	
+	if _AB.childcube then
+		_AB.updateBlockCache(_AB.childcube)
+	end
+	
+	_AB.built = false
+	
+	if _AB.colorbool and _AB.childcube and typeof(color) == "Color3" then
+		local paintPos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+		
+		local paintExists = LocalPlayer.Backpack:FindFirstChild("Paint") or LocalPlayer.Character:FindFirstChild("Paint")
+		if paintExists and _AB.childcube.Color ~= color then
+			local paintArgs = {
 				[1] = _AB.childcube,
 				[2] = Enum.NormalId.Top,
-				[3] = pos,
+				[3] = paintPos,
 				[4] = "color",
-				[5] = color or nil,
+				[5] = color,
 				[6] = "tiles",
 				[7] = ""
 			}
-			task.wait()
-			local success,err = pcall(function()
+			
+			task.wait(0.01)
+			
+			pcall(function()
 				if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
 					LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
 				end
 			end)
-			if not _AB.childcube then
-				if _AB.oldprt then _AB.oldprt:Destroy() end
-				return
-			end
 			
-			_AB.highlight.Adornee = _AB.childcube
-			_AB.highlight.FillColor = _AB.childcube.Color
-			c = 0
-			local s,e = pcall(function()
-				repeat
-					c = c + 1
-					if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Paint") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
-						LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
-					end
-					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Paint") then
-						local event = (LocalPlayer.Character.Paint:FindFirstChild("origevent") and LocalPlayer.Character.Paint.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Paint.Script.Event:FireServer(unpack(args))
-					end
-					local s,e = pcall(function()
-						_AB.novel = true
-						if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-							LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
-						end
+			_AB.built = false
+			attempts = 0
+			
+			repeat
+				attempts = attempts + 1
+				
+				if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(paintPos + Vector3.new(0, 6, 0))
+				end
+				
+				if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Paint") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
+					LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
+				end
+				
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Paint") then
+					pcall(function()
+						local event = LocalPlayer.Character.Paint:FindFirstChild("origevent")
+							and LocalPlayer.Character.Paint.origevent:Invoke(unpack(paintArgs))
+							or LocalPlayer.Character.Paint.Script.Event:FireServer(unpack(paintArgs))
 					end)
-					task.wait(.2)
-				until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Color == color or _AB.stopped == true or _AB.skipblock == true or c > 2000
-				_AB.novel = false
-			end)
+				end
+				
+				task.wait(0.08)
+				
+			until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Color == color or _AB.stopped or _AB.skipblock or attempts > 25
 		end
+	end
+	
+	if _AB.childcube and texture then
+		local paintPos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
 		
-		if _AB.childcube and texture and (LocalPlayer.Backpack:FindFirstChild("Paint") or LocalPlayer.Character:FindFirstChild("Paint")) then
-			local pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
-			local args = {
+		local paintExists = LocalPlayer.Backpack:FindFirstChild("Paint") or LocalPlayer.Character:FindFirstChild("Paint")
+		if paintExists then
+			local textureArgs = {
 				[1] = _AB.childcube,
 				[2] = Enum.NormalId.Top,
-				[3] = pos,
+				[3] = paintPos,
 				[4] = "material",
 				[5] = nil,
 				[6] = texture,
 				[7] = ""
 			}
-			task.wait()
-			local success,err = pcall(function()
+			
+			task.wait(0.01)
+			
+			pcall(function()
 				if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
 					LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
 				end
 			end)
-			if not _AB.childcube then
-				if _AB.oldprt then _AB.oldprt:Destroy() end
-				return
-			end
 			
-			_AB.highlight.Adornee = _AB.childcube
-			_AB.highlight.FillColor = _AB.childcube.Color
-			c = 0
-			local s,e = pcall(function()
-				repeat
-					c = c + 1
-					if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Paint") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
-						LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
-					end
-					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Paint") then
-						local event = (LocalPlayer.Character.Paint:FindFirstChild("origevent") and LocalPlayer.Character.Paint.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Paint.Script.Event:FireServer(unpack(args))
-					end
-					local s,e = pcall(function()
-						_AB.novel = true
-						if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-							LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0,6,0))
-						end
+			_AB.built = false
+			attempts = 0
+			
+			repeat
+				attempts = attempts + 1
+				
+				if _AB.tp and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(paintPos + Vector3.new(0, 6, 0))
+				end
+				
+				if LocalPlayer.Character and not LocalPlayer.Character:FindFirstChild("Paint") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Paint") then
+					LocalPlayer.Backpack.Paint.Parent = LocalPlayer.Character
+				end
+				
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Paint") then
+					pcall(function()
+						local event = LocalPlayer.Character.Paint:FindFirstChild("origevent")
+							and LocalPlayer.Character.Paint.origevent:Invoke(unpack(textureArgs))
+							or LocalPlayer.Character.Paint.Script.Event:FireServer(unpack(textureArgs))
 					end)
-					task.wait(.2)
-				until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Material == _AB.swappedmaterials[texture] or _AB.stopped == true or _AB.skipblock == true or c > 2000
-				_AB.novel = false
-			end)
+				end
+				
+				task.wait(0.08)
+				
+			until not _AB.childcube or not _AB.childcube.Parent or _AB.stopped or _AB.skipblock or attempts > 15
+		end
+	end
+	
+	if _AB.childcube and bsizev3 and (bsizev3.X ~= _AB.mult or bsizev3.Y ~= _AB.mult or bsizev3.Z ~= _AB.mult) and (LocalPlayer.Character:FindFirstChild("Shape") or LocalPlayer.Backpack:FindFirstChild("Shape")) then
+		if not LocalPlayer.Character:FindFirstChild("Shape") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Shape") then
+			LocalPlayer.Backpack.Shape.Parent = LocalPlayer.Character
 		end
 		
-		if _AB.childcube and bsizev3 and (bsizev3.X ~= _AB.mult or bsizev3.Y ~= _AB.mult or bsizev3.Z ~= _AB.mult) and (LocalPlayer.Character:FindFirstChild("Shape") or LocalPlayer.Backpack:FindFirstChild("Shape")) then
-			if not LocalPlayer.Character:FindFirstChild("Shape") and LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Shape") then
-				LocalPlayer.Backpack.Shape.Parent = LocalPlayer.Character
-			end
-			
-			local args = {[1] = _AB.childcube, [2] = Enum.NormalId.Right, [3] = "", [4] = ""}
-			
-			if _AB.childcube and _AB.childcube.Size.X ~= bsizev3.X then
-				c = 0
-				repeat
-					c = c + 1
-					pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
-					args[4] = nil
-					if _AB.childcube then
-						args[3] = pos
-						if _AB.childcube.Size.X > bsizev3.X then
-							args[4] = "decrease"
-						elseif _AB.childcube.Size.X < bsizev3.X then
-							args[4] = "increase"
-						end
+		local args = {[1] = _AB.childcube, [2] = Enum.NormalId.Right, [3] = "", [4] = ""}
+		
+		if _AB.childcube and _AB.childcube.Size.X ~= bsizev3.X then
+			local c = 0
+			repeat
+				c = c + 1
+				pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+				args[4] = nil
+				if _AB.childcube then
+					args[3] = pos
+					if _AB.childcube.Size.X > bsizev3.X then
+						args[4] = "decrease"
+					elseif _AB.childcube.Size.X < bsizev3.X then
+						args[4] = "increase"
 					end
-					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
-						local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
-					end
-					task.wait(_AB.resizewait)
-				until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.X <= 1) or (_AB.childcube and _AB.childcube.Size.X == bsizev3.X) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.X*3)/_AB.resizewait
-			end
-			
-			args[2] = Enum.NormalId.Top
-			if _AB.childcube and _AB.childcube.Size.Y ~= bsizev3.Y then
-				c = 0
-				repeat
-					c = c + 1
-					pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
-					args[4] = nil
-					if _AB.childcube then
-						args[3] = pos
-						if _AB.childcube.Size.Y > bsizev3.Y then
-							args[4] = "decrease"
-						elseif _AB.childcube.Size.Y < bsizev3.Y then
-							args[4] = "increase"
-						end
-					end
-					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
-						local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
-					end
-					task.wait(_AB.resizewait)
-				until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.Y <= 1) or (_AB.childcube and _AB.childcube.Size.Y == bsizev3.Y) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.Y*3)/_AB.resizewait
-			end
-			
-			args[2] = Enum.NormalId.Back
-			if _AB.childcube and _AB.childcube.Size.Z ~= bsizev3.Z then
-				c = 0
-				repeat
-					c = c + 1
-					pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
-					args[4] = nil
-					if _AB.childcube then
-						args[3] = pos
-						if _AB.childcube.Size.Z > bsizev3.Z then
-							args[4] = "decrease"
-						elseif _AB.childcube.Size.Z < bsizev3.Z then
-							args[4] = "increase"
-						end
-					end
-					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
-						local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
-					end
-					task.wait(_AB.resizewait)
-				until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.Z <= 1) or (_AB.childcube and _AB.childcube.Size.Z == bsizev3.Z) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.Z*3)/_AB.resizewait
-			end
+				end
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
+					local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
+				end
+				task.wait(_AB.resizewait)
+			until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.X <= 1) or (_AB.childcube and _AB.childcube.Size.X == bsizev3.X) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.X*3)/_AB.resizewait
 		end
 		
-		_AB.highlight.Adornee = nil
-		_AB.skipblock = false
-	end)
+		if _AB.childcube and _AB.childcube.Size.Y ~= bsizev3.Y then
+			local c = 0
+			repeat
+				c = c + 1
+				pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+				args[4] = nil
+				if _AB.childcube then
+					args[2] = Enum.NormalId.Top
+					args[3] = pos
+					if _AB.childcube.Size.Y > bsizev3.Y then
+						args[4] = "decrease"
+					elseif _AB.childcube.Size.Y < bsizev3.Y then
+						args[4] = "increase"
+					end
+				end
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
+					local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
+				end
+				task.wait(_AB.resizewait)
+			until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.Y <= 1) or (_AB.childcube and _AB.childcube.Size.Y == bsizev3.Y) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.Y*3)/_AB.resizewait
+		end
+		
+		if _AB.childcube and _AB.childcube.Size.Z ~= bsizev3.Z then
+			local c = 0
+			repeat
+				c = c + 1
+				pos = (_AB.childcube and _AB.childcube.Position + _AB.childcube.Size/2) or pos
+				args[4] = nil
+				if _AB.childcube then
+					args[2] = Enum.NormalId.Back
+					args[3] = pos
+					if _AB.childcube.Size.Z > bsizev3.Z then
+						args[4] = "decrease"
+					elseif _AB.childcube.Size.Z < bsizev3.Z then
+						args[4] = "increase"
+					end
+				end
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Shape") then
+					local event = (LocalPlayer.Character.Shape:FindFirstChild("origevent") and LocalPlayer.Character.Shape.origevent:Invoke(unpack(args))) or LocalPlayer.Character.Shape.Script.Event:FireServer(unpack(args))
+				end
+				task.wait(_AB.resizewait)
+			until args[4] == nil or (args[4] == "decrease" and _AB.childcube and _AB.childcube.Size.Z <= 1) or (_AB.childcube and _AB.childcube.Size.Z == bsizev3.Z) or _AB.stopped == true or _AB.skipblock == true or not _AB.childcube or c > (bsizev3.Z*3)/_AB.resizewait
+		end
+	end
+	
+	_AB.highlight.Adornee = nil
+	_AB.skipblock = false
 	if _AB.oldprt then _AB.oldprt:Destroy() end
 	_AB.novel = false
 	_AB.childcube = nil
