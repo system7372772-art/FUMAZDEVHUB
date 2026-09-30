@@ -11042,6 +11042,77 @@ Gears67:AddButton({
 	end
 })
 
+Gears67:AddToggle({
+	Name = "Random Paint Loop",
+	Default = false,
+	Callback = function(value)
+		_G.RandomPaintLoopEnabled = value
+		if value then
+			_G.StopRandomPaintColor = false
+			task.spawn(function()
+				while _G.RandomPaintLoopEnabled and not _G.StopRandomPaintColor do
+					local Players = game:GetService("Players")
+					local plr = Players.LocalPlayer
+					local character = plr.Character
+					
+					if not character then task.wait(1) continue end
+					
+					local pb = character:FindFirstChild("PaintBucket") or plr.Backpack:FindFirstChild("PaintBucket")
+					if not pb then task.wait(1) continue end
+					
+					if pb.Parent ~= character then
+						pb.Parent = character
+						task.wait(0.2)
+					end
+					
+					local paintevent = pb:FindFirstChild("Remotes") and pb.Remotes:FindFirstChild("ServerControls")
+					if not paintevent then task.wait(1) continue end
+					
+					local targetColor = Color3.new(math.random(), math.random(), math.random())
+					
+					pcall(function()
+						paintevent:InvokeServer("PaintPart", {
+							Part = game.ReplicatedStorage:FindFirstChild("Brick"),
+							Color = targetColor
+						})
+					end)
+					
+					local searchRoots = {workspace, game:GetService("ReplicatedStorage")}
+					for _, root in ipairs(searchRoots) do
+						for _, v in ipairs(root:GetDescendants()) do
+							if _G.StopRandomPaintColor then break end
+							local ok, col = pcall(function() return v.Color end)
+							if ok and typeof(col) == "Color3" then
+								pcall(function()
+									paintevent:InvokeServer("PaintPart", {
+										Part = v,
+										Color = targetColor
+									})
+								end)
+							end
+						end
+						if _G.StopRandomPaintColor then break end
+					end
+					
+					task.wait(0.5)
+				end
+			end)
+		else
+			_G.StopRandomPaintColor = true
+		end
+	end
+})
+
+Gears67:AddButton({
+	Name = "Get PaintBucket Gear",
+	Info = "Request PaintBucket gear via chat",
+	Callback = function()
+		pcall(function()
+			game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";Gear me 18474459")
+		end)
+	end
+})
+
 Utils67:AddButton({
 	Name = "Copy Job ID",
 	Info = "Copies server Job ID to clipboard",
