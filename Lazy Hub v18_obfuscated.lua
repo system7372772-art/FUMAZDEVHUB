@@ -2853,6 +2853,18 @@ local Building67 = NS:AddGroup({
     Side = "Left"
 })
 
+local Gears67 = NS:AddGroup({
+	Name = "Gears🚧",
+	Info = "Gears🚧",
+	Side = "Left"
+})
+
+local Utils67 = NS:AddGroup({
+	Name = "Utils⛏️",
+	Info = "Utilidades⛏️",
+	Side = "Right"
+})
+
 local CCOG = OG:AddGroup({
 	Name = "Customize🖌",
 	Info = "Customize🖌",
@@ -2874,6 +2886,12 @@ local AntisOG = OG:AddGroup({
 local Extras = Extra:AddGroup({
 	Name = "Extras🛒",
 	Info = "Extras",
+	Side = "Left"
+})
+
+local Themes67 = Settings:AddGroup({
+	Name = "Themes📚",
+	Info = "Themes📚",
 	Side = "Left"
 })
 
@@ -10913,6 +10931,225 @@ Building67:AddButton({
 	end
 })
 
+Gears67:AddButton({
+	Name = "Color: White",
+	Info = "Select white color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(1, 1, 1)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Red",
+	Info = "Select red color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(1, 0, 0)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Blue",
+	Info = "Select blue color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(0, 0, 1)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Green",
+	Info = "Select green color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(0, 1, 0)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Black",
+	Info = "Select black color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(0, 0, 0)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Yellow",
+	Info = "Select yellow color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(1, 1, 0)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Cyan",
+	Info = "Select cyan color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(0, 1, 1)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Color: Purple",
+	Info = "Select purple color",
+	Callback = function()
+		_G.PaintBucketColor = Color3.new(0.5, 0, 0.5)
+	end
+})
+
+Gears67:AddButton({
+	Name = "Paint All Blocks",
+	Info = "Paint all blocks using PaintBucket",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local plr = Players.LocalPlayer
+		local character = plr.Character
+		
+		if not character then return end
+		
+		local pb = character:FindFirstChild("PaintBucket") or plr.Backpack:FindFirstChild("PaintBucket")
+		if not pb then return end
+		
+		if pb.Parent ~= character then
+			pb.Parent = character
+			task.wait(0.2)
+		end
+		
+		local paintevent = pb:FindFirstChild("Remotes") and pb.Remotes:FindFirstChild("ServerControls")
+		if not paintevent then return end
+		
+		local targetColor = _G.PaintBucketColor or Color3.new(1, 1, 1)
+		
+		pcall(function()
+			paintevent:InvokeServer("PaintPart", {
+				Part = game.ReplicatedStorage:FindFirstChild("Brick"),
+				Color = targetColor
+			})
+		end)
+		
+		local searchRoots = {workspace, game:GetService("ReplicatedStorage")}
+		for _, root in ipairs(searchRoots) do
+			for _, v in ipairs(root:GetDescendants()) do
+				local ok, col = pcall(function() return v.Color end)
+				if ok and typeof(col) == "Color3" then
+					pcall(function()
+						paintevent:InvokeServer("PaintPart", {
+							Part = v,
+							Color = targetColor
+						})
+					end)
+				end
+			end
+		end
+	end
+})
+
+Utils67:AddButton({
+	Name = "Copy Job ID",
+	Info = "Copies server Job ID to clipboard",
+	Callback = function()
+		if setclipboard then
+			setclipboard(game.JobId)
+		end
+	end
+})
+
+Utils67:AddButton({
+	Name = "Copy Place ID",
+	Info = "Copies game Place ID to clipboard",
+	Callback = function()
+		if setclipboard then
+			setclipboard(tostring(game.PlaceId))
+		end
+	end
+})
+
+Utils67:AddButton({
+	Name = "Rejoin Server",
+	Info = "Rejoin current server",
+	Callback = function()
+		local TeleportService = game:GetService("TeleportService")
+		TeleportService:Teleport(game.PlaceId)
+	end
+})
+
+Utils67:AddButton({
+	Name = "Del Clones",
+	Info = "Send delete clones command",
+	Callback = function()
+		pcall(function()
+			game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(";delclones all")
+		end)
+	end
+})
+
+Utils67:AddButton({
+	Name = "Get Server Stats",
+	Info = "Show current player count",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local count = #Players:GetPlayers()
+	end
+})
+
+Utils67:AddButton({
+	Name = "Find Players",
+	Info = "Scan and list all players",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local playerList = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			table.insert(playerList, player.Name)
+		end
+	end
+})
+
+Utils67:AddButton({
+	Name = "Teleport to Player",
+	Info = "Teleport to random player",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local allPlayers = Players:GetPlayers()
+		if #allPlayers > 1 then
+			local randomPlayer = allPlayers[math.random(2, #allPlayers)]
+			if randomPlayer.Character and randomPlayer.Character:FindFirstChild("HumanoidRootPart") then
+				local plr = Players.LocalPlayer
+				if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+					plr.Character.HumanoidRootPart.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+				end
+			end
+		end
+	end
+})
+
+Utils67:AddButton({
+	Name = "Get My Position",
+	Info = "Get current player position",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local plr = Players.LocalPlayer
+		if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+			local pos = plr.Character.HumanoidRootPart.Position
+			if setclipboard then
+				setclipboard(tostring(pos))
+			end
+		end
+	end
+})
+
+Utils67:AddButton({
+	Name = "List All Players",
+	Info = "Get all player names",
+	Callback = function()
+		local Players = game:GetService("Players")
+		local names = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			table.insert(names, player.Name)
+		end
+		if setclipboard then
+			setclipboard(table.concat(names, ", "))
+		end
+	end
+})
+
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
@@ -11142,12 +11379,30 @@ function _AB.getStackableBlock()
 	return _AB.lastPlacedBlock
 end
 
+function _AB.isSimilarBlock(block1, block2, tolerance)
+	tolerance = tolerance or 0.1
+	if not block1 or not block2 then return false end
+	if not block1.Parent or not block2.Parent then return false end
+	
+	local sizeDiff = (block1.Size - block2.Size).Magnitude
+	if sizeDiff > tolerance then return false end
+	
+	if block1.Material ~= block2.Material then return false end
+	
+	local colorDiff = math.abs(block1.Color.R - block2.Color.R) + math.abs(block1.Color.G - block2.Color.G) + math.abs(block1.Color.B - block2.Color.B)
+	if colorDiff > 0.05 then return false end
+	
+	return true
+end
+
 function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmaterial,sprays,anchored,collide)
 	task.wait(0.001)
 	if anchored == nil then anchored = true end
 	if collide == nil then collide = true end
 	
-	local isStackable = _AB.isAdjacentBlock(pos, _AB.getStackableBlock())
+	local stackBlock = _AB.getStackableBlock()
+	local isIdentical = stackBlock and _AB.isSimilarBlock(stackBlock, stackBlock, 0.1)
+	local isStackable = _AB.isAdjacentBlock(pos, stackBlock)
 	
 	pcall(function()
 		if LocalPlayer.Backpack and LocalPlayer.Backpack:FindFirstChild("Build") then
@@ -11183,7 +11438,8 @@ function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmateria
 	
 	_AB.built = false
 	local attempts = 0
-	local maxAttempts = isStackable and 50 or 100
+	local maxAttempts = isIdentical and 12 or (isStackable and 50 or 100)
+	local waitTime = isIdentical and 0.008 or (isStackable and 0.03 or 0.05)
 	
 	repeat
 		attempts = attempts + 1
@@ -11204,7 +11460,7 @@ function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmateria
 			end)
 		end
 		
-		task.wait(isStackable and 0.03 or 0.05)
+		task.wait(waitTime)
 		
 	until (_AB.built and _AB.childcube) or _AB.stopped or _AB.skipblock or attempts > maxAttempts
 	
@@ -11239,6 +11495,7 @@ function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmateria
 			
 			_AB.built = false
 			attempts = 0
+			local maxPaintAttempts = isIdentical and 8 or 25
 			
 			repeat
 				attempts = attempts + 1
@@ -11259,9 +11516,9 @@ function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmateria
 					end)
 				end
 				
-				task.wait(0.08)
+				task.wait(isIdentical and 0.04 or 0.08)
 				
-			until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Color == color or _AB.stopped or _AB.skipblock or attempts > 25
+			until not _AB.childcube or not _AB.childcube.Parent or _AB.childcube.Color == color or _AB.stopped or _AB.skipblock or attempts > maxPaintAttempts
 		end
 	end
 	
@@ -11290,6 +11547,7 @@ function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmateria
 			
 			_AB.built = false
 			attempts = 0
+			local maxMatAttempts = isIdentical and 8 or 15
 			
 			repeat
 				attempts = attempts + 1
@@ -11310,9 +11568,9 @@ function _AB.buildblock(pos,texture,color,bsize,bsizev3,premadebuild,origmateria
 					end)
 				end
 				
-				task.wait(0.08)
+				task.wait(isIdentical and 0.04 or 0.08)
 				
-			until not _AB.childcube or not _AB.childcube.Parent or _AB.stopped or _AB.skipblock or attempts > 15
+			until not _AB.childcube or not _AB.childcube.Parent or _AB.stopped or _AB.skipblock or attempts > maxMatAttempts
 		end
 	end
 	
