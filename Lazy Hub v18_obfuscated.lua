@@ -10357,6 +10357,153 @@ local HeightBox = Canvas:AddTextbox({
     Info = "Canvas height"
 })
 
+local CP = {
+    bricks = {},
+    painted = {},
+    count = 0,
+    pixels = nil,
+    jw = 0,
+    jh = 0,
+    jsonText = nil,
+    W = 0,
+    H = 0,
+    axis = "Z",
+    mirror = false,
+    conn = nil,
+    painting = false
+}
+_G.CanvasPaint = CP
+
+local PixelJson = Canvas:AddTextbox({
+    Placeholder = "JSON code here",
+    Info = "Paste the JSON"
+})
+
+local PaintStatus = Canvas:AddLabel("Paint: no saved canvas")
+
+CP.raw = {}
+
+function CP.save(px, py, obj)
+    CP.raw[obj] = true
+end
+
+function CP.rescan()
+    if not (CP.center and CP.rotation) then
+        return
+    end
+
+    local lp = game:GetService("Players").LocalPlayer
+    local root = workspace:FindFirstChild("Bricks")
+    local folder = root and root:FindFirstChild(lp.Name)
+
+    if not folder then
+        PaintStatus:Set("workspace.Bricks." .. lp.Name .. " not found")
+        return
+    end
+
+    local inv = CP.rotation:Inverse()
+    local pts = {}
+    local total = 0
+
+    for _, obj in ipairs(folder:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            total += 1
+            local rel = inv * (obj.Position - CP.center)
+
+            if math.abs(rel.X) <= CP.W / 2 + 2 and math.abs(rel.Y) <= CP.H / 2 + 2 then
+                local sz = obj.Size
+                local unit = sz.X > 0.9 and sz.X < 1.1 and sz.Y > 0.9 and sz.Y < 1.1 and sz.Z > 0.9 and sz.Z < 1.1
+                pts[#pts + 1] = {obj = obj, x = rel.X, y = rel.Y, z = rel.Z, unit = unit}
+            end
+        end
+    end
+
+    local units = {}
+
+    for _, p in ipairs(pts) do
+        if p.unit then
+            units[#units + 1] = p
+        end
+    end
+
+    if #units > 0 then
+        pts = units
+    end
+
+    local zs = {}
+
+    for _, p in ipairs(pts) do
+        if CP.raw[p.obj] then
+            zs[#zs + 1] = p.z
+        end
+    end
+
+    if #zs == 0 then
+        for _, p in ipairs(pts) do
+            zs[#zs + 1] = p.z
+        end
+    end
+
+    if #zs == 0 then
+        CP.bricks = {}
+        CP.count = 0
+        PaintStatus:Set("Saved bricks: 0 (folder: " .. total .. ")")
+        return
+    end
+
+    table.sort(zs)
+    local zRef = zs[math.ceil(#zs / 2)]
+
+    local plane = {}
+
+    for _, p in ipairs(pts) do
+        if math.abs(p.z - zRef) <= 0.6 then
+            plane[#plane + 1] = p
+        end
+    end
+
+    local ax, ay = math.huge, math.huge
+    local anyRaw = false
+
+    for _, p in ipairs(plane) do
+        if CP.raw[p.obj] then
+            anyRaw = true
+            ax = math.min(ax, p.x)
+            ay = math.min(ay, p.y)
+        end
+    end
+
+    if not anyRaw then
+        for _, p in ipairs(plane) do
+            ax = math.min(ax, p.x)
+            ay = math.min(ay, p.y)
+        end
+    end
+
+    local bricks, count = {}, 0
+
+    for _, p in ipairs(plane) do
+        local gx = math.round(p.x - ax)
+        local gy = math.round(p.y - ay)
+
+        if gx >= 0 and gx < CP.W and gy >= 0 and gy < CP.H
+        and math.abs(p.x - ax - gx) < 0.3 and math.abs(p.y - ay - gy) < 0.3 then
+            local k = gx .. ":" .. gy
+
+            if not bricks[k] then
+                count += 1
+            end
+
+            bricks[k] = p.obj
+        end
+    end
+
+    CP.bricks = bricks
+    CP.count = count
+
+    PaintStatus:Set("Saved bricks: " .. count .. " (folder: " .. total .. ")")
+end
+
 local buildMode = "SideToSide"
 local rotationAxis = "Z"
 
@@ -10475,6 +10622,13 @@ local function StartCanvas()
             stopped = true
             _G.CanvaRunning = false
 
+            local c = CP.conn
+            task.delay(1, function()
+                if c then c:Disconnect() end
+                if CP.conn == c then CP.conn = nil end
+                CP.rescan()
+            end)
+
             humanoid.WalkSpeed = oldWalkSpeed
             humanoid.JumpPower = oldJumpPower
             humanoid.AutoRotate = oldAutoRotate
@@ -10528,6 +10682,18 @@ local function StartCanvas()
 
         local rotation = getRotation()
 
+        if CP.conn then
+            CP.conn:Disconnect()
+            CP.conn = nil
+        end
+        CP.bricks = {}
+        CP.raw = {}
+        CP.painted = {}
+        CP.count = 0
+        CP.W, CP.H, CP.axis = WIDTH, HEIGHT, rotationAxis
+        CP.center, CP.rotation = center, rotation
+        PaintStatus:Set("Saved bricks: 0")
+
         local function positionFor(x,y)
             local localX =
                 (x - ((WIDTH - 1) / 2)) * GRID
@@ -10575,6 +10741,7 @@ local function StartCanvas()
 
                         if (obj.Position - expected).Magnitude < 0.35 then
                             placed[key(px,py)] = true
+                            CP.save(px,py,obj)
                         end
                     end
                 end
@@ -10631,6 +10798,23 @@ local function StartCanvas()
 
             return true
         end
+
+        CP.conn = bricksFolder.ChildAdded:Connect(function(obj)
+            if not obj:IsA("BasePart") then
+                return
+            end
+
+            CP.raw[obj] = true
+
+            if not CP.pending then
+                CP.pending = true
+
+                task.delay(0.4, function()
+                    CP.pending = false
+                    CP.rescan()
+                end)
+            end
+        end)
 
         scanBricks()
 
@@ -10779,6 +10963,206 @@ Canvas:AddButton({
             _G.CanvaConnection:Disconnect()
             _G.CanvaConnection = nil
         end
+    end
+})
+
+local function CPColorAt(px, py)
+    local u, v
+
+    if CP.axis == "Z" then
+        u = (CP.H - 1 - py + 0.5) / CP.H
+        v = (CP.W - 1 - px + 0.5) / CP.W
+    else
+        u = (px + 0.5) / CP.W
+        v = (CP.H - 1 - py + 0.5) / CP.H
+    end
+
+    if CP.mirror then
+        u = 1 - u
+    end
+
+    local col = math.clamp(math.floor(u * CP.jw) + 1, 1, CP.jw)
+    local row = math.clamp(math.floor(v * CP.jh) + 1, 1, CP.jh)
+
+    local hex = CP.pixels[row] and CP.pixels[row][col]
+
+    if type(hex) ~= "string" then
+        return nil
+    end
+
+    local r, g, b = hex:match("^#?(%x%x)(%x%x)(%x%x)$")
+
+    if not r then
+        return nil
+    end
+
+    return Color3.fromRGB(tonumber(r,16), tonumber(g,16), tonumber(b,16))
+end
+
+local function CPLoadJson(text)
+    local ok, data = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(text)
+    end)
+
+    if not ok or type(data) ~= "table" or type(data.pixels) ~= "table"
+    or not tonumber(data.width) or not tonumber(data.height) then
+        return false
+    end
+
+    CP.pixels = data.pixels
+    CP.jw = tonumber(data.width)
+    CP.jh = tonumber(data.height)
+
+    return true
+end
+
+local function StartPaintCanvas()
+    if CP.painting then
+        return
+    end
+
+    CP.rescan()
+
+    if CP.count == 0 then
+        PaintStatus:Set("Build the canvas first (Start Canvas)")
+        return
+    end
+
+    local text = PixelJson:Get():gsub("^%s+", ""):gsub("%s+$", "")
+
+    if text:sub(1, 1) ~= "{" and text ~= "" and isfile and isfile(text) then
+        text = readfile(text)
+    end
+
+    if text ~= CP.jsonText then
+        if not CPLoadJson(text) then
+            PaintStatus:Set("Invalid JSON")
+            return
+        end
+
+        CP.jsonText = text
+        CP.painted = {}
+
+        if CP.jw ~= CP.W or CP.jh ~= CP.H then
+            PaintStatus:Set("Warning: JSON " .. CP.jw .. "x" .. CP.jh .. " vs canvas " .. CP.W .. "x" .. CP.H .. " (will be fitted)")
+            task.wait(1.2)
+        end
+    end
+
+    CP.painting = true
+
+    task.spawn(function()
+        local lp = game:GetService("Players").LocalPlayer
+        local char = lp.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local tool = (char and char:FindFirstChild("PaintBucket"))
+            or lp.Backpack:FindFirstChild("PaintBucket")
+
+        if not (root and tool) then
+            CP.painting = false
+            PaintStatus:Set("PaintBucket not found")
+            return
+        end
+
+        if tool.Parent ~= char then
+            tool.Parent = char
+            task.wait(0.4)
+        end
+
+        local remote = tool:WaitForChild("Remotes"):WaitForChild("ServerControls")
+
+        local list = {}
+
+        for k, brick in pairs(CP.bricks) do
+            if brick.Parent and not CP.painted[k] then
+                local px, py = k:match("^(%-?%d+):(%-?%d+)$")
+                local color = CPColorAt(tonumber(px), tonumber(py))
+
+                if color then
+                    list[#list + 1] = {k = k, brick = brick, color = color, px = tonumber(px), py = tonumber(py)}
+                end
+            end
+        end
+
+        table.sort(list, function(a, b)
+            if a.py ~= b.py then
+                return a.py < b.py
+            end
+            return a.px < b.px
+        end)
+
+        local total = #list
+        local done = 0
+        local inflight = 0
+
+        for _, item in ipairs(list) do
+            if not CP.painting or not root.Parent then
+                break
+            end
+
+            while inflight >= 20 do
+                task.wait()
+            end
+
+            inflight += 1
+
+            task.spawn(function()
+                local ok = pcall(function()
+                    remote:InvokeServer("PaintPart", {
+                        Part = item.brick,
+                        Color = item.color,
+                        Position = root.Position,
+                        CFrame = root.CFrame
+                    })
+                end)
+
+                if ok then
+                    CP.painted[item.k] = true
+                end
+
+                done += 1
+                inflight -= 1
+            end)
+
+            if done % 10 == 0 then
+                PaintStatus:Set("Painting " .. done .. "/" .. total)
+            end
+        end
+
+        while inflight > 0 do
+            task.wait()
+        end
+
+        local finished = CP.painting
+        CP.painting = false
+
+        PaintStatus:Set((finished and "Painting done " or "Painting stopped ") .. done .. "/" .. total)
+    end)
+end
+
+Canvas:AddButton({
+    Name = "Paint Canvas",
+    Info = "Paints the saved canvas bricks using the pasted JSON (PaintBucket)",
+    Callback = function()
+        StartPaintCanvas()
+    end
+})
+
+Canvas:AddButton({
+    Name = "Stop Paint",
+    Info = "Stops painting and keeps the saved bricks and what is already painted",
+    Callback = function()
+        CP.painting = false
+    end
+})
+
+Canvas:AddButton({
+    Name = "Mirror Image",
+    Info = "Flips the image horizontally if it comes out reversed",
+    Callback = function()
+        CP.mirror = not CP.mirror
+        CP.painted = {}
+        PaintStatus:Set("Mirror: " .. tostring(CP.mirror))
     end
 })
 
