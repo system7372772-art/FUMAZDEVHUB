@@ -10379,6 +10379,14 @@ local PixelJson = Canvas:AddTextbox({
     Info = "Paste the JSON"
 })
 
+Canvas:AddButton({
+    Name = "Clear Json",
+    Info = "Clears the JSON textbox",
+    Callback = function()
+        PixelJson:Set("")
+    end
+})
+
 local PaintStatus = Canvas:AddLabel("Paint: no saved canvas")
 
 CP.raw = {}
