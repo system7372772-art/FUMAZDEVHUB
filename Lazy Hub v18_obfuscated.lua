@@ -10375,8 +10375,8 @@ local CP = {
 _G.CanvasPaint = CP
 
 local PixelJson = Canvas:AddTextbox({
-    Placeholder = "JSON code here",
-    Info = "Paste the JSON"
+    Placeholder = "JSON here",
+    Info = "Paste the JSON code from the pixel art site"
 })
 
 Canvas:AddButton({
@@ -10390,6 +10390,50 @@ Canvas:AddButton({
 local PaintStatus = Canvas:AddLabel("Paint: no saved canvas")
 
 CP.raw = {}
+CP.list = {}
+CP.index = 0
+
+function CP.tag()
+    return "Canvas " .. CP.index .. "/" .. #CP.list .. " - "
+end
+
+function CP.snapshot()
+    if CP.index == 0 then
+        return
+    end
+
+    CP.list[CP.index] = {
+        bricks = CP.bricks,
+        raw = CP.raw,
+        painted = CP.painted,
+        count = CP.count,
+        session = CP.session,
+        W = CP.W,
+        H = CP.H,
+        axis = CP.axis,
+        center = CP.center,
+        rotation = CP.rotation,
+        jsonText = CP.jsonText,
+        pixels = CP.pixels,
+        jw = CP.jw,
+        jh = CP.jh
+    }
+end
+
+function CP.load(i)
+    local c = CP.list[i]
+
+    CP.index = i
+    CP.bricks = c.bricks
+    CP.raw = c.raw
+    CP.painted = c.painted
+    CP.count = c.count
+    CP.session = c.session
+    CP.W, CP.H, CP.axis = c.W, c.H, c.axis
+    CP.center, CP.rotation = c.center, c.rotation
+    CP.jsonText = c.jsonText
+    CP.pixels, CP.jw, CP.jh = c.pixels, c.jw, c.jh
+end
 
 function CP.save(px, py, obj)
     CP.raw[obj] = true
@@ -10455,7 +10499,7 @@ function CP.rescan()
     if #zs == 0 then
         CP.bricks = {}
         CP.count = 0
-        PaintStatus:Set("Saved bricks: 0 (folder: " .. total .. ")")
+        PaintStatus:Set(CP.tag() .. "Saved bricks: 0 (folder: " .. total .. ")")
         return
     end
 
@@ -10509,7 +10553,7 @@ function CP.rescan()
     CP.bricks = bricks
     CP.count = count
 
-    PaintStatus:Set("Saved bricks: " .. count .. " (folder: " .. total .. ")")
+    PaintStatus:Set(CP.tag() .. "Saved bricks: " .. count .. " (folder: " .. total .. ")")
 end
 
 local buildMode = "SideToSide"
@@ -10550,8 +10594,13 @@ Canvas:AddButton({
     end
 })
 
-local function StartCanvas()
+local function StartCanvas(resume)
     if _G.CanvaRunning then
+        return
+    end
+
+    if resume and not CP.session then
+        PaintStatus:Set("Nothing to continue")
         return
     end
 
@@ -10571,6 +10620,10 @@ local function StartCanvas()
         1,
         500
     )
+
+    if resume then
+        WIDTH, HEIGHT = CP.session.W, CP.session.H
+    end
 
     _G.CanvaRunning = true
 
@@ -10606,6 +10659,10 @@ local function StartCanvas()
             origin.Y + ((HEIGHT - 1) * GRID) / 2,
             origin.Z
         )
+
+        if resume then
+            center = CP.session.center
+        end
 
         local placed = {}
 
@@ -10659,6 +10716,12 @@ local function StartCanvas()
                 return
             end
 
+            if humanoid.Health <= 0 or not hrp.Parent then
+                _G.CanvaRunning = false
+                stop()
+                return
+            end
+
             if hrp.Parent then
                 hrp.AssemblyLinearVelocity = Vector3.zero
                 hrp.AssemblyAngularVelocity = Vector3.zero
@@ -10689,18 +10752,37 @@ local function StartCanvas()
         end
 
         local rotation = getRotation()
+        local mode = buildMode
+
+        if resume then
+            rotation = CP.session.rotation
+            mode = CP.session.mode
+        end
 
         if CP.conn then
             CP.conn:Disconnect()
             CP.conn = nil
         end
-        CP.bricks = {}
-        CP.raw = {}
-        CP.painted = {}
-        CP.count = 0
-        CP.W, CP.H, CP.axis = WIDTH, HEIGHT, rotationAxis
-        CP.center, CP.rotation = center, rotation
-        PaintStatus:Set("Saved bricks: 0")
+        if not resume then
+            CP.snapshot()
+            CP.index = #CP.list + 1
+            CP.list[CP.index] = {}
+            CP.jsonText = nil
+            CP.bricks = {}
+            CP.raw = {}
+            CP.painted = {}
+            CP.count = 0
+            CP.W, CP.H, CP.axis = WIDTH, HEIGHT, rotationAxis
+            CP.center, CP.rotation = center, rotation
+            CP.session = {
+                W = WIDTH,
+                H = HEIGHT,
+                center = center,
+                rotation = rotation,
+                mode = mode
+            }
+            PaintStatus:Set(CP.tag() .. "Saved bricks: 0")
+        end
 
         local function positionFor(x,y)
             local localX =
@@ -10752,6 +10834,14 @@ local function StartCanvas()
                             CP.save(px,py,obj)
                         end
                     end
+                end
+            end
+
+            if next(CP.raw) then
+                CP.rescan()
+
+                for k in pairs(CP.bricks) do
+                    placed[k] = true
                 end
             end
 
@@ -10828,7 +10918,7 @@ local function StartCanvas()
 
         local built = 0
 
-        if buildMode == "SideToSide" then
+        if mode == "SideToSide" then
 
             for y = 0,HEIGHT - 1 do
                 if not running() then
@@ -10971,6 +11061,57 @@ Canvas:AddButton({
             _G.CanvaConnection:Disconnect()
             _G.CanvaConnection = nil
         end
+    end
+})
+
+Canvas:AddButton({
+    Name = "Continue Canvas",
+    Info = "Continues the last canvas from where it stopped after dying or pressing Stop",
+    Callback = function()
+        StartCanvas(true)
+    end
+})
+
+local function CPSwitch(step)
+    if _G.CanvaRunning or CP.painting or CP.conn then
+        PaintStatus:Set("Stop the canvas first")
+        return
+    end
+
+    local n = #CP.list
+
+    if n < 2 then
+        PaintStatus:Set(CP.tag() .. "No other canvas saved")
+        return
+    end
+
+    CP.snapshot()
+
+    local i = CP.index + step
+
+    if i > n then
+        i = 1
+    elseif i < 1 then
+        i = n
+    end
+
+    CP.load(i)
+    CP.rescan()
+end
+
+Canvas:AddButton({
+    Name = "Next Canvas",
+    Info = "Switches to the next saved canvas",
+    Callback = function()
+        CPSwitch(1)
+    end
+})
+
+Canvas:AddButton({
+    Name = "Previous Canvas",
+    Info = "Switches to the previous saved canvas",
+    Callback = function()
+        CPSwitch(-1)
     end
 })
 
