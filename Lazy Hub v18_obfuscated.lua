@@ -10376,7 +10376,7 @@ _G.CanvasPaint = CP
 
 local PixelJson = Canvas:AddTextbox({
     Placeholder = "JSON here",
-    Info = "Paste the JSON code from the pixel art site"
+    Info = "Paste the JSON code from the pixel art web site"
 })
 
 Canvas:AddButton({
@@ -10390,6 +10390,7 @@ Canvas:AddButton({
 local PaintStatus = Canvas:AddLabel("Paint: no saved canvas")
 
 CP.raw = {}
+CP.tries = {}
 CP.list = {}
 CP.index = 0
 
@@ -11165,16 +11166,16 @@ local function CPLoadJson(text)
     return true
 end
 
-local function StartPaintCanvas()
+local function CPPrepare()
     if CP.painting then
-        return
+        return false
     end
 
     CP.rescan()
 
     if CP.count == 0 then
         PaintStatus:Set("Build the canvas first (Start Canvas)")
-        return
+        return false
     end
 
     local text = PixelJson:Get():gsub("^%s+", ""):gsub("%s+$", "")
@@ -11186,7 +11187,7 @@ local function StartPaintCanvas()
     if text ~= CP.jsonText then
         if not CPLoadJson(text) then
             PaintStatus:Set("Invalid JSON")
-            return
+            return false
         end
 
         CP.jsonText = text
@@ -11198,102 +11199,261 @@ local function StartPaintCanvas()
         end
     end
 
+    if not CP.pixels then
+        PaintStatus:Set("Invalid JSON")
+        return false
+    end
+
+    return true
+end
+
+local function CPSame(a, b)
+    return math.abs(a.R - b.R) * 255 < 2
+    and math.abs(a.G - b.G) * 255 < 2
+    and math.abs(a.B - b.B) * 255 < 2
+end
+
+local function CPSortList(list)
+    table.sort(list, function(a, b)
+        if a.py ~= b.py then
+            return a.py < b.py
+        end
+        return a.px < b.px
+    end)
+end
+
+local function CPBuildListBucket()
+    local list = {}
+
+    for k, brick in pairs(CP.bricks) do
+        if brick.Parent and not CP.painted[k] then
+            local px, py = k:match("^(%-?%d+):(%-?%d+)$")
+            local color = CPColorAt(tonumber(px), tonumber(py))
+
+            if color and CP.painted[k] ~= color then
+                list[#list + 1] = {k = k, brick = brick, color = color, px = tonumber(px), py = tonumber(py)}
+            end
+        end
+    end
+
+    CPSortList(list)
+
+    return list
+end
+
+local function CPBuildList(ignoreTries)
+    local list = {}
+
+    for k, brick in pairs(CP.bricks) do
+        if brick.Parent then
+            local px, py = k:match("^(%-?%d+):(%-?%d+)$")
+            local color = CPColorAt(tonumber(px), tonumber(py))
+
+            if color and not CPSame(brick.Color, color)
+            and (ignoreTries or (CP.tries[k] or 0) < 4) then
+                list[#list + 1] = {k = k, brick = brick, color = color, px = tonumber(px), py = tonumber(py)}
+            end
+        end
+    end
+
+    CPSortList(list)
+
+    return list
+end
+
+local function CPPaintFast(root, remote)
+    local list = CPBuildListBucket()
+    local total = #list
+    local done = 0
+    local inflight = 0
+
+    for _, item in ipairs(list) do
+        if not CP.painting or not root.Parent then
+            break
+        end
+
+        while inflight >= 20 do
+            task.wait()
+        end
+
+        inflight += 1
+
+        task.spawn(function()
+            local ok = pcall(function()
+                remote:InvokeServer("PaintPart", {
+                    Part = item.brick,
+                    Color = item.color,
+                    Position = root.Position,
+                    CFrame = root.CFrame
+                })
+            end)
+
+            if ok then
+                CP.painted[item.k] = item.color
+            end
+
+            done += 1
+            inflight -= 1
+        end)
+
+        if done % 10 == 0 then
+            PaintStatus:Set("Painting " .. done .. "/" .. total)
+        end
+    end
+
+    while inflight > 0 do
+        task.wait()
+    end
+
+    return done, total
+end
+
+local function CPPaintTP(root, event, list, label)
+    local total = #list
+    local done = 0
+
+    root.Anchored = true
+
+    for _, item in ipairs(list) do
+        if not CP.painting or not root.Parent or not item.brick.Parent then
+            break
+        end
+
+        local cf = item.brick.CFrame
+        local face = cf:PointToWorldSpace(Vector3.new(0, 0, item.brick.Size.Z / 2))
+        local normal = cf:VectorToWorldSpace(Vector3.new(0, 0, 1))
+
+        root.CFrame = CFrame.new(face + normal * 3 + Vector3.new(0, 2, 0))
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
+
+        task.wait(0.08)
+
+        if not CP.painting then
+            break
+        end
+
+        event:FireServer(item.brick, Enum.NormalId.Back, face, "color", item.color, "smooth", "")
+
+        CP.tries[item.k] = (CP.tries[item.k] or 0) + 1
+        done += 1
+
+        if done % 5 == 0 then
+            PaintStatus:Set(label .. " " .. done .. "/" .. total)
+        end
+    end
+
+    if root.Parent then
+        root.Anchored = false
+    end
+end
+
+local function CPRun()
+    if not CPPrepare() then
+        return
+    end
+
     CP.painting = true
 
     task.spawn(function()
         local lp = game:GetService("Players").LocalPlayer
         local char = lp.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        local tool = (char and char:FindFirstChild("PaintBucket"))
-            or lp.Backpack:FindFirstChild("PaintBucket")
+        local useTool = CP.method == "tool"
+        local toolName = useTool and "Paint" or "PaintBucket"
+        local tool = (char and char:FindFirstChild(toolName))
+            or lp.Backpack:FindFirstChild(toolName)
 
         if not (root and tool) then
             CP.painting = false
-            PaintStatus:Set("PaintBucket not found")
+            PaintStatus:Set((useTool and "Paint tool" or "PaintBucket") .. " not found")
             return
         end
 
         if tool.Parent ~= char then
-            tool.Parent = char
+            local hum = char:FindFirstChildOfClass("Humanoid")
+
+            if hum then
+                hum:EquipTool(tool)
+            else
+                tool.Parent = char
+            end
+
             task.wait(0.4)
         end
 
-        local remote = tool:WaitForChild("Remotes"):WaitForChild("ServerControls")
+        local remote
 
-        local list = {}
-
-        for k, brick in pairs(CP.bricks) do
-            if brick.Parent and not CP.painted[k] then
-                local px, py = k:match("^(%-?%d+):(%-?%d+)$")
-                local color = CPColorAt(tonumber(px), tonumber(py))
-
-                if color then
-                    list[#list + 1] = {k = k, brick = brick, color = color, px = tonumber(px), py = tonumber(py)}
-                end
-            end
+        if useTool then
+            local sc = tool:WaitForChild("Script", 5)
+            remote = sc and sc:WaitForChild("Event", 5)
+        else
+            local rem = tool:WaitForChild("Remotes", 5)
+            remote = rem and rem:WaitForChild("ServerControls", 5)
         end
 
-        table.sort(list, function(a, b)
-            if a.py ~= b.py then
-                return a.py < b.py
-            end
-            return a.px < b.px
-        end)
+        if not remote then
+            CP.painting = false
+            PaintStatus:Set("Remote not found")
+            return
+        end
 
-        local total = #list
-        local done = 0
-        local inflight = 0
+        if not useTool then
+            local done, total = CPPaintFast(root, remote)
+            local finished = CP.painting
 
-        for _, item in ipairs(list) do
-            if not CP.painting or not root.Parent then
+            CP.painting = false
+
+            PaintStatus:Set((finished and "Painting done " or "Painting stopped ") .. done .. "/" .. total)
+            return
+        end
+
+        CP.tries = {}
+
+        local list = CPBuildList()
+
+        PaintStatus:Set("Painting 0/" .. #list)
+
+        if #list > 0 then
+            CPPaintTP(root, remote, list, "Painting")
+        end
+
+        local pass = 0
+
+        while CP.painting and root.Parent and pass < 8 do
+            task.wait(0.8)
+
+            list = CPBuildList()
+
+            if #list == 0 then
                 break
             end
 
-            while inflight >= 20 do
-                task.wait()
-            end
-
-            inflight += 1
-
-            task.spawn(function()
-                local ok = pcall(function()
-                    remote:InvokeServer("PaintPart", {
-                        Part = item.brick,
-                        Color = item.color,
-                        Position = root.Position,
-                        CFrame = root.CFrame
-                    })
-                end)
-
-                if ok then
-                    CP.painted[item.k] = true
-                end
-
-                done += 1
-                inflight -= 1
-            end)
-
-            if done % 10 == 0 then
-                PaintStatus:Set("Painting " .. done .. "/" .. total)
-            end
-        end
-
-        while inflight > 0 do
-            task.wait()
+            pass += 1
+            CPPaintTP(root, remote, list, "Fix " .. pass)
         end
 
         local finished = CP.painting
         CP.painting = false
 
-        PaintStatus:Set((finished and "Painting done " or "Painting stopped ") .. done .. "/" .. total)
+        PaintStatus:Set((finished and "Painting done" or "Painting stopped") .. " - missing " .. #CPBuildList(true))
     end)
 end
 
 Canvas:AddButton({
-    Name = "Paint Canvas",
-    Info = "Paints the saved canvas bricks using the pasted JSON (PaintBucket)",
+    Name = "Paint Method",
+    Info = "Switches between the PaintBucket remote and the Paint tool with teleport to each brick",
     Callback = function()
-        StartPaintCanvas()
+        CP.method = CP.method == "tool" and "bucket" or "tool"
+        PaintStatus:Set(CP.method == "tool" and "Paint method: Paint tool with teleport" or "Paint method: PaintBucket")
+    end
+})
+
+Canvas:AddButton({
+    Name = "Paint Canvas",
+    Info = "Paints the saved canvas bricks using the pasted JSON with the selected paint method",
+    Callback = function()
+        CPRun()
     end
 })
 
