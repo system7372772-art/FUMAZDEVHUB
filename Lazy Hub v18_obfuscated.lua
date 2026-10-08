@@ -10376,7 +10376,7 @@ _G.CanvasPaint = CP
 
 local PixelJson = Canvas:AddTextbox({
     Placeholder = "JSON here",
-    Info = "Paste the JSON code from the pixel art web site"
+    Info = "Paste the JSON code from the pixel art website here"
 })
 
 Canvas:AddButton({
@@ -10417,7 +10417,10 @@ function CP.snapshot()
         jsonText = CP.jsonText,
         pixels = CP.pixels,
         jw = CP.jw,
-        jh = CP.jh
+        jh = CP.jh,
+        frames = CP.frames,
+        frame = CP.frame,
+        fps = CP.fps
     }
 end
 
@@ -10434,6 +10437,7 @@ function CP.load(i)
     CP.center, CP.rotation = c.center, c.rotation
     CP.jsonText = c.jsonText
     CP.pixels, CP.jw, CP.jh = c.pixels, c.jw, c.jh
+    CP.frames, CP.frame, CP.fps = c.frames, c.frame, c.fps
 end
 
 function CP.save(px, py, obj)
@@ -11117,6 +11121,10 @@ Canvas:AddButton({
 })
 
 local function CPColorAt(px, py)
+    if CP.white then
+        return Color3.fromRGB(255, 255, 255)
+    end
+
     local u, v
 
     if CP.axis == "Z" then
@@ -11154,19 +11162,45 @@ local function CPLoadJson(text)
         return game:GetService("HttpService"):JSONDecode(text)
     end)
 
-    if not ok or type(data) ~= "table" or type(data.pixels) ~= "table"
+    if not ok or type(data) ~= "table"
     or not tonumber(data.width) or not tonumber(data.height) then
         return false
     end
 
-    CP.pixels = data.pixels
+    local frames = data.pixels and {data.pixels}
+
+    if type(data.frames) == "table" and #data.frames > 0 then
+        frames = data.frames
+    end
+
+    if type(frames) ~= "table" or type(frames[1]) ~= "table" then
+        return false
+    end
+
+    CP.frames = frames
+    CP.frame = 1
+    CP.fps = math.clamp(tonumber(data.fps) or 8, 1, 30)
+    CP.pixels = frames[1]
     CP.jw = tonumber(data.width)
     CP.jh = tonumber(data.height)
 
     return true
 end
 
-local function CPPrepare()
+local function CPSetFrame(i)
+    CP.frame = i
+    CP.pixels = CP.frames[i]
+end
+
+local function CPFrameTag()
+    if CP.frames and #CP.frames > 1 then
+        return "Frame " .. CP.frame .. "/" .. #CP.frames .. " "
+    end
+
+    return ""
+end
+
+local function CPPrepare(skipJson)
     if CP.painting then
         return false
     end
@@ -11176,6 +11210,10 @@ local function CPPrepare()
     if CP.count == 0 then
         PaintStatus:Set("Build the canvas first (Start Canvas)")
         return false
+    end
+
+    if skipJson then
+        return true
     end
 
     local text = PixelJson:Get():gsub("^%s+", ""):gsub("%s+$", "")
@@ -11226,7 +11264,7 @@ local function CPBuildListBucket()
     local list = {}
 
     for k, brick in pairs(CP.bricks) do
-        if brick.Parent and not CP.painted[k] then
+        if brick.Parent then
             local px, py = k:match("^(%-?%d+):(%-?%d+)$")
             local color = CPColorAt(tonumber(px), tonumber(py))
 
@@ -11297,7 +11335,7 @@ local function CPPaintFast(root, remote)
         end)
 
         if done % 10 == 0 then
-            PaintStatus:Set("Painting " .. done .. "/" .. total)
+            PaintStatus:Set(CPFrameTag() .. "Painting " .. done .. "/" .. total)
         end
     end
 
@@ -11339,7 +11377,7 @@ local function CPPaintTP(root, event, list, label)
         done += 1
 
         if done % 5 == 0 then
-            PaintStatus:Set(label .. " " .. done .. "/" .. total)
+            PaintStatus:Set(CPFrameTag() .. label .. " " .. done .. "/" .. total)
         end
     end
 
@@ -11348,8 +11386,10 @@ local function CPPaintTP(root, event, list, label)
     end
 end
 
-local function CPRun()
-    if not CPPrepare() then
+local function CPRun(white, play)
+    CP.white = false
+
+    if not CPPrepare(white) then
         return
     end
 
@@ -11398,45 +11438,63 @@ local function CPRun()
             return
         end
 
-        if not useTool then
-            local done, total = CPPaintFast(root, remote)
-            local finished = CP.painting
+        CP.white = white == true
 
-            CP.painting = false
+        local loop = play and CP.frames and #CP.frames > 1
+        local done, total, missing = 0, 0, 0
 
-            PaintStatus:Set((finished and "Painting done " or "Painting stopped ") .. done .. "/" .. total)
-            return
-        end
+        repeat
+            if useTool then
+                CP.tries = {}
 
-        CP.tries = {}
+                local list = CPBuildList()
 
-        local list = CPBuildList()
+                PaintStatus:Set(CPFrameTag() .. "Painting 0/" .. #list)
 
-        PaintStatus:Set("Painting 0/" .. #list)
+                if #list > 0 then
+                    CPPaintTP(root, remote, list, "Painting")
+                end
 
-        if #list > 0 then
-            CPPaintTP(root, remote, list, "Painting")
-        end
+                local pass = 0
 
-        local pass = 0
+                while CP.painting and root.Parent and pass < 8 do
+                    task.wait(0.8)
 
-        while CP.painting and root.Parent and pass < 8 do
-            task.wait(0.8)
+                    list = CPBuildList()
 
-            list = CPBuildList()
+                    if #list == 0 then
+                        break
+                    end
 
-            if #list == 0 then
-                break
+                    pass += 1
+                    CPPaintTP(root, remote, list, "Fix " .. pass)
+                end
+
+                missing = #CPBuildList(true)
+            else
+                done, total = CPPaintFast(root, remote)
             end
 
-            pass += 1
-            CPPaintTP(root, remote, list, "Fix " .. pass)
-        end
+            if loop and CP.painting and root.Parent then
+                CPSetFrame(CP.frame % #CP.frames + 1)
+                task.wait(1 / CP.fps)
+            end
+        until not loop or not CP.painting or not root.Parent
 
         local finished = CP.painting
-        CP.painting = false
 
-        PaintStatus:Set((finished and "Painting done" or "Painting stopped") .. " - missing " .. #CPBuildList(true))
+        CP.painting = false
+        CP.white = false
+
+        if white then
+            CP.painted = {}
+        end
+
+        if useTool then
+            PaintStatus:Set(CPFrameTag() .. (finished and "Painting done" or "Painting stopped") .. " - missing " .. missing)
+        else
+            PaintStatus:Set(CPFrameTag() .. (finished and "Painting done " or "Painting stopped ") .. done .. "/" .. total)
+        end
     end)
 end
 
@@ -11454,6 +11512,59 @@ Canvas:AddButton({
     Info = "Paints the saved canvas bricks using the pasted JSON with the selected paint method",
     Callback = function()
         CPRun()
+    end
+})
+
+local function CPStep(step)
+    if CP.painting then
+        PaintStatus:Set("Stop painting first")
+        return
+    end
+
+    if not CPPrepare() then
+        return
+    end
+
+    local n = #CP.frames
+
+    if n < 2 then
+        PaintStatus:Set("The JSON has only one frame")
+        return
+    end
+
+    CPSetFrame((CP.frame - 1 + step) % n + 1)
+    CPRun(false)
+end
+
+Canvas:AddButton({
+    Name = "Next Frame",
+    Info = "Paints the next frame of the animation using the selected paint method",
+    Callback = function()
+        CPStep(1)
+    end
+})
+
+Canvas:AddButton({
+    Name = "Previous Frame",
+    Info = "Paints the previous frame of the animation using the selected paint method",
+    Callback = function()
+        CPStep(-1)
+    end
+})
+
+Canvas:AddButton({
+    Name = "Play Animation",
+    Info = "Paints every frame in a loop using the fps from the JSON until you press Stop Paint",
+    Callback = function()
+        CPRun(false, true)
+    end
+})
+
+Canvas:AddButton({
+    Name = "Clear Canvas",
+    Info = "Paints the whole saved canvas white using the selected paint method",
+    Callback = function()
+        CPRun(true)
     end
 })
 
