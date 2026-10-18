@@ -226,6 +226,7 @@ local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "LegacyServiceGui"
 gui.ResetOnSpawn = false
 
@@ -442,23 +443,23 @@ buttonClickSound.Volume = 0.5
 buttonClickSound.Parent = workspace
 
 Library.Theme = {
-	Background = Color3.fromRGB(12,12,14),
-	Secondary = Color3.fromRGB(20,20,23),
-	Element = Color3.fromRGB(28,28,31),
-	Border = Color3.fromRGB(70,70,75),
-	Text = Color3.fromRGB(235,235,235),
-	SubText = Color3.fromRGB(160,160,165),
-	Accent = Color3.fromRGB(85,45,125),
-	ToggleOff = Color3.fromRGB(45,45,48),
-	AccentHover = Color3.fromRGB(100,55,145),
-	GroupBackground = Color3.fromRGB(17,17,20)
+	Background = Color3.fromRGB(28,28,31),
+	Secondary = Color3.fromRGB(34,34,37),
+	Element = Color3.fromRGB(50,50,54),
+	Border = Color3.fromRGB(70,66,64),
+	Text = Color3.fromRGB(242,236,226),
+	SubText = Color3.fromRGB(172,164,155),
+	Accent = Color3.fromRGB(176,112,84),
+	ToggleOff = Color3.fromRGB(58,58,62),
+	AccentHover = Color3.fromRGB(204,136,100),
+	GroupBackground = Color3.fromRGB(24,24,27)
 }
 
 Library.Settings = {
 	Blur = true,
 	BlurSize = 8,
-	Transparency = 0.12,
-	CornerRadius = 8,
+	Transparency = 0.04,
+	CornerRadius = 14,
 	AnimationSpeed = 0.18,
 	Tooltip = true,
 	TooltipMaxWidth = 600
@@ -515,35 +516,138 @@ end
 
 local function stroke(obj, color, thickness)
 	local s = Instance.new("UIStroke")
-	s.Color = color or Library.Theme.Border
-	s.Thickness = thickness or 1
-	s.Transparency = 0.35
+	s.Color = Color3.fromRGB(255,255,255)
+	s.Thickness = (thickness or 1) + 1
+	s.Transparency = 0
 	s.Parent = obj
+
+	local metal = Instance.new("UIGradient")
+	metal.Rotation = 90
+	metal.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(84,80,78)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(26,26,29)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(4,4,6))
+	})
+	metal.Parent = s
+
 	return s
 end
 
+local function surfaceGradient(obj)
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(Color3.fromRGB(255,255,255), Color3.fromRGB(138,138,146))
+	g.Parent = obj
+	return g
+end
+
+local function innerBevel(obj)
+	local rim = Instance.new("Frame")
+	rim.Name = "Bevel"
+	rim.BackgroundTransparency = 1
+	rim.BorderSizePixel = 0
+	rim.Active = false
+	rim.Size = UDim2.new(1,-6,1,-6)
+	rim.Position = UDim2.new(0,3,0,3)
+	rim.ZIndex = obj.ZIndex
+	rim.Parent = obj
+
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0,7)
+	c.Parent = rim
+
+	local s = Instance.new("UIStroke")
+	s.Color = Color3.fromRGB(255,255,255)
+	s.Thickness = 1
+	s.Transparency = 0.45
+	s.Parent = rim
+
+	local g = Instance.new("UIGradient")
+	g.Rotation = 90
+	g.Color = ColorSequence.new(Color3.fromRGB(92,88,86), Color3.fromRGB(10,10,12))
+	g.Parent = s
+	return rim
+end
+
+local function sinkApply(obj, sunk, speed)
+	speed = speed or 0.08
+	local depth = obj:GetAttribute("SinkDepth") or 3
+
+	local padding = obj:FindFirstChild("SinkPad")
+	if not padding then
+		padding = Instance.new("UIPadding")
+		padding.Name = "SinkPad"
+		padding.Parent = obj
+	end
+	Anim(padding,{PaddingTop = UDim.new(0, sunk and depth or 0)},speed)
+
+	local grad = obj:FindFirstChildOfClass("UIGradient")
+	if grad then
+		Anim(grad,{Rotation = sunk and 270 or 90},speed)
+	end
+
+	local outline = obj:FindFirstChildOfClass("UIStroke")
+	local outlineGrad = outline and outline:FindFirstChildOfClass("UIGradient")
+	if outlineGrad then
+		Anim(outlineGrad,{Rotation = sunk and 270 or 90},speed)
+	end
+
+	local bevel = obj:FindFirstChild("Bevel")
+	local bevelStroke = bevel and bevel:FindFirstChildOfClass("UIStroke")
+	local bevelGrad = bevelStroke and bevelStroke:FindFirstChildOfClass("UIGradient")
+	if bevelGrad then
+		Anim(bevelGrad,{Rotation = sunk and 270 or 90},speed)
+	end
+end
+
+local function sinkPress(obj, pressed, speed)
+	sinkApply(obj, pressed or obj:GetAttribute("Sunk") == true, speed)
+end
+
+local function setSunk(obj, sunk, speed, depth)
+	if depth then
+		obj:SetAttribute("SinkDepth", depth)
+	end
+	obj:SetAttribute("Sunk", sunk)
+	sinkApply(obj, sunk, speed)
+end
+
 local function buttonAnimation(button, normalColor, hoverColor)
+	local pressedAt = 0
+	button:SetAttribute("SinkDepth", 4)
+
+	local function releaseSink()
+		local stamp = pressedAt
+		task.delay(math.max(0, 0.14 - (tick() - pressedAt)), function()
+			if pressedAt == stamp then
+				sinkPress(button,false,0.14)
+			end
+		end)
+	end
+
 	button.MouseEnter:Connect(function()
 		Anim(button,{
-			BackgroundColor3 = hoverColor,
 			Size = UDim2.new(1,0,0,35)
 		},0.12)
 	end)
 
 	button.MouseLeave:Connect(function()
+		releaseSink()
 		Anim(button,{
-			BackgroundColor3 = normalColor,
 			Size = UDim2.new(1,0,0,34)
 		},0.14)
 	end)
 
 	button.MouseButton1Down:Connect(function()
+		pressedAt = tick()
+		sinkPress(button,true,0.05)
 		Anim(button,{
 			Size = UDim2.new(1,-4,0,32)
 		},0.07)
 	end)
 
 	button.MouseButton1Up:Connect(function()
+		releaseSink()
 		Anim(button,{
 			Size = UDim2.new(1,0,0,35)
 		},0.1)
@@ -588,7 +692,8 @@ function Library:CreateWindow(options)
 	main.Parent = gui
 
 	corner(main)
-	stroke(main,Library.Theme.Border,1)
+	stroke(main,Library.Theme.Border,2)
+	surfaceGradient(main)
 
 	Window.Main = main
 
@@ -600,6 +705,7 @@ function Library:CreateWindow(options)
 	top.Parent = main
 
 	corner(top)
+	surfaceGradient(top)
 
 	local topFix = Instance.new("Frame")
 	topFix.Size = UDim2.new(1,0,0,12)
@@ -610,13 +716,13 @@ function Library:CreateWindow(options)
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1,0,1,0)
-	title.Position = UDim2.new(0,14,0,0)
+	title.Position = UDim2.new(0,0,0,0)
 	title.BackgroundTransparency = 1
 	title.Text = options.Title or options.Name or "Library"
 	title.TextColor3 = Library.Theme.Text
-	title.TextSize = 15
-	title.Font = Enum.Font.GothamMedium
-	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.TextSize = 17
+	title.Font = Enum.Font.Garamond
+	title.TextXAlignment = Enum.TextXAlignment.Center
 	title.Parent = top
 
 	local tabs = Instance.new("ScrollingFrame")
@@ -659,7 +765,7 @@ function Library:CreateWindow(options)
 	tooltip.ZIndex = 1000
 	tooltip.Parent = gui
 
-	corner(tooltip,6)
+	corner(tooltip,10)
 	stroke(tooltip,Library.Theme.Border,1)
 
 	local tooltipText = Instance.new("TextLabel")
@@ -926,13 +1032,15 @@ function Library:CreateWindow(options)
 	toggleButton.Text = "×"
 	toggleButton.TextColor3 = Library.Theme.SubText
 	toggleButton.TextSize = 22
-	toggleButton.Font = Enum.Font.Gotham
+	toggleButton.Font = Enum.Font.Garamond
 	toggleButton.AutoButtonColor = false
 	toggleButton.BorderSizePixel = 0
 	toggleButton.Parent = gui
 
-	corner(toggleButton,7)
+	corner(toggleButton,12)
 	stroke(toggleButton,Library.Theme.Border,1)
+	surfaceGradient(toggleButton)
+	innerBevel(toggleButton)
 
 	local buttonDragging = false
 	local buttonDragInput
@@ -1110,13 +1218,15 @@ function Library:CreateWindow(options)
 		tabButton.BackgroundTransparency = 1
 		tabButton.Text = name
 		tabButton.TextColor3 = Library.Theme.SubText
-		tabButton.TextSize = 12
-		tabButton.Font = Enum.Font.GothamMedium
+		tabButton.TextSize = 14
+		tabButton.Font = Enum.Font.Garamond
 		tabButton.AutoButtonColor = false
 		tabButton.BorderSizePixel = 0
 		tabButton.Parent = tabs
 
-		corner(tabButton,6)
+		corner(tabButton,10)
+		stroke(tabButton,Library.Theme.Border,0)
+		surfaceGradient(tabButton)
 
 		tabButton.MouseEnter:Connect(function()
 			if Window.CurrentTab ~= tab then
@@ -1138,12 +1248,14 @@ function Library:CreateWindow(options)
 		end)
 
 		tabButton.MouseButton1Down:Connect(function()
+			sinkPress(tabButton,true,0.06)
 			Anim(tabButton,{
 				Size = UDim2.new(1,-6,0,32)
 			},0.07)
 		end)
 
 		tabButton.MouseButton1Up:Connect(function()
+			sinkPress(tabButton,false,0.12)
 			Anim(tabButton,{
 				Size = UDim2.new(1,0,0,34)
 			},0.1)
@@ -1260,8 +1372,8 @@ function Library:CreateWindow(options)
 			nameLabel.BackgroundTransparency = 1
 			nameLabel.Text = config.Name or "Section"
 			nameLabel.TextColor3 = Library.Theme.Text
-			nameLabel.TextSize = 14
-			nameLabel.Font = Enum.Font.GothamBold
+			nameLabel.TextSize = 16
+			nameLabel.Font = Enum.Font.Garamond
 			nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 			nameLabel.Parent = section
 
@@ -1271,8 +1383,8 @@ function Library:CreateWindow(options)
 			info.BackgroundTransparency = 1
 			info.Text = config.Info or ""
 			info.TextColor3 = Library.Theme.SubText
-			info.TextSize = 10
-			info.Font = Enum.Font.Gotham
+			info.TextSize = 12
+			info.Font = Enum.Font.Garamond
 			info.TextXAlignment = Enum.TextXAlignment.Left
 			info.Parent = section
 
@@ -1296,8 +1408,8 @@ function Library:CreateWindow(options)
 			label.BackgroundTransparency = 1
 			label.Text = text or ""
 			label.TextColor3 = Library.Theme.SubText
-			label.TextSize = 12
-			label.Font = Enum.Font.Gotham
+			label.TextSize = 14
+			label.Font = Enum.Font.Garamond
 			label.TextWrapped = true
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Parent = column
@@ -1327,14 +1439,16 @@ function Library:CreateWindow(options)
 			button.BackgroundColor3 = Library.Theme.Element
 			button.Text = config.Name or "Button"
 			button.TextColor3 = Library.Theme.Text
-			button.TextSize = 12
-			button.Font = Enum.Font.GothamMedium
+			button.TextSize = 14
+			button.Font = Enum.Font.Garamond
 			button.AutoButtonColor = false
 			button.BorderSizePixel = 0
 			button.Parent = column
 
-			corner(button,6)
+			corner(button,10)
 			stroke(button,Library.Theme.Border,1)
+			surfaceGradient(button)
+			innerBevel(button)
 
 			buttonAnimation(
 				button,
@@ -1364,8 +1478,10 @@ function Library:CreateWindow(options)
 			holder.BorderSizePixel = 0
 			holder.Parent = column
 
-			corner(holder,6)
+			corner(holder,10)
 			stroke(holder,Library.Theme.Border,1)
+			surfaceGradient(holder)
+			innerBevel(holder)
 
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(1,-55,1,0)
@@ -1373,8 +1489,8 @@ function Library:CreateWindow(options)
 			label.BackgroundTransparency = 1
 			label.Text = config.Name or "Toggle"
 			label.TextColor3 = Library.Theme.Text
-			label.TextSize = 12
-			label.Font = Enum.Font.GothamMedium
+			label.TextSize = 14
+			label.Font = Enum.Font.Garamond
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Parent = holder
 
@@ -1388,6 +1504,7 @@ function Library:CreateWindow(options)
 			toggle.Parent = holder
 
 			corner(toggle,10)
+			surfaceGradient(toggle)
 
 			local knob = Instance.new("Frame")
 			knob.Size = UDim2.new(0,16,0,16)
@@ -1397,11 +1514,19 @@ function Library:CreateWindow(options)
 			knob.Parent = toggle
 
 			corner(knob,8)
+			surfaceGradient(knob)
 
 			local state = config.Default == true
 
 			local function update(value,callback)
 				state = value
+				setSunk(toggle,state,0.12,1)
+				if callback then
+					sinkPress(holder,true,0.05)
+					task.delay(0.1,function()
+						sinkPress(holder,false,0.14)
+					end)
+				end
 
 				if state then
 					Spring(toggle,{
@@ -1465,8 +1590,10 @@ function Library:CreateWindow(options)
 			holder.BorderSizePixel = 0
 			holder.Parent = column
 
-			corner(holder,6)
+			corner(holder,10)
 			stroke(holder,Library.Theme.Border,1)
+			surfaceGradient(holder)
+			innerBevel(holder)
 
 			local box = Instance.new("TextBox")
 			box.Size = UDim2.new(1,-12,1,-10)
@@ -1477,13 +1604,15 @@ function Library:CreateWindow(options)
 			box.PlaceholderText = config.Placeholder or "Text..."
 			box.PlaceholderColor3 = Library.Theme.SubText
 			box.TextColor3 = Library.Theme.Text
-			box.TextSize = 12
-			box.Font = Enum.Font.Gotham
+			box.TextSize = 14
+			box.Font = Enum.Font.Garamond
 			box.ClearTextOnFocus = false
 			box.Parent = holder
 
-			corner(box,5)
+			corner(box,8)
 			stroke(box,Library.Theme.Border,1)
+			surfaceGradient(box)
+			innerBevel(box)
 
 			box.Focused:Connect(function()
 				Anim(box,{
@@ -1526,8 +1655,10 @@ function Library:CreateWindow(options)
 			holder.BorderSizePixel = 0
 			holder.Parent = column
 
-			corner(holder,6)
+			corner(holder,10)
 			stroke(holder,Library.Theme.Border,1)
+			surfaceGradient(holder)
+			innerBevel(holder)
 
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.new(1,-55,0,20)
@@ -1535,8 +1666,8 @@ function Library:CreateWindow(options)
 			label.BackgroundTransparency = 1
 			label.Text = config.Name or "Slider"
 			label.TextColor3 = Library.Theme.Text
-			label.TextSize = 11
-			label.Font = Enum.Font.GothamMedium
+			label.TextSize = 13
+			label.Font = Enum.Font.Garamond
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			label.Parent = holder
 
@@ -1545,8 +1676,8 @@ function Library:CreateWindow(options)
 			valueLabel.Position = UDim2.new(1,-51,0,3)
 			valueLabel.BackgroundTransparency = 1
 			valueLabel.TextColor3 = Library.Theme.SubText
-			valueLabel.TextSize = 11
-			valueLabel.Font = Enum.Font.Gotham
+			valueLabel.TextSize = 13
+			valueLabel.Font = Enum.Font.Garamond
 			valueLabel.TextXAlignment = Enum.TextXAlignment.Right
 			valueLabel.Parent = holder
 
@@ -1558,6 +1689,7 @@ function Library:CreateWindow(options)
 			bar.Parent = holder
 
 			corner(bar,3)
+			surfaceGradient(bar)
 
 			local fill = Instance.new("Frame")
 			fill.Size = UDim2.new(0,0,1,0)
@@ -1566,6 +1698,7 @@ function Library:CreateWindow(options)
 			fill.Parent = bar
 
 			corner(fill,3)
+			surfaceGradient(fill)
 
 			local min = config.Min or 0
 			local max = config.Max or 100
@@ -1659,8 +1792,9 @@ function Library:CreateWindow(options)
 			group.BorderSizePixel = 0
 			group.Parent = column
 
-			corner(group,7)
+			corner(group,12)
 			stroke(group,Library.Theme.Border,1)
+			surfaceGradient(group)
 
 			local groupPadding = Instance.new("UIPadding")
 			groupPadding.PaddingTop = UDim.new(0,7)
@@ -1683,8 +1817,8 @@ function Library:CreateWindow(options)
 				groupTitle.BackgroundTransparency = 1
 				groupTitle.Text = config.Name
 				groupTitle.TextColor3 = Library.Theme.Text
-				groupTitle.TextSize = 13
-				groupTitle.Font = Enum.Font.GothamBold
+				groupTitle.TextSize = 15
+				groupTitle.Font = Enum.Font.Garamond
 				groupTitle.TextXAlignment = Enum.TextXAlignment.Left
 				groupTitle.LayoutOrder = -1000
 				groupTitle.Parent = group
@@ -1696,8 +1830,8 @@ function Library:CreateWindow(options)
 					groupInfo.BackgroundTransparency = 1
 					groupInfo.Text = config.Info
 					groupInfo.TextColor3 = Library.Theme.SubText
-					groupInfo.TextSize = 9
-					groupInfo.Font = Enum.Font.Gotham
+					groupInfo.TextSize = 11
+					groupInfo.Font = Enum.Font.Garamond
 					groupInfo.TextXAlignment = Enum.TextXAlignment.Left
 					groupInfo.LayoutOrder = -999
 					groupInfo.Parent = group
@@ -1724,14 +1858,16 @@ button.TextWrapped = true
 				button.BackgroundColor3 = Library.Theme.Element
 				button.Text = buttonConfig.Name or "Button"
 				button.TextColor3 = Library.Theme.Text
-				button.TextSize = 12
-				button.Font = Enum.Font.GothamMedium
+				button.TextSize = 14
+				button.Font = Enum.Font.Garamond
 				button.AutoButtonColor = false
 				button.BorderSizePixel = 0
 				button.Parent = group
 
-				corner(button,6)
+				corner(button,10)
 				stroke(button,Library.Theme.Border,1)
+				surfaceGradient(button)
+				innerBevel(button)
 
 				buttonAnimation(
 					button,
@@ -1755,8 +1891,8 @@ button.TextWrapped = true
 				label.BackgroundTransparency = 1
 				label.Text = tostring(text or "")
 				label.TextColor3 = Library.Theme.SubText
-				label.TextSize = 11
-				label.Font = Enum.Font.Gotham
+				label.TextSize = 13
+				label.Font = Enum.Font.Garamond
 				label.TextWrapped = true
 				label.TextXAlignment = Enum.TextXAlignment.Left
 				label.Parent = group
@@ -1776,8 +1912,8 @@ button.TextWrapped = true
 				section.BackgroundTransparency = 1
 				section.Text = tostring(text or "")
 				section.TextColor3 = Library.Theme.Text
-				section.TextSize = 11
-				section.Font = Enum.Font.GothamBold
+				section.TextSize = 13
+				section.Font = Enum.Font.Garamond
 				section.TextXAlignment = Enum.TextXAlignment.Left
 				section.Parent = group
 
@@ -1793,8 +1929,10 @@ button.TextWrapped = true
 				holder.BorderSizePixel = 0
 				holder.Parent = group
 
-				corner(holder,6)
+				corner(holder,10)
 				stroke(holder,Library.Theme.Border,1)
+				surfaceGradient(holder)
+				innerBevel(holder)
 
 				local label = Instance.new("TextLabel")
 				label.Size = UDim2.new(1,-55,1,0)
@@ -1802,8 +1940,8 @@ button.TextWrapped = true
 				label.BackgroundTransparency = 1
 				label.Text = toggleConfig.Name or "Toggle"
 				label.TextColor3 = Library.Theme.Text
-				label.TextSize = 12
-				label.Font = Enum.Font.GothamMedium
+				label.TextSize = 14
+				label.Font = Enum.Font.Garamond
 				label.TextXAlignment = Enum.TextXAlignment.Left
 				label.Parent = holder
 
@@ -1817,6 +1955,7 @@ button.TextWrapped = true
 				toggle.Parent = holder
 
 				corner(toggle,10)
+				surfaceGradient(toggle)
 
 				local knob = Instance.new("Frame")
 				knob.Size = UDim2.new(0,16,0,16)
@@ -1826,11 +1965,19 @@ button.TextWrapped = true
 				knob.Parent = toggle
 
 				corner(knob,8)
+				surfaceGradient(knob)
 
 				local state = toggleConfig.Default == true
 
 				local function update(value,callback)
 					state = value
+					setSunk(toggle,state,0.12,1)
+					if callback then
+						sinkPress(holder,true,0.05)
+						task.delay(0.1,function()
+							sinkPress(holder,false,0.14)
+						end)
+					end
 
 					if state then
 						Spring(toggle,{
@@ -1892,8 +2039,10 @@ button.TextWrapped = true
 				holder.BorderSizePixel = 0
 				holder.Parent = group
 
-				corner(holder,6)
+				corner(holder,10)
 				stroke(holder,Library.Theme.Border,1)
+				surfaceGradient(holder)
+				innerBevel(holder)
 
 				local box = Instance.new("TextBox")
 				box.Size = UDim2.new(1,-12,1,-10)
@@ -1904,13 +2053,15 @@ button.TextWrapped = true
 				box.PlaceholderText = textboxConfig.Placeholder or "Text..."
 				box.PlaceholderColor3 = Library.Theme.SubText
 				box.TextColor3 = Library.Theme.Text
-				box.TextSize = 12
-				box.Font = Enum.Font.Gotham
+				box.TextSize = 14
+				box.Font = Enum.Font.Garamond
 				box.ClearTextOnFocus = false
 				box.Parent = holder
 
-				corner(box,5)
+				corner(box,8)
 				stroke(box,Library.Theme.Border,1)
+				surfaceGradient(box)
+				innerBevel(box)
 
 				box.Focused:Connect(function()
 					Anim(box,{
@@ -1951,8 +2102,10 @@ button.TextWrapped = true
 				holder.BorderSizePixel = 0
 				holder.Parent = group
 
-				corner(holder,6)
+				corner(holder,10)
 				stroke(holder,Library.Theme.Border,1)
+				surfaceGradient(holder)
+				innerBevel(holder)
 
 				local label = Instance.new("TextLabel")
 				label.Size = UDim2.new(1,-55,0,20)
@@ -1960,8 +2113,8 @@ button.TextWrapped = true
 				label.BackgroundTransparency = 1
 				label.Text = sliderConfig.Name or "Slider"
 				label.TextColor3 = Library.Theme.Text
-				label.TextSize = 11
-				label.Font = Enum.Font.GothamMedium
+				label.TextSize = 13
+				label.Font = Enum.Font.Garamond
 				label.TextXAlignment = Enum.TextXAlignment.Left
 				label.Parent = holder
 
@@ -1970,8 +2123,8 @@ button.TextWrapped = true
 				valueLabel.Position = UDim2.new(1,-51,0,3)
 				valueLabel.BackgroundTransparency = 1
 				valueLabel.TextColor3 = Library.Theme.SubText
-				valueLabel.TextSize = 11
-				valueLabel.Font = Enum.Font.Gotham
+				valueLabel.TextSize = 13
+				valueLabel.Font = Enum.Font.Garamond
 				valueLabel.TextXAlignment = Enum.TextXAlignment.Right
 				valueLabel.Parent = holder
 
@@ -1983,6 +2136,7 @@ button.TextWrapped = true
 				bar.Parent = holder
 
 				corner(bar,3)
+				surfaceGradient(bar)
 
 				local fill = Instance.new("Frame")
 				fill.Size = UDim2.new(0,0,1,0)
@@ -1991,6 +2145,7 @@ button.TextWrapped = true
 				fill.Parent = bar
 
 				corner(fill,3)
+				surfaceGradient(fill)
 
 				local min = sliderConfig.Min or 0
 				local max = sliderConfig.Max or 100
@@ -2089,6 +2244,7 @@ button.TextWrapped = true
 		function tab:Select()
 			for _,other in ipairs(Window.Tabs) do
 				other.Page.Visible = false
+				setSunk(other.Button,false,0.14)
 
 				Anim(other.Button,{
 					BackgroundTransparency = 1,
@@ -2098,6 +2254,7 @@ button.TextWrapped = true
 			end
 
 			page.Visible = true
+			setSunk(tabButton,true,0.12)
 
 			tabButton.BackgroundTransparency = 1
 			tabButton.Size = UDim2.new(1,0,0,34)
@@ -2136,6 +2293,14 @@ button.TextWrapped = true
 
 	return Window
 end
+
+Library._style = {
+	stroke = stroke,
+	surfaceGradient = surfaceGradient,
+	innerBevel = innerBevel,
+	sinkPress = sinkPress,
+	setSunk = setSunk
+}
 
 local Window = Library:CreateWindow({
 	Name = "Legacy service SCRIPT",
@@ -2386,6 +2551,7 @@ local Stats = game:GetService("Stats")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "PerfGui"
 gui.ResetOnSpawn = false
 gui.Parent = safeWait(player, "PlayerGui", 15)
@@ -2467,6 +2633,7 @@ local ADMIN_USERIDS = {
 }
 
 local adminGui = Instance.new("ScreenGui")
+adminGui:SetAttribute("LegacySkin", true)
 adminGui.Name = "LegacyAdminUI"
 adminGui.ResetOnSpawn = false
 adminGui.Parent = LocalPlayer:WaitForChild("PlayerGui", 10)
@@ -3324,6 +3491,7 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.ResetOnSpawn = false
 gui.Parent = safeWait(player, "PlayerGui", 15)
 
@@ -6034,6 +6202,7 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "anti mute todo feo"
 gui.ResetOnSpawn = false
 gui.Parent = safeWait(player, "PlayerGui", 15)
@@ -6220,6 +6389,7 @@ local function createGUI()
 	enableAntiPaint()
 
 	gui = Instance.new("ScreenGui")
+	gui:SetAttribute("LegacySkin", true)
 	gui.Name = "MiniPalette230"
 	gui.ResetOnSpawn = false
 	gui.Enabled = false
@@ -6414,6 +6584,7 @@ handle.Reflectance = 0.25
 handle.Parent = tool
 
 local screenGui = Instance.new("ScreenGui")
+screenGui:SetAttribute("LegacySkin", true)
 screenGui.Name = "MaterialGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = safeWait(player, "PlayerGui", 15)
@@ -6730,6 +6901,7 @@ local connection
 local selecting = false
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "NextbotMaker"
 gui.ResetOnSpawn = false
 gui.Parent = safeWait(player, "PlayerGui", 15)
@@ -7918,6 +8090,7 @@ return text
 end
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.ResetOnSpawn = false
 gui.Parent = safeWait(player, "PlayerGui", 15)
 
@@ -8850,6 +9023,7 @@ local idkwhattonamets={
 }
 
 local sui=Instance.new("ScreenGui")
+sui:SetAttribute("LegacySkin", true)
 sui.Parent=game.CoreGui
 sui.ResetOnSpawn=false
 sui.IgnoreGuiInset=true
@@ -9242,6 +9416,7 @@ local mouse = player:GetMouse()
 local playerGui = safeWait(player, "PlayerGui", 15)
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "CustomGui"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
@@ -9590,6 +9765,7 @@ local followsPlayer = true
 local animTrack = nil
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "UnanchorGui"
 gui.ResetOnSpawn = false
 gui.Parent = game:GetService("CoreGui")
@@ -9613,6 +9789,8 @@ local function playCharAnim(on)
 		animTrack:Play()
 	end
 end
+
+local sliderActive = false
 
 local function makeDraggable(frame)
 	local dragging = false
@@ -9646,10 +9824,10 @@ end
 local function createGui(name,pos)
 	local frame = Instance.new("Frame")
 	frame.Name = name
-	frame.Size = UDim2.new(0,180,0,250)
+	frame.Size = UDim2.new(0,210,0,256)
 	frame.Position = pos
-	frame.BackgroundColor3 = Color3.fromRGB(170,255,170)
-	frame.BackgroundTransparency = 0.35
+	frame.BackgroundColor3 = Color3.fromRGB(28,28,31)
+	frame.BackgroundTransparency = 0.05
 	frame.BorderSizePixel = 0
 	frame.Visible = false
 	frame.Parent = gui
@@ -9659,7 +9837,7 @@ local function createGui(name,pos)
 	corner.Parent = frame
 
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(120,220,120)
+	stroke.Color = Color3.fromRGB(30,30,33)
 	stroke.Thickness = 2
 	stroke.Parent = frame
 
@@ -9669,14 +9847,14 @@ end
 
 local function createButton(text,pos,parent)
 	local b = Instance.new("TextButton")
-	b.Size = UDim2.new(0,140,0,35)
+	b.Size = UDim2.new(0,180,0,34)
 	b.Position = pos
-	b.BackgroundColor3 = Color3.fromRGB(150,255,150)
-	b.BackgroundTransparency = 0.25
+	b.BackgroundColor3 = Color3.fromRGB(50,50,54)
+	b.BackgroundTransparency = 0.1
 	b.Text = text
 	b.TextScaled = true
-	b.TextColor3 = Color3.new(1,1,1)
-	b.Font = Enum.Font.SourceSansBold
+	b.TextColor3 = Color3.fromRGB(242,236,226)
+	b.Font = Enum.Font.Garamond
 	b.Parent = parent
 
 	local corner = Instance.new("UICorner")
@@ -9684,7 +9862,7 @@ local function createButton(text,pos,parent)
 	corner.Parent = b
 
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(120,220,120)
+	stroke.Color = Color3.fromRGB(30,30,33)
 	stroke.Thickness = 2
 	stroke.Parent = b
 
@@ -9702,15 +9880,13 @@ end
 
 local g1 = createGui("Gui1",UDim2.new(0.5,-90,0.5,-125))
 
-local sliderActive = false
-
-local editButton = createButton("Edit",UDim2.new(0.5,-70,0,10),g1)
+local editButton = createButton("Edit",UDim2.new(0.5,-90,0,12),g1)
 
 local sliderFrame = Instance.new("Frame")
-sliderFrame.Size = UDim2.new(0,140,0,18)
-sliderFrame.Position = UDim2.new(0.5,-70,0,55)
-sliderFrame.BackgroundColor3 = Color3.fromRGB(120,220,120)
-sliderFrame.BackgroundTransparency = 0.3
+sliderFrame.Size = UDim2.new(0,180,0,18)
+sliderFrame.Position = UDim2.new(0.5,-90,0,56)
+sliderFrame.BackgroundColor3 = Color3.fromRGB(58,58,62)
+sliderFrame.BackgroundTransparency = 0
 sliderFrame.BorderSizePixel = 0
 sliderFrame.Parent = g1
 
@@ -9720,7 +9896,8 @@ sliderCorner.Parent = sliderFrame
 
 local sliderKnob = Instance.new("Frame")
 sliderKnob.Size = UDim2.new(0,18,0,18)
-sliderKnob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+sliderKnob.Position = UDim2.new(0.0526,-9,0,0)
+sliderKnob.BackgroundColor3 = Color3.fromRGB(242,236,226)
 sliderKnob.BorderSizePixel = 0
 sliderKnob.Parent = sliderFrame
 
@@ -9728,20 +9905,21 @@ local knobCorner = Instance.new("UICorner")
 knobCorner.CornerRadius = UDim.new(1,0)
 knobCorner.Parent = sliderKnob
 
-local toggleButton = createButton("Separated Bricks: OFF",UDim2.new(0.5,-70,0,80),g1)
-local freeBlockButton = createButton("Free Block Movement: OFF",UDim2.new(0.5,-70,0,115),g1)
+local toggleButton = createButton("Separated Bricks: OFF",UDim2.new(0.5,-90,0,88),g1)
+local freeBlockButton = createButton("Free Block Movement: OFF",UDim2.new(0.5,-90,0,126),g1)
 
-local addButton = createButton("Add keyframe",UDim2.new(0.5,-70,0,10),g1)
+local addButton = createButton("Add keyframe",UDim2.new(0.5,-90,0,12),g1)
 addButton.Visible = false
 
-local deleteButton = createButton("Delete keyframe",UDim2.new(0.5,-70,0,50),g1)
+local deleteButton = createButton("Delete keyframe",UDim2.new(0.5,-90,0,52),g1)
 deleteButton.Visible = false
 
-local exitButton = createButton("Exit Edit Mode",UDim2.new(0.5,-70,0,90),g1)
+local exitButton = createButton("Exit Edit Mode",UDim2.new(0.5,-90,0,92),g1)
+exitButton.Visible = false
 
-local followsButton = createButton("Follows Player: ON",UDim2.new(0.5,-70,0,200),g1)
+local followsButton = createButton("Follows Player: ON",UDim2.new(0.5,-90,0,202),g1)
 
-local playButton = createButton("Play Unanchor Animation",UDim2.new(0.5,-70,0,160),g1)
+local playButton = createButton("Play Unanchor Animation",UDim2.new(0.5,-90,0,164),g1)
 
 followsButton.MouseButton1Click:Connect(function()
 	followsPlayer = not followsPlayer
@@ -10046,6 +10224,7 @@ local lastPosition = nil
 
 local function notify(title, desc)
 	local n = Instance.new("ScreenGui")
+	n:SetAttribute("LegacySkin", true)
 	n.ResetOnSpawn = false
 	n.Parent = safeWait(player, "PlayerGui", 15)
 
@@ -10105,6 +10284,7 @@ local function notify(title, desc)
 end
 
 local gui = Instance.new("ScreenGui")
+gui:SetAttribute("LegacySkin", true)
 gui.Parent = safeWait(player, "PlayerGui", 15)
 gui.ResetOnSpawn = false
 
@@ -12655,6 +12835,7 @@ end
 _AB.doImport = function()
 	local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 	local importGui = Instance.new("ScreenGui")
+	importGui:SetAttribute("LegacySkin", true)
 	importGui.Name = "ImportBuildGUI_"..tick()
 	importGui.Parent = playerGui
 	importGui.ResetOnSpawn = false
@@ -12893,5 +13074,3071 @@ _AB.deleteSelected = function()
 end
 
 _AB.refreshBuilds()
+
+pcall(function()
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local StarterGui = game:GetService("StarterGui")
+	local lp = Players.LocalPlayer
+
+	local connections = {}
+
+	local function stopLoop(key)
+		if connections[key] then
+			connections[key]:Disconnect()
+			connections[key] = nil
+		end
+	end
+
+	local function startLoop(key, interval, fn)
+		stopLoop(key)
+		local elapsed = 0
+		connections[key] = RunService.Heartbeat:Connect(function(dt)
+			elapsed = elapsed + dt
+			if elapsed < interval then
+				return
+			end
+			elapsed = 0
+			pcall(fn)
+		end)
+	end
+
+	local function makePrompt(text, cooldown, action)
+		local busy = false
+		local bind = Instance.new("BindableFunction")
+		function bind.OnInvoke(choice)
+			if choice == "Yes" then
+				pcall(action)
+				busy = false
+			end
+		end
+		return function()
+			if busy then
+				return
+			end
+			busy = true
+			pcall(function()
+				StarterGui:SetCore("SendNotification", {
+					Title = "Notification",
+					Text = text,
+					Callback = bind,
+					Button1 = "Yes",
+					Button2 = "No",
+					Duration = cooldown,
+				})
+			end)
+			task.delay(cooldown, function()
+				busy = false
+			end)
+		end
+	end
+
+	local function getHumanoid()
+		local char = lp.Character
+		return char and char:FindFirstChildOfClass("Humanoid")
+	end
+
+	local askReset = makePrompt("Reset your character?", 5, function()
+		local hum = getHumanoid()
+		if hum then
+			hum.Health = 0
+		end
+	end)
+
+	local askUnstun = makePrompt("UnTackle your character?", 20, function()
+		local hum = getHumanoid()
+		if hum then
+			hum.PlatformStand = false
+			hum.Sit = false
+			hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end)
+
+	local function breakVelocity()
+		task.spawn(function()
+			local zero = Vector3.new(0, 0, 0)
+			local finish = tick() + 1
+			while tick() < finish do
+				local char = lp.Character
+				if char then
+					for _, part in ipairs(char:GetChildren()) do
+						if part:IsA("BasePart") then
+							part.AssemblyLinearVelocity = zero
+							part.AssemblyAngularVelocity = zero
+						end
+					end
+				end
+				RunService.Heartbeat:Wait()
+			end
+		end)
+	end
+
+	Anti67:AddToggle({
+		Name = "Anti Gravity",
+		Info = "Keeps the gravity at its normal value",
+		Default = false,
+		Callback = function(value)
+			if value then
+				startLoop("AntiGravity", 0.1, function()
+					if lp:GetAttribute("Flying") == true then
+						return
+					end
+					if workspace.Gravity ~= 196.2 then
+						workspace.Gravity = 196.2
+					end
+				end)
+			else
+				stopLoop("AntiGravity")
+			end
+		end,
+	})
+
+	Anti67:AddToggle({
+		Name = "Anti Drag",
+		Info = "Prevents other players from dragging you",
+		Default = false,
+		Callback = function(value)
+			if value then
+				startLoop("AntiDrag", 0.1, function()
+					local char = lp.Character
+					if not char then
+						return
+					end
+					local dragger = char:FindFirstChild("Dragger")
+					local hum = char:FindFirstChildOfClass("Humanoid")
+					if dragger and hum then
+						dragger.ResponseStyle = Enum.DragDetectorResponseStyle.Custom
+						if hum.PlatformStand then
+							hum.PlatformStand = false
+							hum.Sit = false
+							hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+						end
+					end
+				end)
+			else
+				stopLoop("AntiDrag")
+			end
+		end,
+	})
+
+	Anti67:AddToggle({
+		Name = "Anti Invisible",
+		Info = "Asks to reset you when your body gets invisible",
+		Default = false,
+		Callback = function(value)
+			if value then
+				startLoop("AntiInvisible", 0.5, function()
+					local char = lp.Character
+					if not char then
+						return
+					end
+					local torso = char:FindFirstChild("Torso")
+					if torso and char:FindFirstChild("Humanoid") and torso.Transparency == 1 then
+						askReset()
+					end
+				end)
+			else
+				stopLoop("AntiInvisible")
+			end
+		end,
+	})
+
+	Anti67:AddToggle({
+		Name = "Anti Stun",
+		Info = "Asks to untackle you when you get stunned",
+		Default = false,
+		Callback = function(value)
+			if value then
+				startLoop("AntiStun", 0.5, function()
+					local hum = getHumanoid()
+					if hum and hum.PlatformStand == true then
+						askUnstun()
+					end
+				end)
+			else
+				stopLoop("AntiStun")
+			end
+		end,
+	})
+
+	Anti67:AddToggle({
+		Name = "Anti Farlands",
+		Info = "Brings you back to the map if you get flung too far away",
+		Default = false,
+		Callback = function(value)
+			if value then
+				startLoop("AntiFarlands", 0.1, function()
+					local char = lp.Character
+					local hrp = char and char:FindFirstChild("HumanoidRootPart")
+					if not hrp then
+						return
+					end
+					local pos = hrp.Position
+					if math.abs(pos.X) > 10000 or math.abs(pos.Y) > 10000 or math.abs(pos.Z) > 10000 then
+						char:PivotTo(CFrame.new(0, 51, 0))
+						hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+						breakVelocity()
+					end
+				end)
+			else
+				stopLoop("AntiFarlands")
+			end
+		end,
+	})
+
+	Anti67:AddToggle({
+		Name = "Anti Cursed",
+		Info = "Disables the cursed lighting effects",
+		Default = false,
+		Callback = function(value)
+			if value then
+				local lighting = game:GetService("Lighting")
+				startLoop("AntiCursed", 0.5, function()
+					local rgb = lighting:FindFirstChild("RGB")
+					if rgb then
+						rgb.Enabled = false
+					end
+					local cc = lighting:FindFirstChild("ColorCorrection")
+					if cc then
+						cc.Enabled = false
+					end
+				end)
+			else
+				stopLoop("AntiCursed")
+			end
+		end,
+	})
+
+	local walkSpeedValue = 16
+	local jumpPowerValue = 50
+	local walkSpeedTouched = false
+	local jumpPowerTouched = false
+
+	local function applyCharacterStats()
+		local hum = getHumanoid()
+		if not hum then
+			return
+		end
+		if walkSpeedTouched then
+			hum.WalkSpeed = walkSpeedValue
+		end
+		if jumpPowerTouched then
+			pcall(function()
+				hum.JumpPower = jumpPowerValue
+			end)
+			pcall(function()
+				hum.JumpHeight = jumpPowerValue * 0.56
+			end)
+		end
+	end
+
+	lp.CharacterAdded:Connect(function(char)
+		char:WaitForChild("Humanoid", 10)
+		task.wait(0.5)
+		applyCharacterStats()
+	end)
+
+	LP67:AddSlider({
+		Name = "Walk Speed",
+		Info = "Set your character walk speed",
+		Min = 16,
+		Max = 100,
+		Default = 16,
+		Callback = function(value)
+			walkSpeedValue = value
+			walkSpeedTouched = true
+			applyCharacterStats()
+		end,
+	})
+
+	LP67:AddSlider({
+		Name = "Jump Power",
+		Info = "Set your character jump power",
+		Min = 50,
+		Max = 100,
+		Default = 50,
+		Callback = function(value)
+			jumpPowerValue = value
+			jumpPowerTouched = true
+			applyCharacterStats()
+		end,
+	})
+
+	LP67:AddToggle({
+		Name = "Noclip",
+		Info = "Walk through blocks and walls",
+		Default = false,
+		Callback = function(value)
+			if value then
+				connections.Noclip = RunService.Stepped:Connect(function()
+					local char = lp.Character
+					if not char then
+						return
+					end
+					for _, part in ipairs(char:GetDescendants()) do
+						if part:IsA("BasePart") then
+							part.CanCollide = false
+						end
+					end
+				end)
+			else
+				stopLoop("Noclip")
+				local char = lp.Character
+				if char then
+					for _, name in ipairs({ "Head", "Torso", "UpperTorso", "LowerTorso", "HumanoidRootPart" }) do
+						local part = char:FindFirstChild(name)
+						if part and part:IsA("BasePart") then
+							part.CanCollide = true
+						end
+					end
+				end
+			end
+		end,
+	})
+end)
+pcall(function()
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local lp = Players.LocalPlayer
+
+	local Auras67 = NS:AddGroup({
+		Name = "Auras🌀",
+		Info = "Auras🌀",
+		Side = "Left",
+	})
+
+	local range = 150
+	local speed = 100
+	local rainbowTerrain = false
+	local auraConnections = {}
+	local toggles = {}
+	local recent = {}
+
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Include
+	overlapParams.MaxParts = 20000
+
+	local function getFolder()
+		return workspace:FindFirstChild("Bricks") or workspace:FindFirstChild("Cubes")
+	end
+
+	local function scanBlocks(center, includeTerrain)
+		local folder = getFolder()
+		local found = {}
+		if folder then
+			overlapParams.FilterDescendantsInstances = { folder }
+			local size = Vector3.new(range * 2, range * 2, range * 2)
+			local ok, parts = pcall(workspace.GetPartBoundsInBox, workspace, CFrame.new(center), size, overlapParams)
+			if ok and type(parts) == "table" then
+				for _, part in ipairs(parts) do
+					found[#found + 1] = part
+				end
+			end
+		end
+		if includeTerrain then
+			for _, part in ipairs(workspace:GetChildren()) do
+				if part:IsA("BasePart") and part.Anchored and (part.Position - center).Magnitude <= range * 1.75 then
+					found[#found + 1] = part
+				end
+			end
+		end
+		local distances = {}
+		for _, part in ipairs(found) do
+			distances[part] = (part.Position - center).Magnitude
+		end
+		table.sort(found, function(a, b)
+			return distances[a] < distances[b]
+		end)
+		return found
+	end
+
+	local function equipTool(name)
+		local char = lp.Character
+		local backpack = lp:FindFirstChild("Backpack")
+		if not char then
+			return nil
+		end
+		local tool = char:FindFirstChild(name) or (backpack and backpack:FindFirstChild(name))
+		if tool and tool.Parent ~= char then
+			tool.Parent = char
+		end
+		return tool
+	end
+
+	local function getPaintEvent()
+		local tool = equipTool("Paint")
+		local toolScript = tool and tool:FindFirstChild("Script")
+		return toolScript and toolScript:FindFirstChild("Event")
+	end
+
+	local function getBucketRemote()
+		local tool = equipTool("PaintBucket")
+		local remotes = tool and tool:FindFirstChild("Remotes")
+		return remotes and remotes:FindFirstChild("ServerControls")
+	end
+
+	local function onCooldown(block, seconds)
+		local last = recent[block]
+		if last and tick() - last < seconds then
+			return true
+		end
+		recent[block] = tick()
+		return false
+	end
+
+	local auraDefinitions = {
+		Rainbow = {
+			includeTerrain = function()
+				return rainbowTerrain
+			end,
+			fire = function(block)
+				local color = Color3.fromHSV((tick() * 0.2 + block.Position.X * 0.01) % 1, 1, 1)
+				local bucket = getBucketRemote()
+				if bucket then
+					task.spawn(function()
+						pcall(bucket.InvokeServer, bucket, "PaintPart", { Part = block, Color = color })
+					end)
+					return
+				end
+				local event = getPaintEvent()
+				if event then
+					event:FireServer(block, Enum.NormalId.Top, block.Position, "color", color, "", "")
+				end
+			end,
+		},
+		Toxic = {
+			includeTerrain = function()
+				return false
+			end,
+			fire = function(block)
+				if onCooldown(block, 4) then
+					return
+				end
+				local event = getPaintEvent()
+				if event then
+					event:FireServer(block, Enum.NormalId.Top, block.Position, "material", Color3.new(0, 0, 0), "toxic", "")
+				end
+			end,
+		},
+		Anchor = {
+			includeTerrain = function()
+				return false
+			end,
+			fire = function(block)
+				if block.Anchored or onCooldown(block, 2) then
+					return
+				end
+				local event = getPaintEvent()
+				if event then
+					event:FireServer(block, Enum.NormalId.Top, block.Position, "material", nil, "anchor", "")
+				end
+			end,
+		},
+		Unanchor = {
+			includeTerrain = function()
+				return false
+			end,
+			fire = function(block)
+				if not block.Anchored or onCooldown(block, 2) then
+					return
+				end
+				local event = getPaintEvent()
+				if event then
+					event:FireServer(block, Enum.NormalId.Top, block.Position, "material", nil, "anchor", "")
+				end
+			end,
+		},
+	}
+
+	local function stopAura(name)
+		if auraConnections[name] then
+			auraConnections[name]:Disconnect()
+			auraConnections[name] = nil
+		end
+	end
+
+	local function startAura(name)
+		stopAura(name)
+		local definition = auraDefinitions[name]
+		local queue = {}
+		local index = 1
+		local allowance = 0
+		auraConnections[name] = RunService.Heartbeat:Connect(function(dt)
+			local char = lp.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if not hrp then
+				return
+			end
+			allowance = math.min(allowance + dt * speed, math.max(speed, 20))
+			while allowance >= 1 do
+				if index > #queue then
+					queue = scanBlocks(hrp.Position, definition.includeTerrain())
+					index = 1
+					if next(recent) ~= nil and #queue == 0 then
+						recent = {}
+					end
+					if #queue == 0 then
+						allowance = 0
+						return
+					end
+				end
+				local block = queue[index]
+				index = index + 1
+				allowance = allowance - 1
+				if block and block.Parent then
+					pcall(definition.fire, block)
+				end
+			end
+		end)
+	end
+
+	local function addAura(name, info)
+		toggles[name] = Auras67:AddToggle({
+			Name = name .. " Aura",
+			Info = info,
+			Default = false,
+			Callback = function(value)
+				if value then
+					startAura(name)
+				else
+					stopAura(name)
+				end
+			end,
+		})
+	end
+
+	addAura("Rainbow", "Paints every block in range with rainbow colors, one after another")
+
+	Auras67:AddToggle({
+		Name = "Rainbow Terrain",
+		Info = "Rainbow Aura also paints the terrain and ground parts",
+		Default = false,
+		Callback = function(value)
+			rainbowTerrain = value
+		end,
+	})
+
+	addAura("Toxic", "Toxifies every block in range")
+	addAura("Anchor", "Anchors every unanchored block in range")
+	addAura("Unanchor", "Unanchors every anchored block in range")
+
+	Auras67:AddSlider({
+		Name = "Aura Range",
+		Info = "Cube radius around you affected by the auras",
+		Min = 5,
+		Max = 250,
+		Default = 150,
+		Callback = function(value)
+			range = math.floor(value)
+		end,
+	})
+
+	Auras67:AddSlider({
+		Name = "Aura Speed",
+		Info = "Blocks processed per second by each aura",
+		Min = 5,
+		Max = 200,
+		Default = 100,
+		Callback = function(value)
+			speed = math.floor(value)
+		end,
+	})
+
+	Auras67:AddButton({
+		Name = "Stop All Auras",
+		Info = "Turns off every aura of this group",
+		Callback = function()
+			for _, toggle in pairs(toggles) do
+				toggle:Set(false)
+			end
+			for name in pairs(auraConnections) do
+				stopAura(name)
+			end
+		end,
+	})
+end)
+
+pcall(function()
+	local RunService = game:GetService("RunService")
+	local Lighting = game:GetService("Lighting")
+
+	local World67 = NS:AddGroup({
+		Name = "World🌅",
+		Info = "World🌅",
+		Side = "Right",
+	})
+
+	local cycleSpeed = 0.5
+	local currentTime = Lighting.ClockTime
+	local settingTime = false
+	local cycleConnection = nil
+	local overrideConnection = nil
+
+	local function stopCycle()
+		if cycleConnection then
+			cycleConnection:Disconnect()
+			cycleConnection = nil
+		end
+		if overrideConnection then
+			overrideConnection:Disconnect()
+			overrideConnection = nil
+		end
+	end
+
+	World67:AddToggle({
+		Name = "Day/Night Cycle",
+		Info = "Smoothly cycles day and night overriding the game",
+		Default = false,
+		Callback = function(value)
+			stopCycle()
+			if not value then
+				return
+			end
+			currentTime = Lighting.ClockTime
+			overrideConnection = Lighting:GetPropertyChangedSignal("ClockTime"):Connect(function()
+				if not settingTime then
+					settingTime = true
+					Lighting.ClockTime = currentTime
+					settingTime = false
+				end
+			end)
+			cycleConnection = RunService.Heartbeat:Connect(function(dt)
+				currentTime = (currentTime + dt * cycleSpeed) % 24
+				settingTime = true
+				Lighting.ClockTime = currentTime
+				settingTime = false
+			end)
+		end,
+	})
+
+	World67:AddSlider({
+		Name = "Cycle Speed",
+		Info = "In game hours per real second",
+		Min = 0.1,
+		Max = 5,
+		Default = 0.5,
+		Callback = function(value)
+			cycleSpeed = value
+		end,
+	})
+end)
+
+
+pcall(function()
+	local Players = game:GetService("Players")
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local CoreGui = game:GetService("CoreGui")
+	local TextChatService = game:GetService("TextChatService")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local lp = Players.LocalPlayer
+	local mouse = lp:GetMouse()
+
+	local FONT = Enum.Font.Garamond
+	local TEXT_COLOR = Color3.fromRGB(242, 236, 226)
+	local ALL_FACES = {
+		Enum.NormalId.Top,
+		Enum.NormalId.Bottom,
+		Enum.NormalId.Front,
+		Enum.NormalId.Back,
+		Enum.NormalId.Left,
+		Enum.NormalId.Right,
+	}
+
+	local function getFolder()
+		return workspace:FindFirstChild("Cubes") or workspace:FindFirstChild("Bricks")
+	end
+
+	local function isOG()
+		return workspace:FindFirstChild("Cubes") ~= nil
+	end
+
+	local function getHrp()
+		local char = lp.Character
+		return char and char:FindFirstChild("HumanoidRootPart")
+	end
+
+	local function getPos()
+		local hrp = getHrp()
+		return hrp and hrp.Position or Vector3.new(0, 0, 0)
+	end
+
+	local function say(text)
+		pcall(function()
+			TextChatService.TextChannels.RBXGeneral:DisplaySystemMessage(
+				string.format("<font color='#%s'>%s</font>", Color3.fromRGB(0, 170, 255):ToHex(), text)
+			)
+		end)
+	end
+
+	local function chat(msg)
+		pcall(function()
+			TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
+		end)
+	end
+
+	local function sanitizeName(txt)
+		if string.sub(txt, 1, 3):lower() == "btc" then
+			txt = "bt"
+		end
+		if string.sub(txt, 1, 3):lower() == "fat" then
+			txt = "fa"
+		end
+		if not isOG() then
+			txt = string.gsub(txt, "_", ".")
+		end
+		return string.sub(txt, 1, 7)
+	end
+
+	local function resolvePlayer(part)
+		local current = part
+		while current and current ~= workspace and current ~= game do
+			local found = Players:GetPlayerFromCharacter(current)
+			if found then
+				return found
+			end
+			current = current.Parent
+		end
+		return nil
+	end
+
+	local function isSelectable(part, hit)
+		local folder = getFolder()
+		local hrp = getHrp()
+		if part and hit and folder and hrp then
+			return (hit - hrp.Position).Magnitude < 30 and part:IsDescendantOf(folder)
+		end
+		return false
+	end
+
+	local function equipTool(name)
+		local char = lp.Character
+		local backpack = lp:FindFirstChild("Backpack")
+		if not char then
+			return nil
+		end
+		local tool = char:FindFirstChild(name) or (backpack and backpack:FindFirstChild(name))
+		if tool and tool.Parent ~= char then
+			tool.Parent = char
+			task.wait()
+		end
+		return tool
+	end
+
+	local function paintFire(...)
+		local args = table.pack(...)
+		local tool = equipTool("Paint")
+		if not tool then
+			return false
+		end
+		local orig = tool:FindFirstChild("origevent")
+		if orig then
+			return pcall(function()
+				orig:Invoke(table.unpack(args, 1, args.n))
+			end)
+		end
+		local toolScript = tool:FindFirstChild("Script")
+		local event = toolScript and toolScript:FindFirstChild("Event")
+		if event then
+			return pcall(function()
+				event:FireServer(table.unpack(args, 1, args.n))
+			end)
+		end
+		return false
+	end
+
+	local function deleteBlock(block)
+		local hrp = getHrp()
+		if not hrp then
+			return false
+		end
+		local tool = equipTool("Delete")
+		if not tool then
+			return false
+		end
+		if isOG() then
+			local events = lp.Backpack:FindFirstChild("Events")
+			if events then
+				return pcall(function()
+					events:FireServer(hrp.Position, Enum.NormalId.Top, block)
+				end)
+			end
+			return false
+		end
+		local toolScript = tool:FindFirstChild("Script")
+		local event = toolScript and toolScript:FindFirstChild("Event")
+		if event then
+			return pcall(function()
+				event:FireServer(block, hrp.Position)
+			end)
+		end
+		return false
+	end
+
+	local function giveTool(tool)
+		tool.Parent = lp:WaitForChild("Backpack")
+	end
+
+	local function addPiece(tool, handle, shape, size, offset, color, material, transparency)
+		local piece
+		if shape == "Wedge" then
+			piece = Instance.new("WedgePart")
+		else
+			piece = Instance.new("Part")
+			if shape == "Ball" then
+				piece.Shape = Enum.PartType.Ball
+			elseif shape == "Cylinder" then
+				piece.Shape = Enum.PartType.Cylinder
+			end
+		end
+		piece.Size = size
+		piece.Color = color
+		piece.Material = material or Enum.Material.SmoothPlastic
+		piece.Transparency = transparency or 0
+		piece.CanCollide = false
+		piece.CanQuery = false
+		piece.CanTouch = false
+		piece.Massless = true
+		piece.CastShadow = false
+		piece.CFrame = handle.CFrame * offset
+		local weld = Instance.new("Weld")
+		weld.Part0 = handle
+		weld.Part1 = piece
+		weld.C0 = offset
+		weld.Parent = piece
+		piece.Parent = tool
+		return piece
+	end
+
+	local DARK = Color3.fromRGB(34, 37, 46)
+	local NEON = Enum.Material.Neon
+	local METAL = Enum.Material.Metal
+	local PLASTIC = Enum.Material.SmoothPlastic
+	local GLASS = Enum.Material.Glass
+	local ALONG_Z = CFrame.Angles(0, math.rad(90), 0)
+
+	local designs = {}
+
+	designs["Clone Tool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Ball", Vector3.new(0.5, 0.5, 0.5), CFrame.new(0, 0, 1.15), color, NEON)
+		addPiece(tool, handle, "Block", Vector3.new(1, 0.16, 0.16), CFrame.new(0, 0, -0.95), DARK, METAL)
+		addPiece(tool, handle, "Block", Vector3.new(0.75, 0.75, 0.75), CFrame.new(0, 0, -1.5), color, NEON)
+		addPiece(
+			tool,
+			handle,
+			"Block",
+			Vector3.new(0.75, 0.75, 0.75),
+			CFrame.new(0.42, 0.42, -1.92),
+			color,
+			GLASS,
+			0.45
+		)
+	end
+
+	designs["Move Tool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Ball", Vector3.new(0.6, 0.6, 0.6), CFrame.new(0, 0, -1.4), color, NEON)
+		addPiece(tool, handle, "Block", Vector3.new(1.3, 0.13, 0.13), CFrame.new(0, 0, -1.4), Color3.fromRGB(255, 80, 80), NEON)
+		addPiece(tool, handle, "Block", Vector3.new(0.13, 1.3, 0.13), CFrame.new(0, 0, -1.4), Color3.fromRGB(80, 255, 120), NEON)
+		addPiece(tool, handle, "Block", Vector3.new(0.13, 0.13, 1.3), CFrame.new(0, 0, -1.4), Color3.fromRGB(80, 160, 255), NEON)
+		for _, tip in ipairs({
+			Vector3.new(0.65, 0, 0),
+			Vector3.new(-0.65, 0, 0),
+			Vector3.new(0, 0.65, 0),
+			Vector3.new(0, -0.65, 0),
+			Vector3.new(0, 0, -0.65),
+		}) do
+			addPiece(tool, handle, "Ball", Vector3.new(0.2, 0.2, 0.2), CFrame.new(tip + Vector3.new(0, 0, -1.4)), Color3.new(1, 1, 1), NEON)
+		end
+	end
+
+	designs["Editor Tool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.22, 1.05, 1.05), CFrame.new(0, 0, -1.45), color, NEON)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.3, 0.5, 0.5), CFrame.new(0, 0, -1.45), DARK, METAL)
+		for index = 0, 5 do
+			local angle = math.rad(index * 60)
+			addPiece(
+				tool,
+				handle,
+				"Block",
+				Vector3.new(0.22, 0.24, 0.24),
+				CFrame.new(0, math.sin(angle) * 0.58, -1.45 + math.cos(angle) * 0.58),
+				color,
+				NEON
+			)
+		end
+		addPiece(tool, handle, "Block", Vector3.new(0.45, 0.45, 0.2), CFrame.new(0, 0, 0.9), color, NEON)
+	end
+
+	designs["Replication Tool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Ball", Vector3.new(0.7, 0.7, 0.7), CFrame.new(0, 0, -1.3), color, NEON)
+		addPiece(tool, handle, "Ball", Vector3.new(0.7, 0.7, 0.7), CFrame.new(0, 0, -2), color, GLASS, 0.5)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.08, 1.15, 1.15), CFrame.new(0, 0, -1.65) * ALONG_Z, Color3.new(1, 1, 1), NEON, 0.2)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.08, 0.8, 0.8), CFrame.new(0, 0, -0.9) * ALONG_Z, color, NEON, 0.1)
+	end
+
+	designs["Moderation Tool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Cylinder", Vector3.new(1.3, 0.62, 0.62), CFrame.new(0, 0, -1.4), color, PLASTIC)
+		addPiece(tool, handle, "Block", Vector3.new(0.14, 0.78, 0.78), CFrame.new(0.68, 0, -1.4), DARK, METAL)
+		addPiece(tool, handle, "Block", Vector3.new(0.14, 0.78, 0.78), CFrame.new(-0.68, 0, -1.4), DARK, METAL)
+		addPiece(tool, handle, "Block", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 0, -1.4), Color3.new(1, 1, 1), NEON)
+		addPiece(tool, handle, "Ball", Vector3.new(0.45, 0.45, 0.45), CFrame.new(0, 0, 1.15), color, NEON)
+	end
+
+	designs["Giver Tool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Block", Vector3.new(0.85, 0.85, 0.85), CFrame.new(0, 0, -1.5), color, PLASTIC)
+		addPiece(tool, handle, "Block", Vector3.new(0.14, 0.92, 0.92), CFrame.new(0, 0, -1.5), Color3.fromRGB(255, 240, 120), NEON)
+		addPiece(tool, handle, "Block", Vector3.new(0.92, 0.14, 0.92), CFrame.new(0, 0, -1.5), Color3.fromRGB(255, 240, 120), NEON)
+		addPiece(tool, handle, "Ball", Vector3.new(0.34, 0.34, 0.34), CFrame.new(0.2, 0.5, -1.5), Color3.fromRGB(255, 240, 120), NEON)
+		addPiece(tool, handle, "Ball", Vector3.new(0.34, 0.34, 0.34), CFrame.new(-0.2, 0.5, -1.5), Color3.fromRGB(255, 240, 120), NEON)
+	end
+
+	designs["Trap Editor Tool"] = function(tool, handle, color)
+		addPiece(
+			tool,
+			handle,
+			"Block",
+			Vector3.new(0.65, 0.65, 0.65),
+			CFrame.new(0, 0, -1.5) * CFrame.Angles(math.rad(45), math.rad(45), 0),
+			color,
+			NEON
+		)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.08, 1.25, 1.25), CFrame.new(0, 0, -1.5) * ALONG_Z, Color3.new(1, 1, 1), NEON, 0.25)
+		for _, direction in ipairs({
+			Vector3.new(0.55, 0, 0),
+			Vector3.new(-0.55, 0, 0),
+			Vector3.new(0, 0.55, 0),
+			Vector3.new(0, -0.55, 0),
+		}) do
+			addPiece(tool, handle, "Wedge", Vector3.new(0.16, 0.34, 0.16), CFrame.new(direction + Vector3.new(0, 0, -1.5)), Color3.new(1, 1, 1), NEON)
+		end
+	end
+
+	local function newTool(name, tip, color)
+		local tool = Instance.new("Tool")
+		tool.Name = name
+		tool.ToolTip = tip
+		tool.RequiresHandle = true
+		local handle = Instance.new("Part")
+		handle.Name = "Handle"
+		handle.Size = Vector3.new(0.34, 0.34, 2.3)
+		handle.Color = DARK
+		handle.Material = METAL
+		handle.CanCollide = false
+		handle.Parent = tool
+		addPiece(tool, handle, "Block", Vector3.new(0.4, 0.4, 0.28), CFrame.new(0, 0, 0.55), color, NEON)
+		addPiece(tool, handle, "Block", Vector3.new(0.4, 0.4, 0.28), CFrame.new(0, 0, 0.05), color, NEON)
+		local design = designs[name]
+		if design then
+			pcall(design, tool, handle, color)
+		end
+		return tool
+	end
+
+	local function bindCleanup(tool, connections, cleanup)
+		table.insert(
+			connections,
+			tool.AncestryChanged:Connect(function()
+				if tool.Parent and tool.Parent.Parent then
+					return
+				end
+				for _, connection in ipairs(connections) do
+					pcall(function()
+						connection:Disconnect()
+					end)
+				end
+				if cleanup then
+					pcall(cleanup)
+				end
+			end)
+		)
+	end
+
+	local TweenService = game:GetService("TweenService")
+
+	local function tweenTo(obj, props, duration)
+		TweenService:Create(obj, TweenInfo.new(duration or 0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
+	end
+
+	local function addStroke(parent, thickness)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(255, 255, 255)
+		stroke.Thickness = thickness
+		stroke.Parent = parent
+		local metal = Instance.new("UIGradient")
+		metal.Rotation = 90
+		metal.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(84, 80, 78)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(26, 26, 29)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(4, 4, 6)),
+		})
+		metal.Parent = stroke
+		return stroke
+	end
+
+	local function addCorner(parent, radius)
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, radius)
+		corner.Parent = parent
+		return corner
+	end
+
+	local function limitText(parent, size)
+		local constraint = Instance.new("UITextSizeConstraint")
+		constraint.MaxTextSize = size
+		constraint.Parent = parent
+		return constraint
+	end
+
+	local function addSurface(obj, rotation)
+		local gradient = Instance.new("UIGradient")
+		gradient.Rotation = rotation or 90
+		gradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(138, 138, 146))
+		gradient.Parent = obj
+		return gradient
+	end
+
+	local function addBevel(obj)
+		local rim = Instance.new("Frame")
+		rim.Name = "Bevel"
+		rim.BackgroundTransparency = 1
+		rim.BorderSizePixel = 0
+		rim.Active = false
+		rim.Size = UDim2.new(1, -6, 1, -6)
+		rim.Position = UDim2.new(0, 3, 0, 3)
+		rim.ZIndex = obj.ZIndex
+		rim.Parent = obj
+		addCorner(rim, 7)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(255, 255, 255)
+		stroke.Thickness = 1
+		stroke.Transparency = 0.45
+		stroke.Parent = rim
+		local gradient = Instance.new("UIGradient")
+		gradient.Rotation = 90
+		gradient.Color = ColorSequence.new(Color3.fromRGB(92, 88, 86), Color3.fromRGB(10, 10, 12))
+		gradient.Parent = stroke
+		return rim
+	end
+
+	local function sinkApply(obj, sunk, duration)
+		duration = duration or 0.08
+		local depth = obj:GetAttribute("SinkDepth") or 3
+		local padding = obj:FindFirstChild("SinkPad")
+		if not padding then
+			padding = Instance.new("UIPadding")
+			padding.Name = "SinkPad"
+			padding.Parent = obj
+		end
+		tweenTo(padding, { PaddingTop = UDim.new(0, sunk and depth or 0) }, duration)
+		local surface = obj:FindFirstChildOfClass("UIGradient")
+		if surface then
+			tweenTo(surface, { Rotation = sunk and 270 or 90 }, duration)
+		end
+		local outline = obj:FindFirstChildOfClass("UIStroke")
+		local outlineGradient = outline and outline:FindFirstChildOfClass("UIGradient")
+		if outlineGradient then
+			tweenTo(outlineGradient, { Rotation = sunk and 270 or 90 }, duration)
+		end
+		local bevel = obj:FindFirstChild("Bevel")
+		local bevelStroke = bevel and bevel:FindFirstChildOfClass("UIStroke")
+		local bevelGradient = bevelStroke and bevelStroke:FindFirstChildOfClass("UIGradient")
+		if bevelGradient then
+			tweenTo(bevelGradient, { Rotation = sunk and 270 or 90 }, duration)
+		end
+	end
+
+	local function sinkPress(obj, pressed, duration)
+		sinkApply(obj, pressed or obj:GetAttribute("Sunk") == true, duration)
+	end
+
+	local function setSunk(obj, sunk, duration)
+		obj:SetAttribute("Sunk", sunk)
+		sinkApply(obj, sunk, duration)
+	end
+
+	local BUTTON_COLOR = Color3.fromRGB(50, 50, 54)
+
+	local function makeButton(parent, text, callback)
+		local button = Instance.new("TextButton")
+		button.BackgroundColor3 = BUTTON_COLOR
+		button.BackgroundTransparency = 0
+		button.BorderSizePixel = 0
+		button.Font = FONT
+		button.Text = text
+		button.TextColor3 = TEXT_COLOR
+		button.TextScaled = true
+		button.AutoButtonColor = false
+		button.Parent = parent
+		addStroke(button, 2)
+		addCorner(button, 10)
+		addSurface(button)
+		addBevel(button)
+		limitText(button, 17)
+		button:SetAttribute("SinkDepth", 4)
+
+		local pressedAt = 0
+		local function release()
+			local stamp = pressedAt
+			task.delay(math.max(0, 0.14 - (tick() - pressedAt)), function()
+				if pressedAt == stamp then
+					sinkPress(button, false, 0.14)
+				end
+			end)
+		end
+		button.MouseButton1Down:Connect(function()
+			pressedAt = tick()
+			sinkPress(button, true, 0.05)
+		end)
+		button.MouseButton1Up:Connect(release)
+		button.MouseLeave:Connect(release)
+
+		if callback then
+			button.MouseButton1Click:Connect(callback)
+		end
+		return button
+	end
+
+	local function setButtonState(button, on)
+		setSunk(button, on, 0.12)
+	end
+
+	local function createPanel(name, title, width)
+		local gui = Instance.new("ScreenGui")
+		gui.Name = name
+		gui.ResetOnSpawn = false
+		gui.IgnoreGuiInset = true
+		gui.Enabled = false
+		gui.Parent = CoreGui
+
+		local main = Instance.new("Frame")
+		main.Parent = gui
+		main.BackgroundColor3 = Color3.fromRGB(28, 28, 31)
+		main.BackgroundTransparency = 0.04
+		main.BorderSizePixel = 0
+		main.AnchorPoint = Vector2.new(1, 0)
+		main.Position = UDim2.new(1, -12, 0.2, 0)
+		main.Size = UDim2.new(0, width, 0, 0)
+		main.AutomaticSize = Enum.AutomaticSize.Y
+		main.Active = true
+		main.Draggable = true
+		addStroke(main, 3)
+		addCorner(main, 14)
+		addSurface(main)
+
+		local padding = Instance.new("UIPadding")
+		padding.PaddingTop = UDim.new(0, 8)
+		padding.PaddingBottom = UDim.new(0, 8)
+		padding.PaddingLeft = UDim.new(0, 10)
+		padding.PaddingRight = UDim.new(0, 10)
+		padding.Parent = main
+
+		local layout = Instance.new("UIListLayout")
+		layout.Padding = UDim.new(0, 6)
+		layout.SortOrder = Enum.SortOrder.LayoutOrder
+		layout.Parent = main
+
+		local header = Instance.new("TextLabel")
+		header.Parent = main
+		header.LayoutOrder = 0
+		header.BackgroundColor3 = Color3.fromRGB(50, 50, 54)
+		header.BackgroundTransparency = 0
+		header.BorderSizePixel = 0
+		header.Size = UDim2.new(1, 0, 0, 30)
+		header.Font = FONT
+		header.Text = string.upper(title)
+		header.TextColor3 = TEXT_COLOR
+		header.TextScaled = true
+		addStroke(header, 2)
+		addCorner(header, 10)
+		addSurface(header)
+		addBevel(header)
+		limitText(header, 22)
+
+		local panel = { gui = gui, frame = main, order = 1 }
+
+		local function nextOrder()
+			panel.order = panel.order + 1
+			return panel.order
+		end
+
+		function panel:label(text)
+			local label = Instance.new("TextLabel")
+			label.LayoutOrder = nextOrder()
+			label.BackgroundTransparency = 1
+			label.Size = UDim2.new(1, 0, 0, 20)
+			label.Font = FONT
+			label.Text = text
+			label.TextColor3 = TEXT_COLOR
+			label.TextScaled = true
+			label.TextXAlignment = Enum.TextXAlignment.Left
+			label.Parent = main
+			limitText(label, 16)
+			return label
+		end
+
+		function panel:button(text, callback)
+			local button = makeButton(main, text, callback)
+			button.LayoutOrder = nextOrder()
+			button.Size = UDim2.new(1, 0, 0, 28)
+			return button
+		end
+
+		function panel:row(specs)
+			local holder = Instance.new("Frame")
+			holder.LayoutOrder = nextOrder()
+			holder.BackgroundTransparency = 1
+			holder.Size = UDim2.new(1, 0, 0, 28)
+			holder.Parent = main
+			local buttons = {}
+			local count = #specs
+			for index, spec in ipairs(specs) do
+				local button = makeButton(holder, spec[1], spec[2])
+				button.Size = UDim2.new(1 / count, -4, 1, 0)
+				button.Position = UDim2.new((index - 1) / count, 2, 0, 0)
+				buttons[index] = button
+			end
+			return buttons
+		end
+
+		function panel:input(placeholder, default)
+			local box = Instance.new("TextBox")
+			box.LayoutOrder = nextOrder()
+			box.Size = UDim2.new(1, 0, 0, 28)
+			box.BackgroundColor3 = Color3.fromRGB(34, 34, 38)
+			box.BackgroundTransparency = 0
+			box.BorderSizePixel = 0
+			box.Font = FONT
+			box.Text = default or ""
+			box.PlaceholderText = placeholder
+			box.PlaceholderColor3 = Color3.fromRGB(120, 112, 104)
+			box.TextColor3 = TEXT_COLOR
+			box.TextScaled = true
+			box.ClearTextOnFocus = false
+			box.Parent = main
+			addStroke(box, 2)
+			addCorner(box, 10)
+			addSurface(box, 270)
+			limitText(box, 17)
+			return box
+		end
+
+		local status = Instance.new("TextLabel")
+		status.LayoutOrder = 10000
+		status.BackgroundTransparency = 1
+		status.Size = UDim2.new(1, 0, 0, 34)
+		status.Font = FONT
+		status.Text = "Equip to start"
+		status.TextColor3 = Color3.fromRGB(172, 164, 155)
+		status.TextScaled = true
+		status.TextWrapped = true
+		status.Parent = main
+		limitText(status, 15)
+		panel.status = status
+
+		return panel
+	end
+
+	local function makeSelectionBox(color, thickness)
+		local box = Instance.new("SelectionBox")
+		box.Color3 = color
+		box.SurfaceColor3 = color
+		box.SurfaceTransparency = 0.8
+		box.LineThickness = thickness
+		box.Parent = CoreGui
+		return box
+	end
+
+	local function normalizeColorText(text)
+		local parts = string.split(text, ",")
+		if #parts < 3 then
+			return nil
+		end
+		local r, g, b = tonumber(parts[1]), tonumber(parts[2]), tonumber(parts[3])
+		if not r or not g or not b then
+			return nil
+		end
+		return Color3.fromRGB(r, g, b)
+	end
+
+	local createClone
+	local createMove
+	local createEditor
+	local createReplication
+	local createModeration
+	local createGiver
+	local createTrap
+
+	pcall(function()
+		local panel = createPanel("CloneToolGui", "Clone Tool", 220)
+		local status = panel.status
+		local countLabel = panel:label("Selected: 0 block(s)")
+		local offsetLabel = panel:label("Offset: 0, 0, 0")
+		local radiusBox = panel:input("Nearby radius (default 30)", "30")
+
+		local MAX_BOXES = 150
+		local selected = {}
+		local boxes = {}
+		local boxCount = 0
+		local offset = Vector3.new(0, 0, 0)
+		local center = Vector3.new(0, 0, 0)
+		local snapOn = true
+		local building = false
+		local handles = nil
+		local handlePart = nil
+		local dragStart = nil
+		local lastHandleTime = 0
+		local snapButton
+		local function setSnap(value)
+			snapOn = value
+			snapButton.Text = snapOn and "Snap: ON  (G)" or "Snap: OFF (G)"
+			setButtonState(snapButton, snapOn)
+		end
+
+		snapButton = panel:button("Snap: ON  (G)", function()
+			setSnap(not snapOn)
+		end)
+		setButtonState(snapButton, true)
+
+		local function updateCount()
+			local total = 0
+			for _ in pairs(selected) do
+				total = total + 1
+			end
+			countLabel.Text = "Selected: " .. total .. " block(s)"
+			return total
+		end
+
+		local function updateOffsetLabel()
+			offsetLabel.Text = string.format("Offset: %.0f, %.0f, %.0f", offset.X, offset.Y, offset.Z)
+		end
+
+		local function computeCenter()
+			local sum = Vector3.new(0, 0, 0)
+			local total = 0
+			for part in pairs(selected) do
+				if part.Parent then
+					sum = sum + part.Position
+					total = total + 1
+				end
+			end
+			return total > 0 and (sum / total) or Vector3.new(0, 0, 0)
+		end
+
+		local function setHighlight(part, on)
+			if on then
+				if boxes[part] or boxCount >= MAX_BOXES then
+					return
+				end
+				local box = makeSelectionBox(Color3.fromRGB(255, 170, 0), 0.055)
+				box.Adornee = part
+				boxes[part] = box
+				boxCount = boxCount + 1
+			elseif boxes[part] then
+				boxes[part]:Destroy()
+				boxes[part] = nil
+				boxCount = boxCount - 1
+			end
+		end
+
+		local function clearHandles()
+			if handles then
+				handles:Destroy()
+				handles = nil
+			end
+			if handlePart then
+				handlePart:Destroy()
+				handlePart = nil
+			end
+			dragStart = nil
+		end
+
+		local function clearSelection()
+			for part in pairs(selected) do
+				setHighlight(part, false)
+			end
+			selected = {}
+			offset = Vector3.new(0, 0, 0)
+			center = Vector3.new(0, 0, 0)
+			clearHandles()
+			updateCount()
+			updateOffsetLabel()
+		end
+
+		local function buildHandles()
+			clearHandles()
+			center = computeCenter()
+			if updateCount() == 0 then
+				return
+			end
+			handlePart = Instance.new("Part")
+			handlePart.Anchored = true
+			handlePart.CanCollide = false
+			handlePart.CanQuery = false
+			handlePart.CastShadow = false
+			handlePart.Transparency = 1
+			handlePart.Size = Vector3.new(1, 1, 1)
+			handlePart.CFrame = CFrame.new(center + offset)
+			handlePart.Parent = workspace
+
+			handles = Instance.new("Handles")
+			handles.Adornee = handlePart
+			handles.Style = Enum.HandlesStyle.Movement
+			handles.Color3 = Color3.fromRGB(255, 200, 0)
+			handles.Parent = CoreGui
+
+			handles.MouseButton1Down:Connect(function()
+				dragStart = offset
+				lastHandleTime = tick()
+			end)
+			handles.MouseDrag:Connect(function(face, distance)
+				if not dragStart or not handlePart then
+					return
+				end
+				lastHandleTime = tick()
+				local step = snapOn and (math.round(distance / _AB.mult) * _AB.mult) or distance
+				offset = dragStart + Vector3.fromNormalId(face) * step
+				handlePart.CFrame = CFrame.new(center + offset)
+				updateOffsetLabel()
+			end)
+		end
+
+		local function toggleBlock(part)
+			if selected[part] then
+				selected[part] = nil
+				setHighlight(part, false)
+			else
+				selected[part] = true
+				setHighlight(part, true)
+			end
+			local total = updateCount()
+			if total > 0 then
+				buildHandles()
+				status.Text = total .. " selected. Move the handles, then Confirm"
+			else
+				clearHandles()
+				status.Text = "Tap blocks to select them"
+			end
+		end
+
+		local function selectNearby()
+			local folder = getFolder()
+			local hrp = getHrp()
+			if not folder or not hrp then
+				status.Text = "No blocks folder found"
+				return
+			end
+			local radius = math.clamp(tonumber(radiusBox.Text) or 30, 5, 300)
+			local origin = hrp.Position
+			for _, object in ipairs(folder:GetDescendants()) do
+				if object:IsA("BasePart") and (object.Position - origin).Magnitude <= radius then
+					if not selected[object] then
+						selected[object] = true
+						setHighlight(object, true)
+					end
+				end
+			end
+			local total = updateCount()
+			if total > 0 then
+				buildHandles()
+				status.Text = total .. " selected nearby. Move the handles, then Confirm"
+			else
+				status.Text = "No blocks in that radius"
+			end
+		end
+
+		local function doConfirm()
+			if building then
+				status.Text = "Already cloning"
+				return
+			end
+			local data = {}
+			for part in pairs(selected) do
+				if part.Parent then
+					local saved = _AB.saveblock(part)
+					if saved and saved.p then
+						table.insert(data, saved)
+					end
+				end
+			end
+			if #data == 0 then
+				status.Text = "Nothing selected. Tap blocks first"
+				return
+			end
+			table.sort(data, function(a, b)
+				if a.p[2] ~= b.p[2] then
+					return a.p[2] < b.p[2]
+				end
+				if a.p[1] ~= b.p[1] then
+					return a.p[1] < b.p[1]
+				end
+				return a.p[3] < b.p[3]
+			end)
+			local applied = offset
+			building = true
+			_AB.stopped = false
+			task.spawn(function()
+				for index, block in ipairs(data) do
+					if _AB.stopped then
+						break
+					end
+					local pos = Vector3.new(block.p[1], block.p[2], block.p[3]) + applied
+					local color = block.c and Color3.fromRGB(table.unpack(block.c)) or _AB.defaultcolor
+					local size = block.s and Vector3.new(table.unpack(block.s)) or nil
+					local hrp = getHrp()
+					if _AB.tp and hrp then
+						hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+					end
+					pcall(_AB.buildblock, pos, block.m, color, nil, size, nil, block.o, block.sp, block.a, block.cc)
+					task.wait(_AB.buildSpeed)
+					status.Text = string.format("Cloning %d / %d", index, #data)
+				end
+				building = false
+				status.Text = _AB.stopped and "Clone stopped" or ("Done. " .. #data .. " block(s) cloned")
+				_AB.stopped = false
+			end)
+		end
+
+		local function doCancel()
+			clearSelection()
+			status.Text = "Cancelled. Tap blocks to select"
+		end
+
+		panel:button("Select Nearby", selectNearby)
+		panel:button("Confirm Clone", doConfirm)
+		panel:row({
+			{ "Cancel (R)", doCancel },
+			{
+				"Clear Sel.",
+				function()
+					clearSelection()
+					status.Text = "Selection cleared"
+				end,
+			},
+		})
+		panel:button("Stop Building", function()
+			_AB.stopped = true
+			status.Text = "Stopping the clone"
+		end)
+		panel:label("Tap a block to select or deselect")
+
+		createClone = function()
+			local connections = {}
+			local tool = newTool(
+				"Clone Tool",
+				"Tap blocks to select them, move the handles, then confirm to clone",
+				Color3.fromRGB(255, 170, 0),
+				Vector3.new(0.7, 0.7, 2.5),
+				Enum.Material.Neon
+			)
+			local equipped = false
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					panel.gui.Enabled = true
+					updateCount()
+					updateOffsetLabel()
+					status.Text = "Tap blocks to select them"
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					equipped = false
+					panel.gui.Enabled = false
+				end)
+			)
+
+			table.insert(
+				connections,
+				mouse.Button1Down:Connect(function()
+					if not equipped then
+						return
+					end
+					local target = mouse.Target
+					local folder = getFolder()
+					if not target or not folder or not target:IsDescendantOf(folder) then
+						return
+					end
+					task.delay(0.05, function()
+						if not equipped or tick() - lastHandleTime < 0.25 then
+							return
+						end
+						if target.Parent then
+							toggleBlock(target)
+						end
+					end)
+				end)
+			)
+
+			table.insert(
+				connections,
+				UserInputService.InputBegan:Connect(function(input, processed)
+					if processed or not equipped then
+						return
+					end
+					if input.KeyCode == Enum.KeyCode.G then
+						setSnap(not snapOn)
+					elseif input.KeyCode == Enum.KeyCode.R then
+						doCancel()
+					end
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				panel.gui.Enabled = false
+			end)
+
+			return tool
+		end
+	end)
+
+	pcall(function()
+		local panel = createPanel("MoveToolGui", "Move Tool", 210)
+		local status = panel.status
+		local selection = nil
+		local originalCFrame = nil
+		local wasAnchored = false
+		local handles = nil
+		local dragStart = nil
+		local snapOn = true
+		local snapButton
+
+		local function toggleAnchor(part)
+			paintFire(part, Enum.NormalId.Top, getPos(), "material", nil, "anchor", "")
+		end
+
+		local function cleanHandles()
+			if handles then
+				handles:Destroy()
+				handles = nil
+			end
+			dragStart = nil
+		end
+
+		local function setSnap(value)
+			snapOn = value
+			snapButton.Text = snapOn and "Snap: ON  (G)" or "Snap: OFF (G)"
+			setButtonState(snapButton, snapOn)
+		end
+
+		snapButton = panel:button("Snap: ON  (G)", function()
+			setSnap(not snapOn)
+		end)
+		setButtonState(snapButton, true)
+
+		local function doConfirm()
+			if not selection or not selection.Parent then
+				cleanHandles()
+				selection = nil
+				status.Text = "Click a block to select"
+				return
+			end
+			local part = selection
+			local anchoredBefore = wasAnchored
+			local data = _AB.saveblock(part)
+			cleanHandles()
+			selection = nil
+			if not data or not data.p then
+				status.Text = "Could not read the block"
+				return
+			end
+			status.Text = "Moving server side"
+			task.spawn(function()
+				if not part.Anchored then
+					toggleAnchor(part)
+					task.wait(0.2)
+				end
+				deleteBlock(part)
+				task.wait(0.35)
+				local captured = nil
+				local originalUpdate = _AB.updateBlockCache
+				_AB.updateBlockCache = function(block, ...)
+					captured = block
+					return originalUpdate(block, ...)
+				end
+				local color = data.c and Color3.fromRGB(table.unpack(data.c)) or _AB.defaultcolor
+				local size = data.s and Vector3.new(table.unpack(data.s)) or nil
+				local pos = Vector3.new(data.p[1], data.p[2], data.p[3])
+				pcall(_AB.buildblock, pos, data.m, color, nil, size, true, data.o, data.sp, anchoredBefore, data.cc ~= false)
+				_AB.updateBlockCache = originalUpdate
+				_AB.stopped = false
+
+				if not captured or not captured.Parent then
+					local folder = getFolder()
+					local mine = folder and folder:FindFirstChild(lp.Name)
+					local expected = pos
+					if size then
+						expected = Vector3.new(pos.X + size.X / 2 - 0.5, pos.Y + size.Y / 2 - 0.5, pos.Z + size.Z / 2 - 0.5)
+					end
+					local closest = 3
+					for _, child in ipairs(mine and mine:GetChildren() or {}) do
+						if child:IsA("BasePart") then
+							local distance = (child.Position - expected).Magnitude
+							if distance < closest then
+								closest = distance
+								captured = child
+							end
+						end
+					end
+				end
+
+				if captured and captured.Parent then
+					for _ = 1, 4 do
+						task.wait(0.3)
+						if not captured.Parent or captured.Anchored == anchoredBefore then
+							break
+						end
+						paintFire(captured, Enum.NormalId.Top, captured.Position, "material", nil, "anchor", "")
+					end
+					if data.cc ~= nil and captured.Parent and captured.CanCollide ~= data.cc then
+						paintFire(captured, Enum.NormalId.Top, captured.Position, "material", nil, "collide", "")
+					end
+				end
+				status.Text = "Placed. Click a block to select"
+			end)
+		end
+
+		local function doCancel()
+			if selection and selection.Parent then
+				if originalCFrame then
+					selection.CFrame = originalCFrame
+				end
+				if wasAnchored and not selection.Anchored then
+					toggleAnchor(selection)
+				end
+			end
+			cleanHandles()
+			selection = nil
+			status.Text = "Cancelled. Click a block to select"
+		end
+
+		panel:row({ { "Confirm", doConfirm }, { "Cancel (R)", doCancel } })
+		panel:label("G = snap   R = cancel")
+
+		createMove = function()
+			local connections = {}
+			local tool = newTool(
+				"Move Tool",
+				"Click a block then drag the arrows to move it",
+				Color3.fromRGB(0, 180, 255),
+				Vector3.new(0.6, 0.6, 2.5),
+				Enum.Material.SmoothPlastic
+			)
+			local equipped = false
+			local box = makeSelectionBox(Color3.fromRGB(0, 200, 255), 0.05)
+
+			local function selectBlock(part)
+				doConfirm()
+				selection = part
+				originalCFrame = part.CFrame
+				wasAnchored = part.Anchored
+				box.Adornee = part
+				status.Text = "Unanchoring"
+				if part.Anchored then
+					toggleAnchor(part)
+					task.wait(0.2)
+				end
+				pcall(function()
+					lp.SimulationRadius = math.huge
+				end)
+				task.wait(0.1)
+				cleanHandles()
+				handles = Instance.new("Handles")
+				handles.Adornee = part
+				handles.Style = Enum.HandlesStyle.Movement
+				handles.Color3 = Color3.fromRGB(255, 210, 0)
+				handles.Parent = CoreGui
+				handles.MouseButton1Down:Connect(function()
+					dragStart = part.CFrame
+				end)
+				handles.MouseDrag:Connect(function(face, distance)
+					if not dragStart then
+						return
+					end
+					local step = snapOn and (math.round(distance / _AB.mult) * _AB.mult) or distance
+					part.CFrame = dragStart * CFrame.new(Vector3.fromNormalId(face) * step)
+					pcall(function()
+						lp.SimulationRadius = math.huge
+					end)
+				end)
+				status.Text = "Drag arrows to move. Confirm or Cancel"
+			end
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					panel.gui.Enabled = true
+					status.Text = "Click a block to select"
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					if not equipped then
+						return
+					end
+					equipped = false
+					doCancel()
+					panel.gui.Enabled = false
+					box.Adornee = nil
+				end)
+			)
+
+			table.insert(
+				connections,
+				mouse.Button1Down:Connect(function()
+					if not equipped then
+						return
+					end
+					local target = mouse.Target
+					if target and target ~= selection and isSelectable(target, mouse.Hit.Position) then
+						task.spawn(selectBlock, target)
+					end
+				end)
+			)
+
+			table.insert(
+				connections,
+				UserInputService.InputBegan:Connect(function(input, processed)
+					if processed or not equipped then
+						return
+					end
+					if input.KeyCode == Enum.KeyCode.G then
+						setSnap(not snapOn)
+					elseif input.KeyCode == Enum.KeyCode.R then
+						doCancel()
+					end
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				cleanHandles()
+				box:Destroy()
+				panel.gui.Enabled = false
+			end)
+
+			return tool
+		end
+	end)
+
+	pcall(function()
+		local panel = createPanel("EditorToolGui", "Block Editor", 215)
+		local status = panel.status
+		local colorBox = panel:input("R,G,B (e.g. 255,0,0)")
+		local materialBox = panel:input("Material (e.g. Neon)")
+		local selection = nil
+
+		local function ready()
+			return selection and selection.Parent
+		end
+
+		panel:row({
+			{
+				"Color",
+				function()
+					if not ready() then
+						return
+					end
+					local color = normalizeColorText(colorBox.Text)
+					if color and paintFire(selection, Enum.NormalId.Top, getPos(), "color", color, "", "") then
+						status.Text = "Color applied"
+					end
+				end,
+			},
+			{
+				"Material",
+				function()
+					if not ready() then
+						return
+					end
+					if paintFire(selection, Enum.NormalId.Top, getPos(), "material", nil, materialBox.Text:lower(), "") then
+						status.Text = "Material applied"
+					end
+				end,
+			},
+			{
+				"All Sides",
+				function()
+					if not ready() then
+						return
+					end
+					local color = normalizeColorText(colorBox.Text)
+					if not color then
+						return
+					end
+					for _, face in ipairs(ALL_FACES) do
+						paintFire(selection, face, getPos(), "color", color, "", "")
+					end
+					status.Text = "All sides painted"
+				end,
+			},
+		})
+
+		panel:row({
+			{
+				"Anchor",
+				function()
+					if not ready() then
+						return
+					end
+					if paintFire(selection, Enum.NormalId.Top, getPos(), "material", nil, "anchor", "") then
+						status.Text = "Toggled anchor"
+					end
+				end,
+			},
+			{
+				"Toxify",
+				function()
+					if not ready() then
+						return
+					end
+					if paintFire(selection, Enum.NormalId.Top, getPos(), "material", Color3.new(0, 0, 0), "toxic", "") then
+						status.Text = "Toxified"
+					end
+				end,
+			},
+			{
+				"Delete",
+				function()
+					if not ready() then
+						return
+					end
+					deleteBlock(selection)
+					selection = nil
+					status.Text = "Deleted"
+				end,
+			},
+		})
+
+		local signBox = panel:input("Sign text")
+
+		panel:row({
+			{
+				"Sign",
+				function()
+					if not ready() or signBox.Text == "" then
+						return
+					end
+					if
+						paintFire(
+							selection,
+							Enum.NormalId.Front,
+							getPos(),
+							"both \u{1F91D}",
+							selection.Color,
+							"",
+							signBox.Text
+						)
+					then
+						status.Text = "Sign applied"
+					end
+				end,
+			},
+			{
+				"Clone",
+				function()
+					if not ready() then
+						return
+					end
+					local hrp = getHrp()
+					if not hrp then
+						return
+					end
+					local data = _AB.saveblock(selection)
+					if not data or not data.p then
+						return
+					end
+					local target = _AB.round(hrp.Position + hrp.CFrame.LookVector * 6)
+					local size = data.s and Vector3.new(table.unpack(data.s)) or nil
+					local pos = target
+					if size then
+						pos = Vector3.new(target.X - size.X / 2 + 0.5, target.Y - size.Y / 2 + 0.5, target.Z - size.Z / 2 + 0.5)
+					end
+					local color = data.c and Color3.fromRGB(table.unpack(data.c)) or _AB.defaultcolor
+					task.spawn(function()
+						pcall(_AB.buildblock, pos, data.m, color, nil, size, nil, data.o, data.sp, data.a, data.cc)
+					end)
+					status.Text = "Cloned in front of you"
+				end,
+			},
+		})
+
+		local infoLabel = panel:label("")
+		infoLabel.Size = UDim2.new(1, 0, 0, 34)
+		infoLabel.TextWrapped = true
+		infoLabel.TextXAlignment = Enum.TextXAlignment.Center
+
+		createEditor = function()
+			local connections = {}
+			local tool = newTool(
+				"Editor Tool",
+				"Click blocks to edit properties",
+				Color3.fromRGB(0, 85, 255),
+				Vector3.new(0.6, 0.6, 2.5),
+				Enum.Material.SmoothPlastic
+			)
+			local equipped = false
+			local box = makeSelectionBox(Color3.fromRGB(0, 85, 255), 0.07)
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					panel.gui.Enabled = true
+					status.Text = "Click a block to select"
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					if not equipped then
+						return
+					end
+					equipped = false
+					panel.gui.Enabled = false
+					box.Adornee = nil
+					selection = nil
+				end)
+			)
+
+			table.insert(
+				connections,
+				mouse.Button1Down:Connect(function()
+					if not equipped then
+						return
+					end
+					if not isSelectable(mouse.Target, mouse.Hit.Position) then
+						return
+					end
+					selection = mouse.Target
+					box.Adornee = selection
+					local color = selection.Color
+					colorBox.Text = math.floor(color.R * 255)
+						.. ","
+						.. math.floor(color.G * 255)
+						.. ","
+						.. math.floor(color.B * 255)
+					materialBox.Text = selection.Material.Name
+					status.Text = "Selected block"
+					infoLabel.Text = string.format(
+						"Pos %.0f,%.0f,%.0f | Size %.0f,%.0f,%.0f | %s",
+						selection.Position.X,
+						selection.Position.Y,
+						selection.Position.Z,
+						selection.Size.X,
+						selection.Size.Y,
+						selection.Size.Z,
+						selection.Anchored and "Anchored" or "Unanchored"
+					)
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				box:Destroy()
+				panel.gui.Enabled = false
+			end)
+
+			return tool
+		end
+	end)
+
+	pcall(function()
+		local panel = createPanel("ReplicationToolGui", "Replication Tool", 215)
+		local status = panel.status
+		panel:label("Click a block to copy it")
+		panel:label("into ReplicatedStorage.Brick")
+
+		createReplication = function()
+			local connections = {}
+			local tool = newTool(
+				"Replication Tool",
+				"Click a block to replicate it to ReplicatedStorage.Brick",
+				Color3.fromRGB(255, 230, 0),
+				Vector3.new(0.8, 0.8, 2.5),
+				Enum.Material.SmoothPlastic,
+				Enum.PartType.Cylinder
+			)
+			local equipped = false
+			local processing = false
+			local box = makeSelectionBox(Color3.fromRGB(255, 230, 0), 0.07)
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					panel.gui.Enabled = true
+					status.Text = "Click a block to replicate"
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					equipped = false
+					panel.gui.Enabled = false
+					box.Adornee = nil
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Activated:Connect(function()
+					if not equipped or processing then
+						return
+					end
+					if not (mouse.Target and isSelectable(mouse.Target, mouse.Hit.Position) and mouse.TargetSurface) then
+						return
+					end
+					local brick = ReplicatedStorage:FindFirstChild("Brick")
+					if not brick or (brick.HasTag and brick:HasTag("FAKE")) then
+						status.Text = "ReplicatedStorage.Brick is missing"
+						return
+					end
+					processing = true
+					box.Color3 = Color3.fromRGB(0, 200, 0)
+					box.SurfaceColor3 = Color3.fromRGB(0, 200, 0)
+					status.Text = "Replicating"
+					local source = mouse.Target
+
+					local ok = pcall(function()
+						local material = _AB.materials[source.Material] or "plastic"
+						if material == "neon" then
+							material = "toxic"
+						end
+						paintFire(brick, Enum.NormalId.Top, getPos(), "both \u{1F91D}", source.Color, material, "")
+						task.wait(0.25)
+						if source.Anchored ~= brick.Anchored then
+							paintFire(brick, Enum.NormalId.Top, getPos(), "material", Color3.new(), "anchor", "")
+							task.wait(0.25)
+						end
+						if source.CanCollide ~= brick.CanCollide then
+							paintFire(brick, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
+							task.wait(0.25)
+						end
+						local pending = { Back = true, Front = true, Left = true, Right = true, Top = true, Bottom = true }
+						for _, child in ipairs(source:GetChildren()) do
+							if child:IsA("SurfaceGui") then
+								local label = child:FindFirstChild("Label") or child:FindFirstChildWhichIsA("TextLabel")
+								if child.Face and label then
+									pending[child.Face.Name] = nil
+									paintFire(
+										brick,
+										child.Face,
+										getPos(),
+										"both \u{1F91D}",
+										label.TextColor3 or Color3.new(),
+										"spray",
+										label.Text or ""
+									)
+									task.wait(0.5)
+								end
+							end
+						end
+						for faceName in pairs(pending) do
+							paintFire(brick, Enum.NormalId[faceName], getPos(), "material", Color3.new(), "spray", "")
+							task.wait(0.35)
+						end
+					end)
+
+					processing = false
+					box.Color3 = Color3.fromRGB(255, 230, 0)
+					box.SurfaceColor3 = Color3.fromRGB(255, 230, 0)
+					status.Text = ok and "Block replicated" or "Replication failed"
+				end)
+			)
+
+			local elapsed = 0
+			table.insert(
+				connections,
+				RunService.Heartbeat:Connect(function(dt)
+					if processing then
+						return
+					end
+					elapsed = elapsed + dt
+					if elapsed < 0.05 then
+						return
+					end
+					elapsed = 0
+					if equipped and mouse.Target and isSelectable(mouse.Target, mouse.Hit.Position) then
+						box.Adornee = mouse.Target
+					else
+						box.Adornee = nil
+					end
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				box:Destroy()
+				panel.gui.Enabled = false
+			end)
+
+			return tool
+		end
+	end)
+
+	pcall(function()
+		local panel = createPanel("ModerationToolGui", "Moderation Tool", 215)
+		local status = panel.status
+		local commandBox = panel:input("Command (default: reset)", "reset")
+		panel:label("Click any player to fire it")
+
+		createModeration = function()
+			local connections = {}
+			local tool = newTool(
+				"Moderation Tool",
+				"Click players to send a chat command targeting them",
+				Color3.fromRGB(220, 50, 60),
+				Vector3.new(0.8, 0.8, 2.5),
+				Enum.Material.SmoothPlastic,
+				Enum.PartType.Cylinder
+			)
+			local equipped = false
+			local highlightObject = Instance.new("Highlight")
+			highlightObject.FillColor = Color3.fromRGB(220, 50, 60)
+			highlightObject.OutlineColor = Color3.fromRGB(255, 255, 255)
+			highlightObject.FillTransparency = 0.6
+			highlightObject.Parent = CoreGui
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					panel.gui.Enabled = true
+					status.Text = "Click a player"
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					equipped = false
+					panel.gui.Enabled = false
+					highlightObject.Adornee = nil
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Activated:Connect(function()
+					if not equipped or not (mouse.Target and mouse.Target.Parent) then
+						return
+					end
+					local target = resolvePlayer(mouse.Target)
+					if not target then
+						return
+					end
+					local command = (commandBox.Text or ""):match("^%s*(.-)%s*$") or ""
+					if command == "" then
+						command = "reset"
+					end
+					chat(";" .. command .. " " .. sanitizeName(target.Name))
+					status.Text = "Sent " .. command .. " to " .. target.Name
+				end)
+			)
+
+			local elapsed = 0
+			table.insert(
+				connections,
+				RunService.Heartbeat:Connect(function(dt)
+					if not equipped then
+						return
+					end
+					elapsed = elapsed + dt
+					if elapsed < 0.05 then
+						return
+					end
+					elapsed = 0
+					local target = mouse.Target and resolvePlayer(mouse.Target)
+					highlightObject.Adornee = target and target.Character or nil
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				highlightObject:Destroy()
+				panel.gui.Enabled = false
+			end)
+
+			return tool
+		end
+	end)
+
+	local function createZoneTool(config)
+		local zone = {
+			blocks = {},
+			mode = config.modes[1],
+			selectMode = config.modes[1],
+			selecting = false,
+		}
+		for _, modeName in ipairs(config.modes) do
+			zone.blocks[modeName] = {}
+		end
+
+		local panel = createPanel(config.gui, config.title, 225)
+		local status = panel.status
+		local modeLabel = panel:label("Mode: " .. zone.mode)
+		local countLabel = panel:label("")
+		local input = config.inputPlaceholder and panel:input(config.inputPlaceholder) or nil
+
+		local function updateUI()
+			local total = 0
+			for _ in pairs(zone.blocks[zone.mode]) do
+				total = total + 1
+			end
+			modeLabel.Text = "Mode: " .. zone.mode
+			countLabel.Text = zone.mode .. " blocks: " .. total
+		end
+
+		local function dropBlock(modeName, block)
+			local data = zone.blocks[modeName][block]
+			if not data then
+				return
+			end
+			if data.OnTouched then
+				pcall(function()
+					data.OnTouched:Disconnect()
+				end)
+			end
+			if data.SelectionBox then
+				pcall(function()
+					data.SelectionBox:Destroy()
+				end)
+			end
+			zone.blocks[modeName][block] = nil
+			if config.onDrop then
+				config.onDrop(block)
+			end
+		end
+
+		local function setMode(modeName)
+			if zone.selecting then
+				return
+			end
+			zone.mode = modeName
+			updateUI()
+			status.Text = "Mode: " .. modeName
+		end
+
+		for index = 1, #config.modes, 2 do
+			local first = config.modes[index]
+			local second = config.modes[index + 1]
+			local specs = {
+				{
+					first,
+					function()
+						setMode(first)
+					end,
+				},
+			}
+			if second then
+				specs[2] = {
+					second,
+					function()
+						setMode(second)
+					end,
+				}
+			end
+			panel:row(specs)
+		end
+
+		panel:button("Select Blocks", function()
+			if zone.selecting then
+				return
+			end
+			zone.selecting = true
+			zone.selectMode = zone.mode
+			for _, data in pairs(zone.blocks[zone.selectMode]) do
+				if data.SelectionBox then
+					data.SelectionBox.LineThickness = 0.1
+				end
+			end
+			status.Text = "Click " .. zone.selectMode .. " blocks. Finish when done"
+		end)
+
+		local function finish()
+			if not zone.selecting then
+				status.Text = "Not in selection mode"
+				return
+			end
+			local modeName = zone.selectMode
+			local context = nil
+			if config.validate then
+				local ok, result = config.validate(modeName, input and input.Text or "")
+				if not ok then
+					status.Text = result
+					return
+				end
+				context = result
+			end
+			zone.selecting = false
+			local activeColor = config.colors[modeName] or Color3.fromRGB(255, 255, 255)
+			local total = 0
+			for block, data in pairs(zone.blocks[modeName]) do
+				if data.SelectionBox then
+					data.SelectionBox.LineThickness = -1
+				end
+				if not data.Active then
+					data.Active = true
+					if data.SelectionBox then
+						data.SelectionBox.Color3 = activeColor
+						data.SelectionBox.SurfaceColor3 = activeColor
+					end
+					local connect = true
+					if config.activate then
+						connect = config.activate(modeName, block, data, context)
+					end
+					if connect ~= false then
+						data.OnTouched = block.Touched:Connect(function(hit)
+							if not zone.blocks[modeName] or not zone.blocks[modeName][block] then
+								return
+							end
+							local touched = resolvePlayer(hit)
+							if not touched or not touched.Character then
+								return
+							end
+							if not touched.Character:FindFirstChildOfClass("Humanoid") then
+								return
+							end
+							task.spawn(config.onTouch, modeName, block, touched)
+						end)
+					end
+				end
+				total = total + 1
+			end
+			status.Text = modeName .. " active: " .. total .. " block(s)"
+			updateUI()
+		end
+
+		local function cancel()
+			if not zone.selecting then
+				return
+			end
+			zone.selecting = false
+			for block, data in pairs(zone.blocks[zone.selectMode]) do
+				if not data.Active then
+					dropBlock(zone.selectMode, block)
+				elseif data.SelectionBox then
+					data.SelectionBox.LineThickness = -1
+				end
+			end
+			status.Text = "Selection cancelled"
+			updateUI()
+		end
+
+		panel:row({ { "Finish", finish }, { "Cancel", cancel } })
+
+		panel:button("Remove Mode Blocks", function()
+			for block in pairs(zone.blocks[zone.mode]) do
+				dropBlock(zone.mode, block)
+			end
+			if zone.selecting and zone.selectMode == zone.mode then
+				zone.selecting = false
+			end
+			status.Text = zone.mode .. " blocks cleared"
+			updateUI()
+		end)
+
+		panel:button("Remove All Blocks", function()
+			for _, modeName in ipairs(config.modes) do
+				for block in pairs(zone.blocks[modeName]) do
+					dropBlock(modeName, block)
+				end
+			end
+			zone.selecting = false
+			if config.onClearAll then
+				config.onClearAll()
+			end
+			status.Text = "All blocks cleared"
+			updateUI()
+		end)
+
+		zone.create = function()
+			local connections = {}
+			local tool = newTool(
+				config.toolName,
+				config.tip,
+				config.handleColor,
+				Vector3.new(0.8, 0.8, 2.5),
+				config.handleMaterial or Enum.Material.SmoothPlastic
+			)
+			local equipped = false
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					panel.gui.Enabled = true
+					for _, modeBlocks in pairs(zone.blocks) do
+						for _, data in pairs(modeBlocks) do
+							if data.Active and data.SelectionBox then
+								data.SelectionBox.LineThickness = 0.05
+							end
+						end
+					end
+					updateUI()
+					status.Text = "Choose a mode and select blocks"
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					if not equipped then
+						return
+					end
+					equipped = false
+					panel.gui.Enabled = false
+					if zone.selecting then
+						cancel()
+					end
+					for _, modeBlocks in pairs(zone.blocks) do
+						for _, data in pairs(modeBlocks) do
+							if data.SelectionBox then
+								data.SelectionBox.LineThickness = -1
+							end
+						end
+					end
+				end)
+			)
+
+			table.insert(
+				connections,
+				mouse.Button1Down:Connect(function()
+					if not equipped or not zone.selecting then
+						return
+					end
+					local target = mouse.Target
+					local folder = getFolder()
+					if not target or not folder or not target:IsDescendantOf(folder) then
+						return
+					end
+					local modeName = zone.selectMode
+					if zone.blocks[modeName][target] then
+						dropBlock(modeName, target)
+						status.Text = "Block removed from " .. modeName
+					else
+						local box = Instance.new("SelectionBox")
+						box.Color3 = Color3.fromRGB(0, 170, 255)
+						box.LineThickness = 0.1
+						box.SurfaceColor3 = Color3.fromRGB(13, 105, 172)
+						box.SurfaceTransparency = 0.7
+						box.Adornee = target
+						box.Parent = CoreGui
+						zone.blocks[modeName][target] = { SelectionBox = box, Block = target, Active = false }
+						status.Text = "Added to " .. modeName .. ". Press Finish"
+					end
+					updateUI()
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				panel.gui.Enabled = false
+			end)
+
+			return tool
+		end
+
+		return zone
+	end
+
+	pcall(function()
+		local tagged = {}
+		local commands = {
+			R6 = ";r6 %s",
+			Carpet = ";carpet %s",
+			Fly = ";fly %s",
+			Bkit = ";bkit %s",
+			Paint = ";paint %s",
+		}
+
+		local function isTagged(uid, block)
+			return tagged[uid] and tagged[uid][block] and tagged[uid][block] > tick()
+		end
+
+		local function setTag(uid, block, duration)
+			if not tagged[uid] then
+				tagged[uid] = {}
+			end
+			tagged[uid][block] = tick() + duration
+		end
+
+		local function equipEnlighten()
+			local arken = lp.Backpack:FindFirstChild("The Arkenstone")
+			if arken then
+				pcall(function()
+					arken.Parent = lp.Character
+				end)
+			end
+		end
+
+		local zone = createZoneTool({
+			gui = "GiverToolGui",
+			title = "Giver Tool",
+			toolName = "Giver Tool",
+			tip = "Select blocks to give R6, Carpet, Fly, Bkit or Paint on touch",
+			handleColor = Color3.fromRGB(0, 200, 100),
+			modes = { "R6", "Carpet", "Fly", "Bkit", "Paint" },
+			colors = {
+				R6 = Color3.fromRGB(255, 200, 0),
+				Carpet = Color3.fromRGB(139, 90, 43),
+				Fly = Color3.fromRGB(0, 180, 255),
+				Bkit = Color3.fromRGB(0, 210, 100),
+				Paint = Color3.fromRGB(230, 80, 200),
+			},
+			onTouch = function(modeName, block, player)
+				local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+				if modeName == "R6" and humanoid.RigType == Enum.HumanoidRigType.R6 then
+					return
+				end
+				if modeName == "Carpet" and player.Character:FindFirstChild("RainbowMagicCarpet") then
+					return
+				end
+				if isTagged(player.UserId, block) then
+					return
+				end
+				setTag(player.UserId, block, 3)
+				local command = string.format(commands[modeName], sanitizeName(player.Name))
+				equipEnlighten()
+				task.wait(0.15)
+				chat(command)
+			end,
+			onClearAll = function()
+				tagged = {}
+			end,
+		})
+
+		createGiver = zone.create
+	end)
+
+	pcall(function()
+		local tags = {}
+		local disco = {}
+		local guessWords = {}
+		local zone
+		local chatConnection = nil
+
+		local function setTag(block, duration)
+			tags[block] = tick() + duration
+		end
+
+		local function isTagged(block)
+			return tags[block] and tags[block] > tick()
+		end
+
+		local function ensureChatHook()
+			if chatConnection then
+				return
+			end
+			local channels = TextChatService:FindFirstChild("TextChannels")
+			local channel = channels and channels:FindFirstChild("RBXGeneral")
+			if not channel then
+				return
+			end
+			chatConnection = channel.MessageReceived:Connect(function(message)
+				local text = string.lower(message and message.Text or "")
+				if text == "" then
+					return
+				end
+				for block, data in pairs(zone.blocks.Guess) do
+					if data.Active and block.Parent and not isTagged(block) then
+						local matched = false
+						for _, word in ipairs(guessWords[block] or {}) do
+							if word ~= "" and string.find(text, word, 1, true) then
+								matched = true
+								break
+							end
+						end
+						if matched then
+							setTag(block, 6)
+							local original = block.Color
+							paintFire(block, Enum.NormalId.Top, getPos(), "material", Color3.new(1, 0, 0), "glass", "")
+							task.wait(0.1)
+							paintFire(block, Enum.NormalId.Top, getPos(), "material", Color3.new(1, 0, 0), "collide", "")
+							task.delay(5, function()
+								paintFire(block, Enum.NormalId.Top, getPos(), "material", original, "plastic", "")
+								task.wait(0.1)
+								paintFire(block, Enum.NormalId.Top, getPos(), "material", original, "collide", "")
+							end)
+						end
+					end
+				end
+			end)
+		end
+
+		local actions = {
+			Spleef = function(block)
+				if not block.Parent or isTagged(block) or block.CanCollide ~= true then
+					return
+				end
+				setTag(block, 6)
+				local original = block.Color
+				paintFire(block, Enum.NormalId.Top, getPos(), "both \u{1F91D}", Color3.new(1, 0, 0), "collide", "")
+				task.delay(5, function()
+					paintFire(block, Enum.NormalId.Top, getPos(), "both \u{1F91D}", original, "collide", "")
+				end)
+			end,
+			Delete = function(block)
+				if not block.Parent or isTagged(block) or block.CanCollide ~= true then
+					return
+				end
+				setTag(block, 2)
+				deleteBlock(block)
+			end,
+			Toxify = function(block)
+				if not block.Parent or isTagged(block) or block.CanCollide ~= true then
+					return
+				end
+				setTag(block, 3)
+				paintFire(block, Enum.NormalId.Top, getPos(), "material", Color3.new(1, 0, 0), "toxic", "")
+			end,
+			Disco = function(block)
+				if not block.Parent or isTagged(block) then
+					return
+				end
+				setTag(block, 0.2)
+				disco[block] = (disco[block] or 0) + 1
+				local hue = ((disco[block] * 25) % 255) / 255
+				paintFire(block, Enum.NormalId.Top, getPos(), "both \u{1F91D}", Color3.fromHSV(hue, 1, 1), "neon", "")
+			end,
+		}
+
+		zone = createZoneTool({
+			gui = "TrapEditorGui",
+			title = "Trap Editor",
+			toolName = "Trap Editor Tool",
+			tip = "Select blocks, then players touching them trigger the chosen action",
+			handleColor = Color3.fromRGB(255, 100, 200),
+			handleMaterial = Enum.Material.Neon,
+			modes = { "Spleef", "Delete", "Toxify", "Disco", "Guess" },
+			inputPlaceholder = "Guess words (split with |, e.g. apple|red)",
+			colors = {
+				Spleef = Color3.fromRGB(255, 90, 90),
+				Delete = Color3.fromRGB(180, 0, 0),
+				Toxify = Color3.fromRGB(80, 255, 60),
+				Disco = Color3.fromRGB(255, 0, 255),
+				Guess = Color3.fromRGB(255, 200, 0),
+			},
+			validate = function(modeName, text)
+				if modeName ~= "Guess" then
+					return true, nil
+				end
+				local words = {}
+				for _, part in ipairs(string.split(text or "", "|")) do
+					local trimmed = string.lower(part:match("^%s*(.-)%s*$"))
+					if trimmed ~= "" then
+						table.insert(words, trimmed)
+					end
+				end
+				if #words == 0 then
+					return false, "No Guess words set. Type them above"
+				end
+				ensureChatHook()
+				return true, words
+			end,
+			activate = function(modeName, block, _, context)
+				if modeName == "Guess" then
+					guessWords[block] = context
+					return false
+				end
+				return true
+			end,
+			onTouch = function(modeName, block, player)
+				if player == lp then
+					return
+				end
+				local action = actions[modeName]
+				if action then
+					action(block)
+				end
+			end,
+			onDrop = function(block)
+				disco[block] = nil
+				guessWords[block] = nil
+			end,
+			onClearAll = function()
+				tags = {}
+				disco = {}
+				guessWords = {}
+			end,
+		})
+
+		createTrap = zone.create
+	end)
+
+	local function addToolButton(name, info, creator)
+		Extras:AddButton({
+			Name = name,
+			Info = info,
+			Callback = function()
+				giveTool(creator())
+			end,
+		})
+	end
+
+	addToolButton("Clone tool (Ctool)", "Tap blocks to select them, move the handles and clone them", function()
+		return createClone()
+	end)
+
+	addToolButton("Move tool", "Click a block and drag the arrows to move it server side", function()
+		return createMove()
+	end)
+
+	addToolButton("Editor tool", "Click a block to edit its color, material, anchor, sign and more", function()
+		return createEditor()
+	end)
+
+	addToolButton("Replication tool", "Click a block to copy its look into ReplicatedStorage.Brick", function()
+		return createReplication()
+	end)
+
+	addToolButton("Moderation tool", "Click a player to send a chat command targeting them", function()
+		return createModeration()
+	end)
+
+	addToolButton("Giver tool", "Select blocks that give R6, Carpet, Fly, Bkit or Paint on touch", function()
+		return createGiver()
+	end)
+
+	addToolButton("Trap editor tool", "Spleef, Delete, Toxify, Disco and Guess traps on blocks", function()
+		return createTrap()
+	end)
+end)
+
+
+pcall(function()
+	local Players = game:GetService("Players")
+	local CoreGui = game:GetService("CoreGui")
+	local lp = Players.LocalPlayer
+	local S = Library._style
+
+	local SKIN_FONT = Enum.Font.Garamond
+	local CREAM = Color3.fromRGB(242, 236, 226)
+	local SKIN_BG = Color3.fromRGB(28, 28, 31)
+	local SKIN_PANEL = Color3.fromRGB(38, 38, 42)
+	local SKIN_ELEMENT = Color3.fromRGB(50, 50, 54)
+	local SKIN_INPUT = Color3.fromRGB(34, 34, 38)
+
+	local function isNeutral(color)
+		local high = math.max(color.R, color.G, color.B)
+		local low = math.min(color.R, color.G, color.B)
+		return high < 0.36 or (high - low) < 0.2
+	end
+
+	local function tint(color, base)
+		if isNeutral(color) then
+			return base
+		end
+		return Color3.new(color.R * 0.6, color.G * 0.6, color.B * 0.6)
+	end
+
+	local function measure(obj)
+		local width = math.max(obj.AbsoluteSize.X, obj.Size.X.Offset)
+		local height = math.max(obj.AbsoluteSize.Y, obj.Size.Y.Offset)
+		return width, height
+	end
+
+	local function hasLayout(obj)
+		return obj:FindFirstChildOfClass("UIListLayout") ~= nil
+			or obj:FindFirstChildOfClass("UIGridLayout") ~= nil
+			or obj:FindFirstChildOfClass("UITableLayout") ~= nil
+			or obj:FindFirstChildOfClass("UIPageLayout") ~= nil
+	end
+
+	local function clearStrokes(obj)
+		for _, child in ipairs(obj:GetChildren()) do
+			if child:IsA("UIStroke") then
+				child:Destroy()
+			end
+		end
+	end
+
+	local function clearGradients(obj)
+		for _, child in ipairs(obj:GetChildren()) do
+			if child:IsA("UIGradient") then
+				child:Destroy()
+			end
+		end
+	end
+
+	local function ensureCorner(obj, radius)
+		local corner = obj:FindFirstChildOfClass("UICorner")
+		if not corner then
+			corner = Instance.new("UICorner")
+			corner.Parent = obj
+		end
+		if corner.CornerRadius.Scale == 0 and corner.CornerRadius.Offset < radius then
+			corner.CornerRadius = UDim.new(0, radius)
+		end
+	end
+
+	local function skinText(obj)
+		if obj.Font ~= SKIN_FONT then
+			obj.Font = SKIN_FONT
+			if not obj.TextScaled and obj.TextSize <= 18 then
+				obj.TextSize = obj.TextSize + 2
+			end
+		end
+		local color = obj.TextColor3
+		if math.min(color.R, color.G, color.B) > 0.7 and isNeutral(color) then
+			obj.TextColor3 = CREAM
+		end
+	end
+
+	local function raise(obj, base, radius, strokeWidth)
+		if obj.BackgroundTransparency > 0.1 then
+			obj.BackgroundTransparency = 0.05
+		end
+		obj.BackgroundColor3 = tint(obj.BackgroundColor3, base)
+		clearStrokes(obj)
+		clearGradients(obj)
+		S.stroke(obj, nil, strokeWidth)
+		ensureCorner(obj, radius)
+		S.surfaceGradient(obj)
+	end
+
+	local function skinButton(obj)
+		skinText(obj)
+		local width, height = measure(obj)
+		if obj.BackgroundTransparency >= 0.95 or width < 20 or height < 16 then
+			return
+		end
+		if obj.Text == "" and width < 40 then
+			return
+		end
+		raise(obj, SKIN_ELEMENT, 10, 1)
+		if not obj:FindFirstChild("Bevel") and width >= 40 and height >= 24 and not hasLayout(obj) then
+			S.innerBevel(obj)
+		end
+		obj:SetAttribute("SinkDepth", 3)
+
+		local pressedAt = 0
+		local function release()
+			local stamp = pressedAt
+			task.delay(math.max(0, 0.14 - (tick() - pressedAt)), function()
+				if pressedAt == stamp and obj.Parent then
+					S.sinkPress(obj, false, 0.14)
+				end
+			end)
+		end
+		obj.MouseButton1Down:Connect(function()
+			pressedAt = tick()
+			S.sinkPress(obj, true, 0.05)
+		end)
+		obj.MouseButton1Up:Connect(release)
+		obj.MouseLeave:Connect(release)
+	end
+
+	local function skinBox(obj)
+		skinText(obj)
+		local width, height = measure(obj)
+		if width < 28 or height < 18 then
+			return
+		end
+		obj.PlaceholderColor3 = Color3.fromRGB(120, 112, 104)
+		raise(obj, SKIN_INPUT, 10, 1)
+		local gradient = obj:FindFirstChildOfClass("UIGradient")
+		if gradient then
+			gradient.Rotation = 270
+		end
+		if not obj:FindFirstChild("Bevel") and width >= 40 and height >= 24 then
+			S.innerBevel(obj)
+		end
+	end
+
+	local function skinFrame(obj)
+		local width, height = measure(obj)
+		if obj.BackgroundTransparency >= 0.95 then
+			return
+		end
+		if width >= 40 and height >= 24 then
+			local topLevel = obj.Parent ~= nil and obj.Parent:IsA("ScreenGui")
+			raise(obj, topLevel and SKIN_BG or SKIN_PANEL, topLevel and 14 or 10, topLevel and 2 or 1)
+			if obj:IsA("ScrollingFrame") then
+				obj.ScrollBarImageColor3 = Color3.fromRGB(120, 110, 104)
+			elseif not hasLayout(obj) and width >= 60 and height >= 30 and not obj:FindFirstChild("Bevel") then
+				S.innerBevel(obj)
+			end
+		elseif height >= 8 and width >= 8 then
+			if not obj:FindFirstChildOfClass("UIGradient") then
+				S.surfaceGradient(obj)
+			end
+		end
+	end
+
+	local function skinObject(obj)
+		if obj:GetAttribute("Skinned") or obj.Name == "Bevel" then
+			return
+		end
+		if not obj:IsA("GuiObject") then
+			return
+		end
+		if obj:IsA("TextButton") or obj:IsA("TextBox") or obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
+			local width, height = measure(obj)
+			if (width == 0 or height == 0) and not obj:GetAttribute("SkinWaiting") then
+				obj:SetAttribute("SkinWaiting", true)
+				local connection
+				connection = obj:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+					if obj.AbsoluteSize.X > 0 and obj.AbsoluteSize.Y > 0 then
+						connection:Disconnect()
+						obj:SetAttribute("SkinWaiting", nil)
+						task.defer(function()
+							pcall(skinObject, obj)
+						end)
+					end
+				end)
+				return
+			end
+		end
+		obj:SetAttribute("Skinned", true)
+		if obj:IsA("TextButton") then
+			skinButton(obj)
+		elseif obj:IsA("TextBox") then
+			skinBox(obj)
+		elseif obj:IsA("TextLabel") then
+			skinText(obj)
+		elseif obj:IsA("Frame") or obj:IsA("ScrollingFrame") then
+			skinFrame(obj)
+		end
+	end
+
+	local function skinGui(gui)
+		if not gui:IsA("ScreenGui") or gui:GetAttribute("GuiSkinned") or not gui:GetAttribute("LegacySkin") then
+			return
+		end
+		gui:SetAttribute("GuiSkinned", true)
+		gui.DescendantAdded:Connect(function(descendant)
+			task.defer(function()
+				pcall(skinObject, descendant)
+			end)
+		end)
+		task.defer(function()
+			for _, descendant in ipairs(gui:GetDescendants()) do
+				pcall(skinObject, descendant)
+			end
+		end)
+	end
+
+	local function watch(container)
+		for _, child in ipairs(container:GetChildren()) do
+			pcall(skinGui, child)
+		end
+		container.ChildAdded:Connect(function(child)
+			task.defer(function()
+				pcall(skinGui, child)
+			end)
+		end)
+	end
+
+	watch(CoreGui)
+	local playerGui = lp:FindFirstChildOfClass("PlayerGui") or lp:WaitForChild("PlayerGui", 10)
+	if playerGui then
+		watch(playerGui)
+	end
+end)
 
 return Library
