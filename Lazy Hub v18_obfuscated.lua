@@ -6391,6 +6391,7 @@ local function createGUI()
 	gui = Instance.new("ScreenGui")
 	gui:SetAttribute("LegacySkin", true)
 	gui.Name = "MiniPalette230"
+	gui:SetAttribute("LegacySkin", nil)
 	gui.ResetOnSpawn = false
 	gui.Enabled = false
 	gui.Parent = safeWait(player, "PlayerGui", 15)
@@ -6586,6 +6587,7 @@ handle.Parent = tool
 local screenGui = Instance.new("ScreenGui")
 screenGui:SetAttribute("LegacySkin", true)
 screenGui.Name = "MaterialGui"
+screenGui:SetAttribute("LegacySkin", nil)
 screenGui.ResetOnSpawn = false
 screenGui.Parent = safeWait(player, "PlayerGui", 15)
 
