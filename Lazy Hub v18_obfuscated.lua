@@ -2366,69 +2366,6 @@ local function getNameColor(player)
 end
 
 local function createBillboard(player, character)
-	local head = character:FindFirstChild("Head")
-	if not head then
-		return
-	end
-
-	local old = head:FindFirstChild("PlayerInfo")
-	if old then
-		old:Destroy()
-	end
-
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "PlayerInfo"
-	billboard.Size = UDim2.new(3,0,1.6,0)
-	billboard.StudsOffset = Vector3.new(0,5,0)
-	billboard.AlwaysOnTop = false
-	billboard.Parent = head
-
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.fromScale(1,1)
-	frame.BackgroundColor3 = Color3.fromRGB(6,8,14)
-	frame.BorderSizePixel = 0
-	frame.Parent = billboard
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0,12)
-	corner.Parent = frame
-
-	local username = Instance.new("TextLabel")
-	username.BackgroundTransparency = 1
-	username.Size = UDim2.new(1,-10,0.33,0)
-	username.Position = UDim2.new(0,5,0,2)
-	username.Font = Enum.Font.GothamSemibold
-	username.TextScaled = true
-	username.Text = "@"..player.Name
-	username.TextColor3 = getNameColor(player)
-	username.Parent = frame
-
-	local timeLabel = Instance.new("TextLabel")
-	timeLabel.BackgroundTransparency = 1
-	timeLabel.Size = UDim2.new(1,-10,0.33,0)
-	timeLabel.Position = UDim2.new(0,5,0.33,0)
-	timeLabel.Font = Enum.Font.Gotham
-	timeLabel.TextScaled = true
-	timeLabel.TextColor3 = Color3.fromRGB(110,125,145)
-	timeLabel.Parent = frame
-
-	local bricksLabel = Instance.new("TextLabel")
-	bricksLabel.BackgroundTransparency = 1
-	bricksLabel.Size = UDim2.new(1,-10,0.33,0)
-	bricksLabel.Position = UDim2.new(0,5,0.66,0)
-	bricksLabel.Font = Enum.Font.Gotham
-	bricksLabel.TextScaled = true
-	bricksLabel.TextColor3 = Color3.fromRGB(110,125,145)
-	bricksLabel.Parent = frame
-
-	task.spawn(function()
-		while billboard.Parent do
-			username.TextColor3 = getNameColor(player)
-			timeLabel.Text = "Time: "..getTime(player)
-			bricksLabel.Text = "Bricks: "..countParts(player)
-			task.wait(1)
-		end
-	end)
 end
 
 local function onPlayer(player)
@@ -2553,6 +2490,7 @@ local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui:SetAttribute("LegacySkin", true)
 gui.Name = "PerfGui"
+gui:SetAttribute("LegacySkin", nil)
 gui.ResetOnSpawn = false
 gui.Parent = safeWait(player, "PlayerGui", 15)
 
@@ -2842,75 +2780,152 @@ local TESTER_USER_IDS = {
 
 local COLLABORATOR_USER_ID = 1874207784
 
-local function createLegacyTag(character,text,color)
-	local head = character:FindFirstChild("Head")
+local function buildNameCard(head, name, title, subtitle, accent, height)
+	local TweenService = game:GetService("TweenService")
 
-	if not head then
-		return
-	end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = name
+	gui.Adornee = head
+	gui.Size = UDim2.fromOffset(224, 64)
+	gui.StudsOffset = Vector3.new(0, height or 3.2, 0)
+	gui.AlwaysOnTop = false
+	gui.MaxDistance = 650
+	gui.ResetOnSpawn = false
 
-	local old = head:FindFirstChild("LegacyTag")
+	local card = Instance.new("Frame")
+	card.Name = "Card"
+	card.Size = UDim2.fromScale(1, 1)
+	card.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+	card.BackgroundTransparency = 0.03
+	card.BorderSizePixel = 0
+	card.Parent = gui
 
-	if old then
-		old:Destroy()
-	end
+	local cardCorner = Instance.new("UICorner")
+	cardCorner.CornerRadius = UDim.new(0, 14)
+	cardCorner.Parent = card
 
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "LegacyTag"
-	billboard.Adornee = head
-	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.new(5,0,5,0)
-	billboard.StudsOffset = Vector3.new(0,5,0)
-	billboard.MaxDistance = math.huge
-	billboard.Parent = head
+	local surface = Instance.new("UIGradient")
+	surface.Rotation = 90
+	surface.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(150, 150, 158))
+	surface.Parent = card
 
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Size = UDim2.new(1,0,1,0)
-	label.Font = Enum.Font.PatrickHand
-	label.Text = text
-	label.TextColor3 = color
-	label.TextStrokeTransparency = 0
-	label.TextStrokeColor3 = Color3.new(0,0,0)
-	label.TextScaled = true
-	label.Parent = billboard
+	local rim = Instance.new("UIStroke")
+	rim.Color = Color3.fromRGB(255, 255, 255)
+	rim.Thickness = 2
+	rim.Transparency = 0.1
+	rim.Parent = card
+
+	local rimGradient = Instance.new("UIGradient")
+	rimGradient.Rotation = 45
+	rimGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, accent),
+		ColorSequenceKeypoint.new(0.55, Color3.fromRGB(46, 36, 34)),
+		ColorSequenceKeypoint.new(1, Color3.new(accent.R * 0.7, accent.G * 0.7, accent.B * 0.7))
+	})
+	rimGradient.Parent = rim
+
+	TweenService:Create(
+		rim,
+		TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+		{Transparency = 0.6}
+	):Play()
+
+	local emblem = Instance.new("Frame")
+	emblem.Position = UDim2.fromOffset(10, 13)
+	emblem.Size = UDim2.fromOffset(38, 38)
+	emblem.BackgroundColor3 = accent
+	emblem.BorderSizePixel = 0
+	emblem.Parent = card
+
+	local emblemCorner = Instance.new("UICorner")
+	emblemCorner.CornerRadius = UDim.new(1, 0)
+	emblemCorner.Parent = emblem
+
+	local emblemGradient = Instance.new("UIGradient")
+	emblemGradient.Rotation = 90
+	emblemGradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(140, 110, 100))
+	emblemGradient.Parent = emblem
+
+	local emblemStroke = Instance.new("UIStroke")
+	emblemStroke.Color = Color3.fromRGB(12, 12, 14)
+	emblemStroke.Thickness = 2
+	emblemStroke.Parent = emblem
+
+	local letter = Instance.new("TextLabel")
+	letter.BackgroundTransparency = 1
+	letter.Size = UDim2.fromScale(1, 1)
+	letter.Font = Enum.Font.Garamond
+	letter.TextSize = 28
+	letter.TextColor3 = Color3.fromRGB(255, 247, 237)
+	letter.TextStrokeTransparency = 0.6
+	letter.TextStrokeColor3 = Color3.fromRGB(40, 20, 12)
+	letter.Text = "L"
+	letter.Parent = emblem
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Position = UDim2.fromOffset(58, 9)
+	titleLabel.Size = UDim2.new(1, -66, 0, 22)
+	titleLabel.Font = Enum.Font.Garamond
+	titleLabel.TextScaled = true
+	titleLabel.TextColor3 = Color3.fromRGB(242, 236, 226)
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextStrokeTransparency = 0.7
+	titleLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	titleLabel.Text = title
+	titleLabel.Parent = card
+
+	local titleLimit = Instance.new("UITextSizeConstraint")
+	titleLimit.MaxTextSize = 19
+	titleLimit.MinTextSize = 10
+	titleLimit.Parent = titleLabel
+
+	local subtitleLabel = Instance.new("TextLabel")
+	subtitleLabel.BackgroundTransparency = 1
+	subtitleLabel.Position = UDim2.fromOffset(58, 32)
+	subtitleLabel.Size = UDim2.new(1, -66, 0, 14)
+	subtitleLabel.Font = Enum.Font.Garamond
+	subtitleLabel.TextSize = 14
+	subtitleLabel.TextColor3 = Color3.fromRGB(172, 164, 155)
+	subtitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	subtitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	subtitleLabel.TextStrokeTransparency = 0.7
+	subtitleLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	subtitleLabel.Text = subtitle
+	subtitleLabel.Parent = card
+
+	local line = Instance.new("Frame")
+	line.Position = UDim2.fromOffset(58, 51)
+	line.Size = UDim2.fromOffset(46, 3)
+	line.BackgroundColor3 = accent
+	line.BorderSizePixel = 0
+	line.Parent = card
+
+	local lineCorner = Instance.new("UICorner")
+	lineCorner.CornerRadius = UDim.new(1, 0)
+	lineCorner.Parent = line
+
+	gui.Parent = head
+	return gui
 end
 
-local function watchPlayer(player)
-	local function onCharacter(character)
-		if player.UserId == OWNER_USER_ID then
-			createLegacyTag(
-				character,
-				"Legacy Service OWNER",
-				Color3.fromRGB(255,220,0)
-			)
-		elseif table.find(TESTER_USER_IDS,player.UserId) then
-			createLegacyTag(
-				character,
-				"Legacy Service Tester",
-				Color3.fromRGB(0,255,255)
-			)
-		elseif player.UserId == COLLABORATOR_USER_ID then
-			createLegacyTag(
-				character,
-				"Colaborator??",
-				Color3.fromRGB(170,0,255)
-			)
-		end
+Library._card = buildNameCard
+
+Library._fixedRole = function(player)
+	if player.UserId == OWNER_USER_ID then
+		return "Legacy Service Owner", Color3.fromRGB(232,190,92)
 	end
 
-	if player.Character then
-		onCharacter(player.Character)
+	if table.find(TESTER_USER_IDS,player.UserId) then
+		return "Legacy Service Tester", Color3.fromRGB(90,200,210)
 	end
 
-	player.CharacterAdded:Connect(onCharacter)
-end
+	if player.UserId == COLLABORATOR_USER_ID then
+		return "Colaborator??", Color3.fromRGB(170,110,230)
+	end
 
-for _, player in ipairs(Players:GetPlayers()) do
-	watchPlayer(player)
+	return nil
 end
-
-Players.PlayerAdded:Connect(watchPlayer)
 
 local function check()
 	local works =
@@ -15911,6 +15926,216 @@ pcall(function()
 	end)
 end)
 
+
+pcall(function()
+	local Players = game:GetService("Players")
+	local HttpService = game:GetService("HttpService")
+	local lp = Players.LocalPlayer
+
+	local RELAY_URL = "https://legacy-relay.system-7372772.workers.dev"
+	local RELAY_KEY = "THELEGACY18W7272771_7"
+	local BEAT_SECONDS = 20
+	local BB_NAME = "LegacyUserBB"
+
+	local showUsers = true
+	local shareMe = true
+	local active = {}
+	local poke = false
+	local started = false
+
+	local requestFunction = (syn and syn.request) or (http and http.request) or http_request or request
+
+	local Users67 = NS:AddGroup({
+		Name = "Users🌐",
+		Info = "Users🌐",
+		Side = "Right",
+	})
+
+	local function accentFor(role)
+		if role == "OWNER" then
+			return Color3.fromRGB(232, 190, 92)
+		end
+		return Color3.fromRGB(200, 128, 92)
+	end
+
+	local function titleFor(role)
+		if role == "USER" then
+			return "Legacy Service User"
+		end
+		return "Legacy Service " .. string.upper(string.sub(role, 1, 1)) .. string.lower(string.sub(role, 2))
+	end
+
+	local function removeCard(player)
+		local char = player.Character
+		local head = char and char:FindFirstChild("Head")
+		local card = head and head:FindFirstChild(BB_NAME)
+		if card then
+			card:Destroy()
+		end
+	end
+
+	local function makeCard(player, key, title, accent)
+		local char = player.Character
+		local head = char and char:FindFirstChild("Head")
+		if not head then
+			return
+		end
+		local existing = head:FindFirstChild(BB_NAME)
+		if existing then
+			if existing:GetAttribute("Role") == key then
+				return
+			end
+			existing:Destroy()
+		end
+		local subtitle = "@" .. player.Name .. "  |  " .. player.AccountAge .. "d"
+		local gui = Library._card(head, BB_NAME, title, subtitle, accent, 3.2)
+		gui:SetAttribute("Role", key)
+	end
+
+	local function syncPlayer(player)
+		local isSelf = player == lp
+		local char = player.Character
+		local head = char and char:FindFirstChild("Head")
+		local allowed = isSelf and shareMe or (not isSelf and showUsers)
+		local fixedTitle, fixedAccent = Library._fixedRole(player)
+		local role = active[player.UserId]
+		if allowed and head and (fixedTitle or role) then
+			if fixedTitle then
+				makeCard(player, fixedTitle, fixedTitle, fixedAccent)
+			else
+				makeCard(player, role, titleFor(role), accentFor(role))
+			end
+		else
+			removeCard(player)
+		end
+	end
+
+	local function syncAll()
+		for _, player in ipairs(Players:GetPlayers()) do
+			pcall(syncPlayer, player)
+		end
+	end
+
+	local function beat()
+		if not requestFunction or RELAY_URL == "" then
+			return
+		end
+		if not showUsers and not shareMe then
+			return
+		end
+		local url = string.gsub(RELAY_URL, "/+$", "") .. "/hb"
+		local payload = HttpService:JSONEncode({
+			userId = lp.UserId,
+			jobId = game.JobId,
+			key = RELAY_KEY,
+			share = shareMe,
+		})
+		local response = requestFunction({
+			Url = url,
+			Method = "POST",
+			Headers = { ["Content-Type"] = "application/json" },
+			Body = payload,
+		})
+		if not response or response.StatusCode ~= 200 then
+			return
+		end
+		local ok, data = pcall(function()
+			return HttpService:JSONDecode(response.Body)
+		end)
+		if not ok or type(data) ~= "table" or type(data.users) ~= "table" then
+			return
+		end
+		local fresh = {}
+		for _, entry in ipairs(data.users) do
+			local id = tonumber(entry.id)
+			if id then
+				fresh[id] = tostring(entry.role or "USER"):upper()
+			end
+		end
+		active = fresh
+		syncAll()
+	end
+
+	local function hookPlayer(player)
+		player.CharacterAdded:Connect(function()
+			task.wait(1.5)
+			pcall(syncPlayer, player)
+		end)
+		if player.Character then
+			task.defer(function()
+				pcall(syncPlayer, player)
+			end)
+		end
+	end
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		hookPlayer(player)
+	end
+
+	Players.PlayerAdded:Connect(function(player)
+		hookPlayer(player)
+		task.wait(1)
+		poke = true
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		active[player.UserId] = nil
+	end)
+
+	lp.CharacterAdded:Connect(function()
+		task.wait(1)
+		poke = true
+	end)
+
+	local function startLoop()
+		if started then
+			return
+		end
+		started = true
+		task.spawn(function()
+			while true do
+				pcall(beat)
+				local waited = 0
+				while waited < BEAT_SECONDS and not poke do
+					task.wait(0.5)
+					waited = waited + 0.5
+				end
+				poke = false
+			end
+		end)
+	end
+
+	local function refreshAll()
+		for _, player in ipairs(Players:GetPlayers()) do
+			pcall(syncPlayer, player)
+		end
+	end
+
+	Users67:AddToggle({
+		Name = "Show Legacy Users",
+		Info = "Shows a card over players using Legacy Service in this server",
+		Default = true,
+		Callback = function(value)
+			showUsers = value
+			refreshAll()
+			poke = true
+		end,
+	})
+
+	Users67:AddToggle({
+		Name = "Show Me To Others",
+		Info = "Lets other Legacy Service users see the card over your head",
+		Default = true,
+		Callback = function(value)
+			shareMe = value
+			refreshAll()
+			poke = true
+		end,
+	})
+
+	startLoop()
+	task.defer(refreshAll)
+end)
 
 pcall(function()
 	local Players = game:GetService("Players")
