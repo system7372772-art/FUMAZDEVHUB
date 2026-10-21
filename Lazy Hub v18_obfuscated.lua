@@ -2291,6 +2291,7 @@ button.TextWrapped = true
 		return tab
 	end
 
+	Library._window = Window
 	return Window
 end
 
@@ -2906,6 +2907,11 @@ local function buildNameCard(head, name, title, subtitle, accent, height)
 	lineCorner.Parent = line
 
 	gui.Parent = head
+
+	if Library._onNewGui then
+		pcall(Library._onNewGui, gui)
+	end
+
 	return gui
 end
 
@@ -14225,6 +14231,7 @@ pcall(function()
 		gui.ResetOnSpawn = false
 		gui.IgnoreGuiInset = true
 		gui.Enabled = false
+		gui:SetAttribute("ThemeRoot", true)
 		gui.Parent = CoreGui
 
 		local main = Instance.new("Frame")
@@ -16366,6 +16373,1808 @@ pcall(function()
 	if playerGui then
 		watch(playerGui)
 	end
+end)
+
+pcall(function()
+	local Players = game:GetService("Players")
+	local TweenService = game:GetService("TweenService")
+	local RunService = game:GetService("RunService")
+	local UserInputService = game:GetService("UserInputService")
+	local GuiService = game:GetService("GuiService")
+	local CoreGui = game:GetService("CoreGui")
+	local lp = Players.LocalPlayer
+
+	local function rgb(r, g, b)
+		return Color3.fromRGB(r, g, b)
+	end
+
+	local themes = {
+		Medieval = {
+			font = Enum.Font.Garamond,
+			fontDelta = 0,
+			transparency = 0.04,
+			cornerScale = 1,
+			glass = false,
+			colors = {
+				Background = rgb(28, 28, 31),
+				GroupBackground = rgb(24, 24, 27),
+				Secondary = rgb(34, 34, 37),
+				Panel = rgb(38, 38, 42),
+				Input = rgb(34, 34, 38),
+				Element = rgb(50, 50, 54),
+				ToggleOff = rgb(58, 58, 62),
+				Border = rgb(70, 66, 64),
+				Text = rgb(242, 236, 226),
+				SubText = rgb(172, 164, 155),
+				Accent = rgb(176, 112, 84),
+				AccentHover = rgb(204, 136, 100),
+				CardBg = rgb(22, 22, 26),
+				CardRim = rgb(46, 36, 34),
+				EmblemRing = rgb(12, 12, 14),
+				Copper = rgb(200, 128, 92),
+				Letter = rgb(255, 247, 237),
+				MetalHi = rgb(84, 80, 78),
+				MetalMid = rgb(26, 26, 29),
+				MetalLo = rgb(4, 4, 6),
+				BevelHi = rgb(92, 88, 86),
+				BevelLo = rgb(10, 10, 12),
+				SurfaceLo = rgb(138, 138, 146),
+				SurfaceLo2 = rgb(168, 168, 174),
+				SurfaceLo3 = rgb(150, 150, 158),
+				EmblemLo = rgb(140, 110, 100),
+				Placeholder = rgb(120, 112, 104),
+				ScrollBar = rgb(120, 110, 104),
+			},
+		},
+		Aqua = {
+			font = Enum.Font.Nunito,
+			fontDelta = -2,
+			transparency = 0.2,
+			cornerScale = 1.4,
+			glass = true,
+			colors = {
+				Background = rgb(8, 38, 56),
+				GroupBackground = rgb(6, 30, 46),
+				Secondary = rgb(10, 48, 68),
+				Panel = rgb(12, 54, 76),
+				Input = rgb(6, 32, 48),
+				Element = rgb(16, 78, 104),
+				ToggleOff = rgb(20, 62, 84),
+				Border = rgb(90, 200, 220),
+				Text = rgb(226, 248, 255),
+				SubText = rgb(140, 196, 214),
+				Accent = rgb(0, 190, 210),
+				AccentHover = rgb(60, 225, 235),
+				CardBg = rgb(6, 34, 50),
+				CardRim = rgb(10, 70, 92),
+				EmblemRing = rgb(4, 24, 36),
+				Copper = rgb(40, 190, 220),
+				Letter = rgb(240, 255, 255),
+				MetalHi = rgb(120, 225, 238),
+				MetalMid = rgb(24, 110, 140),
+				MetalLo = rgb(6, 40, 58),
+				BevelHi = rgb(140, 235, 245),
+				BevelLo = rgb(6, 44, 62),
+				SurfaceLo = rgb(160, 205, 220),
+				SurfaceLo2 = rgb(185, 220, 235),
+				SurfaceLo3 = rgb(175, 212, 228),
+				EmblemLo = rgb(60, 150, 170),
+				Placeholder = rgb(96, 150, 170),
+				ScrollBar = rgb(90, 190, 210),
+			},
+		},
+		Retro = {
+			font = Enum.Font.Michroma,
+			fontDelta = -4,
+			transparency = 0.06,
+			cornerScale = 0.5,
+			glass = false,
+			textStroke = { color = rgb(0, 230, 255), transparency = 0.6 },
+			colors = {
+				Background = rgb(22, 10, 38),
+				GroupBackground = rgb(17, 8, 30),
+				Secondary = rgb(34, 14, 54),
+				Panel = rgb(40, 18, 62),
+				Input = rgb(14, 8, 26),
+				Element = rgb(58, 26, 86),
+				ToggleOff = rgb(46, 26, 68),
+				Border = rgb(255, 70, 190),
+				Text = rgb(255, 238, 248),
+				SubText = rgb(178, 150, 214),
+				Accent = rgb(255, 46, 166),
+				AccentHover = rgb(255, 150, 70),
+				CardBg = rgb(15, 8, 27),
+				CardRim = rgb(60, 20, 70),
+				EmblemRing = rgb(10, 4, 20),
+				Copper = rgb(0, 224, 255),
+				Letter = rgb(255, 252, 250),
+				MetalHi = rgb(255, 60, 190),
+				MetalMid = rgb(100, 52, 180),
+				MetalLo = rgb(0, 210, 255),
+				BevelHi = rgb(255, 120, 220),
+				BevelLo = rgb(0, 150, 200),
+				SurfaceLo = rgb(150, 130, 182),
+				SurfaceLo2 = rgb(172, 150, 204),
+				SurfaceLo3 = rgb(160, 140, 192),
+				EmblemLo = rgb(152, 60, 142),
+				Placeholder = rgb(140, 104, 170),
+				ScrollBar = rgb(255, 72, 192),
+			},
+		},
+		Wii = {
+			font = Enum.Font.Nunito,
+			fontDelta = -1,
+			transparency = 0.02,
+			cornerScale = 1.7,
+			glass = false,
+			textStroke = { color = rgb(255, 255, 255), transparency = 1 },
+			colors = {
+				Background = rgb(238, 242, 247),
+				GroupBackground = rgb(247, 249, 252),
+				Secondary = rgb(226, 233, 241),
+				Panel = rgb(250, 251, 254),
+				Input = rgb(230, 237, 244),
+				Element = rgb(251, 252, 254),
+				ToggleOff = rgb(196, 206, 218),
+				Border = rgb(150, 172, 194),
+				Text = rgb(70, 84, 104),
+				SubText = rgb(128, 143, 162),
+				Accent = rgb(0, 166, 226),
+				AccentHover = rgb(70, 198, 240),
+				CardBg = rgb(244, 248, 252),
+				CardRim = rgb(190, 214, 232),
+				EmblemRing = rgb(206, 224, 238),
+				Copper = rgb(0, 168, 228),
+				Letter = rgb(254, 254, 255),
+				MetalHi = rgb(253, 254, 255),
+				MetalMid = rgb(196, 212, 228),
+				MetalLo = rgb(122, 152, 180),
+				BevelHi = rgb(252, 253, 255),
+				BevelLo = rgb(172, 196, 216),
+				SurfaceLo = rgb(222, 230, 240),
+				SurfaceLo2 = rgb(230, 237, 246),
+				SurfaceLo3 = rgb(226, 234, 243),
+				EmblemLo = rgb(120, 190, 232),
+				Placeholder = rgb(150, 163, 178),
+				ScrollBar = rgb(120, 190, 226),
+			},
+		},
+		Relax = {
+			font = Enum.Font.Nunito,
+			fontDelta = -1,
+			transparency = 0.08,
+			cornerScale = 1.3,
+			glass = false,
+			colors = {
+				Background = rgb(22, 26, 38),
+				GroupBackground = rgb(18, 22, 32),
+				Secondary = rgb(28, 33, 48),
+				Panel = rgb(32, 38, 56),
+				Input = rgb(16, 20, 30),
+				Element = rgb(40, 47, 68),
+				ToggleOff = rgb(36, 42, 60),
+				Border = rgb(72, 84, 120),
+				Text = rgb(214, 222, 240),
+				SubText = rgb(134, 146, 178),
+				Accent = rgb(122, 140, 220),
+				AccentHover = rgb(156, 172, 240),
+				CardBg = rgb(15, 19, 29),
+				CardRim = rgb(40, 48, 78),
+				EmblemRing = rgb(10, 12, 20),
+				Copper = rgb(126, 150, 226),
+				Letter = rgb(236, 240, 252),
+				MetalHi = rgb(96, 110, 170),
+				MetalMid = rgb(30, 36, 56),
+				MetalLo = rgb(10, 12, 22),
+				BevelHi = rgb(92, 104, 150),
+				BevelLo = rgb(12, 14, 24),
+				SurfaceLo = rgb(136, 142, 170),
+				SurfaceLo2 = rgb(158, 164, 190),
+				SurfaceLo3 = rgb(146, 152, 180),
+				EmblemLo = rgb(80, 96, 150),
+				Placeholder = rgb(96, 108, 142),
+				ScrollBar = rgb(100, 114, 170),
+			},
+		},
+		Cafeteria = {
+			font = Enum.Font.PatrickHand,
+			fontDelta = 1,
+			transparency = 0.05,
+			cornerScale = 1.1,
+			glass = false,
+			colors = {
+				Background = rgb(44, 30, 24),
+				GroupBackground = rgb(36, 24, 19),
+				Secondary = rgb(56, 38, 30),
+				Panel = rgb(64, 44, 34),
+				Input = rgb(30, 20, 16),
+				Element = rgb(88, 62, 48),
+				ToggleOff = rgb(76, 54, 44),
+				Border = rgb(146, 104, 74),
+				Text = rgb(250, 238, 220),
+				SubText = rgb(200, 170, 140),
+				Accent = rgb(214, 142, 72),
+				AccentHover = rgb(238, 172, 98),
+				CardBg = rgb(29, 19, 15),
+				CardRim = rgb(80, 54, 40),
+				EmblemRing = rgb(18, 12, 9),
+				Copper = rgb(222, 152, 84),
+				Letter = rgb(255, 246, 230),
+				MetalHi = rgb(178, 126, 88),
+				MetalMid = rgb(62, 42, 32),
+				MetalLo = rgb(24, 16, 12),
+				BevelHi = rgb(170, 122, 88),
+				BevelLo = rgb(22, 15, 11),
+				SurfaceLo = rgb(150, 128, 112),
+				SurfaceLo2 = rgb(172, 150, 132),
+				SurfaceLo3 = rgb(160, 138, 122),
+				EmblemLo = rgb(150, 100, 70),
+				Placeholder = rgb(150, 118, 92),
+				ScrollBar = rgb(176, 128, 92),
+			},
+		},
+		Realistic = {
+			font = Enum.Font.Roboto,
+			fontDelta = -1,
+			transparency = 0.2,
+			cornerScale = 1.1,
+			glass = true,
+			colors = {
+				Background = rgb(30, 34, 40),
+				GroupBackground = rgb(24, 28, 33),
+				Secondary = rgb(38, 43, 50),
+				Panel = rgb(44, 50, 58),
+				Input = rgb(20, 24, 29),
+				Element = rgb(58, 65, 75),
+				ToggleOff = rgb(50, 56, 65),
+				Border = rgb(120, 132, 148),
+				Text = rgb(236, 240, 244),
+				SubText = rgb(154, 164, 178),
+				Accent = rgb(86, 148, 226),
+				AccentHover = rgb(120, 172, 240),
+				CardBg = rgb(19, 23, 28),
+				CardRim = rgb(52, 60, 72),
+				EmblemRing = rgb(12, 14, 18),
+				Copper = rgb(96, 156, 232),
+				Letter = rgb(244, 247, 250),
+				MetalHi = rgb(150, 160, 176),
+				MetalMid = rgb(46, 52, 60),
+				MetalLo = rgb(14, 16, 20),
+				BevelHi = rgb(140, 152, 168),
+				BevelLo = rgb(16, 18, 22),
+				SurfaceLo = rgb(140, 148, 160),
+				SurfaceLo2 = rgb(160, 168, 180),
+				SurfaceLo3 = rgb(150, 158, 170),
+				EmblemLo = rgb(90, 110, 140),
+				Placeholder = rgb(110, 122, 138),
+				ScrollBar = rgb(120, 134, 156),
+			},
+		},
+	}
+
+	local libraryKeys = {
+		"Background",
+		"Secondary",
+		"Element",
+		"Border",
+		"Text",
+		"SubText",
+		"Accent",
+		"ToggleOff",
+		"AccentHover",
+		"GroupBackground",
+	}
+
+	local panelNames = { "Background", "GroupBackground", "Secondary", "Panel" }
+
+	local currentName = "Medieval"
+	local rng = Random.new()
+
+	local function colorKey(color)
+		return math.floor(color.R * 255 + 0.5) * 65536
+			+ math.floor(color.G * 255 + 0.5) * 256
+			+ math.floor(color.B * 255 + 0.5)
+	end
+
+	local function buildMap(from, to)
+		local map = {}
+		for name, color in pairs(from.colors) do
+			local target = to.colors[name]
+			local key = colorKey(color)
+			if target and key ~= 16777215 and not map[key] then
+				map[key] = target
+			end
+		end
+		return map
+	end
+
+	local function panelKeySet(theme)
+		local set = {}
+		for _, name in ipairs(panelNames) do
+			set[colorKey(theme.colors[name])] = true
+		end
+		return set
+	end
+
+	local function recolor(inst, prop, map)
+		local ok, value = pcall(function()
+			return inst[prop]
+		end)
+		if not ok or typeof(value) ~= "Color3" then
+			return
+		end
+		local target = map[colorKey(value)]
+		if target then
+			inst[prop] = target
+		end
+	end
+
+	local function applyInstance(inst, map, from, to, panelKeys)
+		if inst:IsA("GuiObject") then
+			local oldKey = colorKey(inst.BackgroundColor3)
+			recolor(inst, "BackgroundColor3", map)
+
+			if inst:IsA("Frame") or inst:IsA("ScrollingFrame") then
+				local original = inst:GetAttribute("OrigTransp")
+				if to.glass then
+					local tooSmall = inst.AutomaticSize == Enum.AutomaticSize.None
+						and inst.Size.Y.Scale == 0
+						and inst.Size.Y.Offset > 0
+						and inst.Size.Y.Offset < 30
+					if panelKeys[oldKey] and not tooSmall and inst.BackgroundTransparency <= 0.12 and not original then
+						inst:SetAttribute("OrigTransp", inst.BackgroundTransparency)
+						inst.BackgroundTransparency = to.transparency
+					end
+				elseif original then
+					inst.BackgroundTransparency = original
+					inst:SetAttribute("OrigTransp", nil)
+				end
+			end
+
+			if inst:IsA("TextLabel") or inst:IsA("TextButton") or inst:IsA("TextBox") then
+				recolor(inst, "TextColor3", map)
+				if inst:IsA("TextBox") then
+					recolor(inst, "PlaceholderColor3", map)
+				end
+				if inst.Font == from.font then
+					inst.Font = to.font
+					local delta = to.fontDelta - from.fontDelta
+					if delta ~= 0 and not inst.TextScaled then
+						inst.TextSize = math.max(8, inst.TextSize + delta)
+					end
+				end
+				if to.textStroke then
+					if inst:GetAttribute("OrigStrokeT") == nil then
+						inst:SetAttribute("OrigStrokeT", inst.TextStrokeTransparency)
+						inst:SetAttribute("OrigStrokeC", inst.TextStrokeColor3)
+					end
+					inst.TextStrokeColor3 = to.textStroke.color
+					inst.TextStrokeTransparency = to.textStroke.transparency
+				elseif inst:GetAttribute("OrigStrokeT") ~= nil then
+					inst.TextStrokeTransparency = inst:GetAttribute("OrigStrokeT")
+					inst.TextStrokeColor3 = inst:GetAttribute("OrigStrokeC")
+					inst:SetAttribute("OrigStrokeT", nil)
+					inst:SetAttribute("OrigStrokeC", nil)
+				end
+			end
+			if inst:IsA("ScrollingFrame") then
+				recolor(inst, "ScrollBarImageColor3", map)
+			end
+			if inst:IsA("ImageLabel") or inst:IsA("ImageButton") then
+				recolor(inst, "ImageColor3", map)
+			end
+		elseif inst:IsA("UIStroke") then
+			recolor(inst, "Color", map)
+		elseif inst:IsA("UIGradient") then
+			local keypoints = inst.Color.Keypoints
+			local changed = false
+			local rebuilt = {}
+			for index, point in ipairs(keypoints) do
+				local target = map[colorKey(point.Value)]
+				if target then
+					changed = true
+					rebuilt[index] = ColorSequenceKeypoint.new(point.Time, target)
+				else
+					rebuilt[index] = point
+				end
+			end
+			if changed then
+				inst.Color = ColorSequence.new(rebuilt)
+			end
+		elseif inst:IsA("UICorner") then
+			local original = inst:GetAttribute("OrigCorner")
+			if inst.CornerRadius.Scale == 0 then
+				if original == nil and inst.CornerRadius.Offset >= 4 and inst.CornerRadius.Offset <= 20 then
+					original = inst.CornerRadius.Offset
+					inst:SetAttribute("OrigCorner", original)
+				end
+				if original then
+					local scaled = math.floor(original * to.cornerScale + 0.5)
+					if scaled < 2 then
+						scaled = 2
+					end
+					inst.CornerRadius = UDim.new(0, scaled)
+				end
+			end
+		end
+	end
+
+	local fx = nil
+	local fxAlive = false
+	local bubbleCount = 0
+	local fxConnections = {}
+
+	local function applyTree(root, map, from, to, panelKeys)
+		pcall(applyInstance, root, map, from, to, panelKeys)
+		local counter = 0
+		for _, descendant in ipairs(root:GetDescendants()) do
+			if not (fx and descendant:IsDescendantOf(fx)) then
+				pcall(applyInstance, descendant, map, from, to, panelKeys)
+			end
+			counter = counter + 1
+			if counter % 500 == 0 then
+				task.wait()
+			end
+		end
+	end
+
+	local function applyNew(inst)
+		if currentName == "Medieval" or not inst.Parent then
+			return
+		end
+		if fx and inst:IsDescendantOf(fx) then
+			return
+		end
+		local from = themes.Medieval
+		local to = themes[currentName]
+		pcall(applyInstance, inst, buildMap(from, to), from, to, panelKeySet(from))
+	end
+
+	local function applyNewTree(root)
+		if currentName == "Medieval" or not root.Parent then
+			return
+		end
+		local from = themes.Medieval
+		local to = themes[currentName]
+		applyTree(root, buildMap(from, to), from, to, panelKeySet(from))
+	end
+
+	local function hookRoot(root)
+		if root:GetAttribute("ThemeHooked") then
+			return
+		end
+		root:SetAttribute("ThemeHooked", true)
+		root.DescendantAdded:Connect(function(descendant)
+			if currentName == "Medieval" then
+				return
+			end
+			task.defer(applyNew, descendant)
+			task.delay(0.4, applyNew, descendant)
+		end)
+	end
+
+	local function isThemeRoot(gui)
+		return gui:IsA("ScreenGui") and (gui:GetAttribute("LegacySkin") or gui:GetAttribute("ThemeRoot"))
+	end
+
+	local function getRoots()
+		local roots = {}
+		local window = Library._window
+		if window and window.Gui then
+			table.insert(roots, window.Gui)
+		end
+		local playerGui = lp:FindFirstChildOfClass("PlayerGui")
+		for _, container in ipairs({ CoreGui, playerGui }) do
+			if container then
+				for _, child in ipairs(container:GetChildren()) do
+					if isThemeRoot(child) then
+						table.insert(roots, child)
+					end
+				end
+			end
+		end
+		return roots
+	end
+
+	local function getCards()
+		local cards = {}
+		for _, player in ipairs(Players:GetPlayers()) do
+			local char = player.Character
+			local head = char and char:FindFirstChild("Head")
+			local card = head and head:FindFirstChild("LegacyUserBB")
+			if card then
+				table.insert(cards, card)
+			end
+		end
+		return cards
+	end
+
+	local function newCircle(parent, size, color, transparency)
+		local frame = Instance.new("Frame")
+		frame.BackgroundColor3 = color
+		frame.BackgroundTransparency = transparency
+		frame.BorderSizePixel = 0
+		frame.Size = UDim2.fromOffset(size, size)
+		frame.Parent = parent
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(1, 0)
+		corner.Parent = frame
+		return frame
+	end
+
+	local function makeFxContainer(name, radius)
+		local window = Library._window
+		local main = window and window.Main
+		if not main then
+			return nil
+		end
+		local container = Instance.new("Frame")
+		container.Name = name
+		container.BackgroundTransparency = 1
+		container.BorderSizePixel = 0
+		container.Size = UDim2.fromScale(1, 1)
+		container.ClipsDescendants = true
+		container.ZIndex = 60
+		container.Active = false
+		container.Parent = main
+		local containerCorner = Instance.new("UICorner")
+		containerCorner.CornerRadius = UDim.new(0, radius)
+		containerCorner.Parent = container
+		return container, main
+	end
+
+	local function solid(parent, color, transparency, size, position)
+		local frame = Instance.new("Frame")
+		frame.BackgroundColor3 = color
+		frame.BackgroundTransparency = transparency
+		frame.BorderSizePixel = 0
+		frame.Size = size
+		frame.Position = position or UDim2.new(0, 0, 0, 0)
+		frame.Parent = parent
+		return frame
+	end
+
+	local function fadeGradient(parent, rotation, points)
+		local gradient = Instance.new("UIGradient")
+		gradient.Rotation = rotation
+		local keypoints = {}
+		for index, point in ipairs(points) do
+			keypoints[index] = NumberSequenceKeypoint.new(point[1], point[2])
+		end
+		gradient.Transparency = NumberSequence.new(keypoints)
+		gradient.Parent = parent
+		return gradient
+	end
+
+	local function osdLabel(parent, text, anchor, position, align, color)
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.AnchorPoint = anchor
+		label.Position = position
+		label.Size = UDim2.fromOffset(150, 18)
+		label.Font = Enum.Font.Michroma
+		label.TextSize = 11
+		label.TextColor3 = color
+		label.TextStrokeColor3 = Color3.fromRGB(0, 230, 255)
+		label.TextStrokeTransparency = 0.35
+		label.TextXAlignment = align
+		label.Text = text
+		label.Parent = parent
+		return label
+	end
+
+	local function toWindowSpace(main, position)
+		local window = Library._window
+		local gui = window and window.Gui
+		local inset = Vector2.new(0, 0)
+		if gui and not gui.IgnoreGuiInset then
+			inset = GuiService:GetGuiInset()
+		end
+		return Vector2.new(position.X, position.Y) - main.AbsolutePosition - inset
+	end
+
+	local function spawnRipple(parent, relative, color)
+		local ring = newCircle(parent, 8, color, 1)
+		ring.AnchorPoint = Vector2.new(0.5, 0.5)
+		ring.Position = UDim2.fromOffset(relative.X, relative.Y)
+		local outline = Instance.new("UIStroke")
+		outline.Color = color
+		outline.Thickness = 2
+		outline.Transparency = 0.2
+		outline.Parent = ring
+		TweenService:Create(
+			ring,
+			TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Size = UDim2.fromOffset(100, 100) }
+		):Play()
+		TweenService:Create(
+			outline,
+			TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Transparency = 1 }
+		):Play()
+		task.delay(0.85, function()
+			ring:Destroy()
+		end)
+	end
+
+	local function connectRipples(main, container, color)
+		table.insert(
+			fxConnections,
+			UserInputService.InputBegan:Connect(function(input)
+				if
+					input.UserInputType ~= Enum.UserInputType.MouseButton1
+					and input.UserInputType ~= Enum.UserInputType.Touch
+				then
+					return
+				end
+				local relative = toWindowSpace(main, input.Position)
+				if
+					relative.X >= 0
+					and relative.Y >= 0
+					and relative.X <= main.AbsoluteSize.X
+					and relative.Y <= main.AbsoluteSize.Y
+				then
+					spawnRipple(container, relative, color)
+				end
+			end)
+		)
+	end
+
+	local function makeWave(parent, width, color, transparency, period, seconds, direction, lift)
+		local strip = Instance.new("Frame")
+		strip.BackgroundTransparency = 1
+		strip.BorderSizePixel = 0
+		strip.Size = UDim2.new(0, width + period * 4, 0, period * 1.6)
+		local startX = direction > 0 and -period * 2 or 0
+		local endX = direction > 0 and 0 or -period * 2
+		strip.Position = UDim2.new(0, startX, 1, -lift)
+		strip.Parent = parent
+		local count = math.ceil((width + period * 4) / period) + 1
+		for index = 0, count do
+			local circle = newCircle(strip, period * 1.6, color, transparency)
+			circle.Position = UDim2.fromOffset(index * period, 0)
+		end
+		TweenService:Create(
+			strip,
+			TweenInfo.new(seconds, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, false),
+			{ Position = UDim2.new(0, endX, 1, -lift) }
+		):Play()
+	end
+
+	local function makeRay(parent, xScale, widthPx, sway)
+		local ray = Instance.new("Frame")
+		ray.BackgroundColor3 = Color3.fromRGB(235, 252, 255)
+		ray.BackgroundTransparency = 0
+		ray.BorderSizePixel = 0
+		ray.Rotation = 16
+		ray.Size = UDim2.new(0, widthPx, 1.7, 0)
+		ray.Position = UDim2.new(xScale, 0, -0.25, 0)
+		ray.Parent = parent
+		local fade = Instance.new("UIGradient")
+		fade.Rotation = 90
+		fade.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.9),
+			NumberSequenceKeypoint.new(0.6, 0.96),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		fade.Parent = ray
+		TweenService:Create(
+			ray,
+			TweenInfo.new(rng:NextNumber(5, 8), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Position = UDim2.new(xScale, sway, -0.25, 0) }
+		):Play()
+	end
+
+	local function spawnBubble(root)
+		if not root or not root.Parent then
+			return
+		end
+		local size = rng:NextInteger(6, 18)
+		local x = rng:NextNumber(0.03, 0.97)
+		local rise = rng:NextNumber(4.5, 8.5)
+
+		local wrapper = Instance.new("Frame")
+		wrapper.BackgroundTransparency = 1
+		wrapper.Size = UDim2.fromOffset(size, size)
+		wrapper.Position = UDim2.new(x, 0, 1, size)
+		wrapper.Parent = root
+
+		local swayHolder = Instance.new("Frame")
+		swayHolder.BackgroundTransparency = 1
+		swayHolder.Size = UDim2.fromScale(1, 1)
+		swayHolder.Parent = wrapper
+
+		local bubble = newCircle(swayHolder, size, Color3.fromRGB(210, 245, 255), 0.78)
+		bubble.Size = UDim2.fromScale(1, 1)
+
+		local rim = Instance.new("UIStroke")
+		rim.Color = Color3.fromRGB(235, 252, 255)
+		rim.Thickness = 1
+		rim.Transparency = 0.45
+		rim.Parent = bubble
+
+		local shine = newCircle(bubble, 4, Color3.fromRGB(255, 255, 255), 0.3)
+		shine.Size = UDim2.fromScale(0.28, 0.28)
+		shine.Position = UDim2.fromScale(0.2, 0.17)
+
+		bubbleCount = bubbleCount + 1
+
+		TweenService:Create(
+			swayHolder,
+			TweenInfo.new(rng:NextNumber(1, 1.8), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Position = UDim2.fromOffset(rng:NextInteger(-12, 12), 0) }
+		):Play()
+
+		TweenService:Create(
+			bubble,
+			TweenInfo.new(rise * 0.35, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, rise * 0.65),
+			{ BackgroundTransparency = 1 }
+		):Play()
+		TweenService:Create(
+			rim,
+			TweenInfo.new(rise * 0.35, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, rise * 0.65),
+			{ Transparency = 1 }
+		):Play()
+
+		local rising = TweenService:Create(
+			wrapper,
+			TweenInfo.new(rise, Enum.EasingStyle.Linear),
+			{ Position = UDim2.new(x, 0, -0.1, -size) }
+		)
+		rising.Completed:Connect(function()
+			bubbleCount = math.max(0, bubbleCount - 1)
+			wrapper:Destroy()
+		end)
+		rising:Play()
+	end
+
+	local fxNames = {
+		AquaFX = true,
+		RetroFX = true,
+		WiiFX = true,
+		RelaxFX = true,
+		CafeFX = true,
+		RealisticFX = true,
+	}
+
+	local function purgeFx()
+		local window = Library._window
+		local main = window and window.Main
+		if not main then
+			return
+		end
+		for _, child in ipairs(main:GetChildren()) do
+			if fxNames[child.Name] then
+				child:Destroy()
+			end
+		end
+	end
+
+	local function stopFx()
+		fxAlive = false
+		for _, connection in ipairs(fxConnections) do
+			connection:Disconnect()
+		end
+		fxConnections = {}
+		if fx then
+			fx:Destroy()
+			fx = nil
+		end
+		purgeFx()
+		bubbleCount = 0
+	end
+
+	local function startAquaFx()
+		local window = Library._window
+		local main = window and window.Main
+		if not main then
+			return
+		end
+
+		fx = Instance.new("Frame")
+		local aquaRoot = fx
+		fx.Name = "AquaFX"
+		fx.BackgroundTransparency = 1
+		fx.BorderSizePixel = 0
+		fx.Size = UDim2.fromScale(1, 1)
+		fx.ClipsDescendants = true
+		fx.ZIndex = 60
+		fx.Active = false
+		fx.Parent = main
+
+		local fxCorner = Instance.new("UICorner")
+		fxCorner.CornerRadius = UDim.new(0, 20)
+		fxCorner.Parent = fx
+
+		local water = Instance.new("Frame")
+		water.BackgroundColor3 = Color3.fromRGB(30, 170, 210)
+		water.BackgroundTransparency = 0
+		water.BorderSizePixel = 0
+		water.Size = UDim2.fromScale(1, 1)
+		water.Parent = fx
+		local waterGradient = Instance.new("UIGradient")
+		waterGradient.Rotation = 90
+		waterGradient.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.55, 0.96),
+			NumberSequenceKeypoint.new(1, 0.78),
+		})
+		waterGradient.Parent = water
+		TweenService:Create(
+			waterGradient,
+			TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Offset = Vector2.new(0, 0.12) }
+		):Play()
+
+		local width = math.max(main.AbsoluteSize.X, 520)
+		makeRay(fx, 0.12, 54, 26)
+		makeRay(fx, 0.44, 82, -30)
+		makeRay(fx, 0.74, 60, 22)
+		makeWave(fx, width, Color3.fromRGB(70, 180, 220), 0.8, 36, 4.6, -1, 22)
+		makeWave(fx, width, Color3.fromRGB(150, 230, 245), 0.84, 36, 3, 1, 14)
+
+		local fishCount = 0
+		local function spawnFish()
+			if not aquaRoot.Parent then
+				return
+			end
+			local size = rng:NextInteger(14, 26)
+			local direction = rng:NextInteger(1, 2) == 1 and 1 or -1
+			local y = rng:NextNumber(0.18, 0.7)
+			local travel = rng:NextNumber(10, 16)
+			local tint = rng:NextInteger(1, 2) == 1 and Color3.fromRGB(110, 230, 235) or Color3.fromRGB(255, 190, 120)
+
+			local holder = Instance.new("Frame")
+			holder.BackgroundTransparency = 1
+			holder.Size = UDim2.fromOffset(size * 2.4, size)
+			holder.Position = UDim2.new(direction > 0 and -0.15 or 1.1, 0, y, 0)
+			holder.Parent = aquaRoot
+
+			local bob = Instance.new("Frame")
+			bob.BackgroundTransparency = 1
+			bob.Size = UDim2.fromScale(1, 1)
+			bob.Parent = holder
+
+			local bodyX = direction > 0 and size * 0.6 or 0
+			local body = newCircle(bob, size, tint, 0.7)
+			body.Size = UDim2.fromOffset(size * 1.8, size)
+			body.Position = UDim2.fromOffset(bodyX, 0)
+
+			local tail = solid(bob, tint, 0.7, UDim2.fromOffset(size * 0.55, size * 0.55))
+			tail.Rotation = 45
+			tail.Position = direction > 0 and UDim2.fromOffset(size * 0.05, size * 0.225) or UDim2.fromOffset(size * 1.85, size * 0.225)
+
+			local eye = newCircle(bob, 3, Color3.fromRGB(10, 40, 60), 0.2)
+			eye.Position = UDim2.fromOffset(direction > 0 and bodyX + size * 1.35 or bodyX + size * 0.4, size * 0.28)
+
+			fishCount = fishCount + 1
+			TweenService:Create(
+				bob,
+				TweenInfo.new(rng:NextNumber(1.2, 2), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{ Position = UDim2.fromOffset(0, rng:NextInteger(-7, 7)) }
+			):Play()
+			local swim = TweenService:Create(
+				holder,
+				TweenInfo.new(travel, Enum.EasingStyle.Linear),
+				{ Position = UDim2.new(direction > 0 and 1.1 or -0.15, 0, y, 0) }
+			)
+			swim.Completed:Connect(function()
+				fishCount = math.max(0, fishCount - 1)
+				holder:Destroy()
+			end)
+			swim:Play()
+		end
+
+		task.spawn(function()
+			while fxAlive and aquaRoot.Parent do
+				if fishCount < 3 then
+					pcall(spawnFish)
+				end
+				task.wait(rng:NextNumber(3, 6))
+			end
+		end)
+
+		connectRipples(main, fx, Color3.fromRGB(200, 245, 255))
+
+		fxAlive = true
+		task.spawn(function()
+			while fxAlive and aquaRoot.Parent do
+				if bubbleCount < 14 then
+					pcall(spawnBubble, aquaRoot)
+				end
+				task.wait(rng:NextNumber(0.35, 0.8))
+			end
+		end)
+	end
+
+	local function startRetroFx()
+		local container, main = makeFxContainer("RetroFX", 8)
+		if not container then
+			return
+		end
+		fx = container
+
+		local width = math.max(main.AbsoluteSize.X, 500)
+		local height = math.max(main.AbsoluteSize.Y, 340)
+		local horizon = math.floor(height * 0.6)
+		local floorHeight = height - horizon
+
+		local wash = solid(container, Color3.fromRGB(255, 255, 255), 0, UDim2.fromScale(1, 1))
+		local washGradient = Instance.new("UIGradient")
+		washGradient.Rotation = 90
+		washGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 40, 200)),
+			ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 60, 170)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 150, 60)),
+		})
+		washGradient.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.95),
+			NumberSequenceKeypoint.new(1, 0.86),
+		})
+		washGradient.Parent = wash
+
+		local sky = Instance.new("Frame")
+		sky.BackgroundTransparency = 1
+		sky.ClipsDescendants = true
+		sky.Size = UDim2.new(1, 0, 0, horizon)
+		sky.Parent = container
+
+		local sunSize = math.floor(height * 0.36)
+		local sun = Instance.new("Frame")
+		sun.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		sun.BackgroundTransparency = 0
+		sun.BorderSizePixel = 0
+		sun.Size = UDim2.fromOffset(sunSize, sunSize)
+		sun.Position = UDim2.new(0.5, -sunSize / 2, 0, horizon - math.floor(sunSize * 0.66))
+		sun.Parent = sky
+		local sunCorner = Instance.new("UICorner")
+		sunCorner.CornerRadius = UDim.new(1, 0)
+		sunCorner.Parent = sun
+		local sunGradient = Instance.new("UIGradient")
+		sunGradient.Rotation = 90
+		sunGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 232, 90)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 130, 70)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 50, 160)),
+		})
+		sunGradient.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.8),
+			NumberSequenceKeypoint.new(0.55, 0.8),
+			NumberSequenceKeypoint.new(0.5501, 1),
+			NumberSequenceKeypoint.new(0.58, 1),
+			NumberSequenceKeypoint.new(0.5801, 0.8),
+			NumberSequenceKeypoint.new(0.66, 0.8),
+			NumberSequenceKeypoint.new(0.6601, 1),
+			NumberSequenceKeypoint.new(0.71, 1),
+			NumberSequenceKeypoint.new(0.7101, 0.8),
+			NumberSequenceKeypoint.new(0.79, 0.8),
+			NumberSequenceKeypoint.new(0.7901, 1),
+			NumberSequenceKeypoint.new(0.86, 1),
+			NumberSequenceKeypoint.new(0.8601, 0.8),
+			NumberSequenceKeypoint.new(1, 0.8),
+		})
+		sunGradient.Parent = sun
+
+		local grid = Instance.new("Frame")
+		grid.BackgroundTransparency = 1
+		grid.ClipsDescendants = true
+		grid.Size = UDim2.new(1, 0, 0, floorHeight)
+		grid.Position = UDim2.new(0, 0, 0, horizon)
+		grid.Parent = container
+
+		solid(grid, Color3.fromRGB(0, 230, 255), 0.5, UDim2.new(1, 0, 0, 2))
+
+		local lineLength = floorHeight * 1.7
+		for index = -9, 9 do
+			local angle = math.rad(index * 6.5)
+			local line = solid(grid, Color3.fromRGB(255, 70, 200), 0.72, UDim2.fromOffset(1, lineLength))
+			line.AnchorPoint = Vector2.new(0.5, 0.5)
+			line.Position = UDim2.new(0.5, -math.sin(angle) * lineLength / 2, 0, math.cos(angle) * lineLength / 2)
+			line.Rotation = index * 6.5
+		end
+
+		local rows = {}
+		for index = 1, 9 do
+			rows[index] = solid(grid, Color3.fromRGB(0, 220, 255), 0.7, UDim2.new(1, 0, 0, 1))
+		end
+
+		local scan = Instance.new("Frame")
+		scan.BackgroundTransparency = 1
+		scan.Size = UDim2.fromScale(1, 1)
+		scan.Parent = container
+		for y = 0, height, 5 do
+			solid(scan, Color3.fromRGB(0, 0, 0), 0.9, UDim2.new(1, 0, 0, 1), UDim2.new(0, 0, 0, y))
+		end
+
+		local shapeColors = {
+			Color3.fromRGB(255, 232, 90),
+			Color3.fromRGB(0, 224, 200),
+			Color3.fromRGB(255, 80, 170),
+		}
+		for index = 1, 7 do
+			local size = rng:NextInteger(16, 34)
+			local shape = Instance.new("Frame")
+			shape.BackgroundTransparency = 1
+			shape.BorderSizePixel = 0
+			shape.Size = UDim2.fromOffset(size, size)
+			local baseX = rng:NextNumber(0.04, 0.94)
+			local baseY = rng:NextNumber(0.06, 0.55)
+			shape.Position = UDim2.new(baseX, 0, baseY, 0)
+			shape.Rotation = rng:NextInteger(0, 90)
+			shape.Parent = container
+			if index % 2 == 0 then
+				local round = Instance.new("UICorner")
+				round.CornerRadius = UDim.new(1, 0)
+				round.Parent = shape
+			end
+			local outline = Instance.new("UIStroke")
+			outline.Color = shapeColors[(index - 1) % 3 + 1]
+			outline.Thickness = 2
+			outline.Transparency = 0.4
+			outline.Parent = shape
+			TweenService:Create(
+				shape,
+				TweenInfo.new(rng:NextNumber(5, 9), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{
+					Position = UDim2.new(baseX, rng:NextInteger(-18, 18), baseY, rng:NextInteger(-16, 16)),
+					Rotation = shape.Rotation + rng:NextInteger(-50, 50),
+				}
+			):Play()
+		end
+
+		local black = Color3.fromRGB(0, 0, 0)
+		local top = solid(container, black, 0, UDim2.new(1, 0, 0, 46))
+		fadeGradient(top, 90, { { 0, 0.5 }, { 1, 1 } })
+		local bottom = solid(container, black, 0, UDim2.new(1, 0, 0, 46), UDim2.new(0, 0, 1, -46))
+		fadeGradient(bottom, 90, { { 0, 1 }, { 1, 0.5 } })
+		local left = solid(container, black, 0, UDim2.new(0, 46, 1, 0))
+		fadeGradient(left, 0, { { 0, 0.5 }, { 1, 1 } })
+		local right = solid(container, black, 0, UDim2.new(0, 46, 1, 0), UDim2.new(1, -46, 0, 0))
+		fadeGradient(right, 0, { { 0, 1 }, { 1, 0.5 } })
+
+		local band = solid(container, Color3.fromRGB(255, 255, 255), 0, UDim2.new(1, 0, 0, 58), UDim2.new(0, 0, 0, -64))
+		fadeGradient(band, 90, { { 0, 1 }, { 0.42, 0.9 }, { 0.5, 0.8 }, { 0.58, 0.9 }, { 1, 1 } })
+		TweenService:Create(
+			band,
+			TweenInfo.new(5.5, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1, false),
+			{ Position = UDim2.new(0, 0, 1, 8) }
+		):Play()
+
+		local playLabel = osdLabel(container, "PLAY >", Vector2.new(0, 0), UDim2.new(0, 12, 0, 8), Enum.TextXAlignment.Left, Color3.fromRGB(255, 255, 255))
+		local recLabel = osdLabel(container, "REC *", Vector2.new(1, 0), UDim2.new(1, -12, 0, 8), Enum.TextXAlignment.Right, Color3.fromRGB(255, 70, 90))
+		local counter = osdLabel(container, "SP 00:00:00", Vector2.new(1, 1), UDim2.new(1, -12, 1, -8), Enum.TextXAlignment.Right, Color3.fromRGB(255, 255, 255))
+
+		fxAlive = true
+
+		task.spawn(function()
+			local started = tick()
+			local blink = true
+			while fxAlive and container.Parent do
+				local elapsed = math.floor(tick() - started)
+				counter.Text = string.format("SP %02d:%02d:%02d", math.floor(elapsed / 3600), math.floor(elapsed / 60) % 60, elapsed % 60)
+				blink = not blink
+				recLabel.TextTransparency = blink and 0 or 1
+				recLabel.TextStrokeTransparency = blink and 0.35 or 1
+				playLabel.TextTransparency = (elapsed % 7 == 0) and 0.6 or 0
+				task.wait(0.6)
+			end
+		end)
+
+		task.spawn(function()
+			local phase = 0
+			while fxAlive and container.Parent do
+				phase = (phase + 0.03) % 1
+				for index, row in ipairs(rows) do
+					local t = ((index - 1 + phase) % #rows) / #rows
+					row.Position = UDim2.new(0, 0, 0, math.floor(floorHeight * t ^ 2.2))
+				end
+				task.wait(0.05)
+			end
+		end)
+
+		task.spawn(function()
+			while fxAlive and container.Parent do
+				task.wait(rng:NextNumber(1.6, 4.2))
+				if not (fxAlive and container.Parent) then
+					break
+				end
+				for _ = 1, rng:NextInteger(2, 4) do
+					local tint = rng:NextInteger(1, 2) == 1 and Color3.fromRGB(255, 60, 200) or Color3.fromRGB(60, 230, 255)
+					local strip = solid(
+						container,
+						tint,
+						0.7,
+						UDim2.new(1, 0, 0, rng:NextInteger(4, 20)),
+						UDim2.new(rng:NextNumber(-0.04, 0.04), 0, rng:NextNumber(0, 0.95), 0)
+					)
+					TweenService:Create(
+						strip,
+						TweenInfo.new(0.14, Enum.EasingStyle.Linear),
+						{ Position = UDim2.new(rng:NextNumber(-0.08, 0.08), 0, strip.Position.Y.Scale, 0), BackgroundTransparency = 1 }
+					):Play()
+					task.delay(0.16, function()
+						strip:Destroy()
+					end)
+				end
+			end
+		end)
+	end
+
+	local function startWiiFx()
+		local container, main = makeFxContainer("WiiFX", 24)
+		if not container then
+			return
+		end
+		fx = container
+
+		local width = math.max(main.AbsoluteSize.X, 500)
+		local height = math.max(main.AbsoluteSize.Y, 340)
+
+		fxAlive = true
+
+		local gloss = solid(container, Color3.fromRGB(255, 255, 255), 0, UDim2.fromScale(1, 1))
+		fadeGradient(gloss, 90, { { 0, 0.55 }, { 0.46, 0.8 }, { 0.4601, 1 }, { 1, 1 } })
+
+		local hillBack = newCircle(container, 10, Color3.fromRGB(110, 205, 245), 0.84)
+		hillBack.Size = UDim2.fromOffset(width * 1.7, width * 1.7)
+		hillBack.Position = UDim2.new(0, -width * 0.35, 1, -height * 0.16)
+		local hillFront = newCircle(container, 10, Color3.fromRGB(255, 255, 255), 0.62)
+		hillFront.Size = UDim2.fromOffset(width * 1.9, width * 1.9)
+		hillFront.Position = UDim2.new(0, -width * 0.55, 1, -height * 0.07)
+
+		TweenService:Create(
+			hillBack,
+			TweenInfo.new(7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Position = UDim2.new(0, -width * 0.2, 1, -height * 0.18) }
+		):Play()
+		TweenService:Create(
+			hillFront,
+			TweenInfo.new(9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Position = UDim2.new(0, -width * 0.4, 1, -height * 0.09) }
+		):Play()
+
+		local function spawnOrb()
+			if not fx then
+				return
+			end
+			local size = rng:NextInteger(18, 56)
+			local x = rng:NextNumber(0.03, 0.97)
+			local life = rng:NextNumber(9, 15)
+			local orb = newCircle(container, size, Color3.fromRGB(170, 225, 250), 0.84)
+			orb.Position = UDim2.new(x, 0, 1, size)
+			local orbRim = Instance.new("UIStroke")
+			orbRim.Color = Color3.fromRGB(120, 200, 240)
+			orbRim.Thickness = 1
+			orbRim.Transparency = 0.55
+			orbRim.Parent = orb
+			TweenService:Create(
+				orbRim,
+				TweenInfo.new(life * 0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, life * 0.6),
+				{ Transparency = 1 }
+			):Play()
+			bubbleCount = bubbleCount + 1
+			TweenService:Create(
+				orb,
+				TweenInfo.new(life * 0.4, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, life * 0.6),
+				{ BackgroundTransparency = 1 }
+			):Play()
+			local rising = TweenService:Create(
+				orb,
+				TweenInfo.new(life, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+				{ Position = UDim2.new(x, rng:NextInteger(-24, 24), 0.05, 0) }
+			)
+			rising.Completed:Connect(function()
+				bubbleCount = math.max(0, bubbleCount - 1)
+				orb:Destroy()
+			end)
+			rising:Play()
+		end
+
+		local glowFrame = Instance.new("Frame")
+		glowFrame.BackgroundTransparency = 1
+		glowFrame.Size = UDim2.new(1, -10, 1, -10)
+		glowFrame.Position = UDim2.fromOffset(5, 5)
+		glowFrame.Parent = container
+		local glowCorner = Instance.new("UICorner")
+		glowCorner.CornerRadius = UDim.new(0, 20)
+		glowCorner.Parent = glowFrame
+		local glowStroke = Instance.new("UIStroke")
+		glowStroke.Color = Color3.fromRGB(110, 205, 245)
+		glowStroke.Thickness = 2
+		glowStroke.Transparency = 0.5
+		glowStroke.Parent = glowFrame
+		TweenService:Create(
+			glowStroke,
+			TweenInfo.new(2.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Transparency = 0.88 }
+		):Play()
+
+		local sweep = solid(container, Color3.fromRGB(255, 255, 255), 0, UDim2.new(0, 110, 1.8, 0), UDim2.new(-0.3, 0, -0.4, 0))
+		sweep.Rotation = 18
+		fadeGradient(sweep, 0, { { 0, 1 }, { 0.5, 0.7 }, { 1, 1 } })
+		task.spawn(function()
+			while fxAlive and container.Parent do
+				task.wait(rng:NextNumber(4, 7))
+				if not (fxAlive and container.Parent) then
+					break
+				end
+				TweenService:Create(
+					sweep,
+					TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+					{ Position = UDim2.new(1.2, 0, -0.4, 0) }
+				):Play()
+				task.wait(1.7)
+				sweep.Position = UDim2.new(-0.3, 0, -0.4, 0)
+			end
+		end)
+
+		local function sparkle()
+			local holder = Instance.new("Frame")
+			holder.BackgroundTransparency = 1
+			holder.AnchorPoint = Vector2.new(0.5, 0.5)
+			holder.Size = UDim2.fromOffset(16, 16)
+			holder.Parent = container
+			local arms = {}
+			for index = 1, 2 do
+				local arm = solid(holder, Color3.fromRGB(90, 196, 242), 1, index == 1 and UDim2.new(1, 0, 0, 2) or UDim2.new(0, 2, 1, 0))
+				arm.AnchorPoint = Vector2.new(0.5, 0.5)
+				arm.Position = UDim2.fromScale(0.5, 0.5)
+				local armCorner = Instance.new("UICorner")
+				armCorner.CornerRadius = UDim.new(1, 0)
+				armCorner.Parent = arm
+				arms[index] = arm
+			end
+			task.spawn(function()
+				task.wait(rng:NextNumber(0, 3))
+				while fxAlive and container.Parent do
+					holder.Position = UDim2.new(rng:NextNumber(0.05, 0.95), 0, rng:NextNumber(0.06, 0.7), 0)
+					holder.Rotation = 0
+					for _, arm in ipairs(arms) do
+						TweenService:Create(arm, TweenInfo.new(0.5), { BackgroundTransparency = 0.1 }):Play()
+					end
+					TweenService:Create(holder, TweenInfo.new(1.3, Enum.EasingStyle.Sine), { Rotation = 90 }):Play()
+					task.wait(0.8)
+					for _, arm in ipairs(arms) do
+						TweenService:Create(arm, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Play()
+					end
+					task.wait(rng:NextNumber(1.2, 3.8))
+				end
+			end)
+		end
+		for _ = 1, 6 do
+			sparkle()
+		end
+
+		connectRipples(main, container, Color3.fromRGB(0, 166, 226))
+
+		if UserInputService.MouseEnabled then
+			local pointer = Instance.new("Frame")
+			pointer.BackgroundTransparency = 1
+			pointer.AnchorPoint = Vector2.new(0.5, 0.5)
+			pointer.Size = UDim2.fromOffset(34, 34)
+			pointer.Visible = false
+			pointer.Parent = container
+			local pointerCorner = Instance.new("UICorner")
+			pointerCorner.CornerRadius = UDim.new(1, 0)
+			pointerCorner.Parent = pointer
+			local pointerRing = Instance.new("UIStroke")
+			pointerRing.Color = Color3.fromRGB(0, 166, 226)
+			pointerRing.Thickness = 2
+			pointerRing.Transparency = 0.3
+			pointerRing.Parent = pointer
+			local dot = newCircle(pointer, 6, Color3.fromRGB(0, 166, 226), 0.2)
+			dot.AnchorPoint = Vector2.new(0.5, 0.5)
+			dot.Position = UDim2.fromScale(0.5, 0.5)
+			local smooth = nil
+			table.insert(
+				fxConnections,
+				RunService.Heartbeat:Connect(function()
+					local relative = toWindowSpace(main, UserInputService:GetMouseLocation())
+					local inside = relative.X >= 0
+						and relative.Y >= 0
+						and relative.X <= main.AbsoluteSize.X
+						and relative.Y <= main.AbsoluteSize.Y
+					pointer.Visible = inside
+					if inside then
+						smooth = smooth and smooth:Lerp(relative, 0.35) or relative
+						pointer.Position = UDim2.fromOffset(smooth.X, smooth.Y)
+					end
+				end)
+			)
+		end
+
+		bubbleCount = 0
+		fxAlive = true
+		task.spawn(function()
+			while fxAlive and container.Parent do
+				if bubbleCount < 9 then
+					pcall(spawnOrb)
+				end
+				task.wait(rng:NextNumber(0.9, 1.8))
+			end
+		end)
+	end
+
+	local function startRelaxFx()
+		local container, main = makeFxContainer("RelaxFX", 18)
+		if not container then
+			return
+		end
+		fx = container
+		fxAlive = true
+
+		local tint = solid(container, Color3.fromRGB(70, 90, 190), 0, UDim2.fromScale(1, 1))
+		fadeGradient(tint, 90, { { 0, 0.94 }, { 1, 0.9 } })
+
+		local auroraColors = {
+			{ Color3.fromRGB(60, 220, 190), Color3.fromRGB(150, 110, 240) },
+			{ Color3.fromRGB(110, 140, 255), Color3.fromRGB(60, 220, 190) },
+			{ Color3.fromRGB(170, 110, 240), Color3.fromRGB(80, 190, 250) },
+		}
+		for index = 1, 3 do
+			local band = solid(
+				container,
+				Color3.fromRGB(255, 255, 255),
+				0,
+				UDim2.new(1.7, 0, 0, 56 + index * 10),
+				UDim2.new(-0.35, 0, 0.06 + index * 0.24, 0)
+			)
+			band.Rotation = -10
+			local gradient = Instance.new("UIGradient")
+			gradient.Rotation = 0
+			gradient.Color = ColorSequence.new(auroraColors[index][1], auroraColors[index][2])
+			gradient.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.3, 0.93),
+				NumberSequenceKeypoint.new(0.7, 0.93),
+				NumberSequenceKeypoint.new(1, 1),
+			})
+			gradient.Parent = band
+			TweenService:Create(
+				band,
+				TweenInfo.new(11 + index * 3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{ Position = UDim2.new(-0.12, 0, 0.1 + index * 0.24, 0) }
+			):Play()
+			TweenService:Create(
+				gradient,
+				TweenInfo.new(7 + index, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{ Offset = Vector2.new(0.2, 0) }
+			):Play()
+		end
+
+		for _ = 1, 18 do
+			local star = newCircle(container, rng:NextInteger(2, 3), Color3.fromRGB(225, 232, 255), 0.85)
+			star.Position = UDim2.new(rng:NextNumber(0.02, 0.98), 0, rng:NextNumber(0.02, 0.9), 0)
+			TweenService:Create(
+				star,
+				TweenInfo.new(rng:NextNumber(1.6, 4.2), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{ BackgroundTransparency = 0.25 }
+			):Play()
+		end
+
+		local halo = newCircle(container, 96, Color3.fromRGB(210, 220, 255), 0.95)
+		halo.Position = UDim2.new(1, -86, 0, -14)
+		TweenService:Create(
+			halo,
+			TweenInfo.new(5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ BackgroundTransparency = 0.9 }
+		):Play()
+		local moon = newCircle(container, 40, Color3.fromRGB(236, 240, 255), 0.82)
+		moon.Position = UDim2.new(1, -58, 0, 14)
+		local moonRim = Instance.new("UIStroke")
+		moonRim.Color = Color3.fromRGB(200, 210, 255)
+		moonRim.Thickness = 1
+		moonRim.Transparency = 0.85
+		moonRim.Parent = moon
+
+		task.spawn(function()
+			while fxAlive and container.Parent do
+				task.wait(rng:NextNumber(9, 15))
+				if not (fxAlive and container.Parent) then
+					break
+				end
+				local startX = rng:NextNumber(0.1, 0.5)
+				local startY = rng:NextNumber(0.04, 0.3)
+				local streak = solid(container, Color3.fromRGB(255, 255, 255), 0, UDim2.fromOffset(70, 2), UDim2.new(startX, 0, startY, 0))
+				streak.Rotation = 25
+				fadeGradient(streak, 0, { { 0, 1 }, { 1, 0.1 } })
+				TweenService:Create(
+					streak,
+					TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+					{ Position = UDim2.new(startX + 0.28, 0, startY + 0.2, 0), BackgroundTransparency = 1 }
+				):Play()
+				task.delay(1, function()
+					streak:Destroy()
+				end)
+			end
+		end)
+
+		connectRipples(main, container, Color3.fromRGB(170, 185, 255))
+	end
+
+	local function startCafeFx()
+		local container, main = makeFxContainer("CafeFX", 14)
+		if not container then
+			return
+		end
+		fx = container
+		fxAlive = true
+
+		local width = math.max(main.AbsoluteSize.X, 500)
+		local height = math.max(main.AbsoluteSize.Y, 340)
+
+		local wash = solid(container, Color3.fromRGB(255, 170, 80), 0, UDim2.fromScale(1, 1))
+		fadeGradient(wash, 90, { { 0, 0.97 }, { 1, 0.9 } })
+
+		local lampSize = math.floor(width * 1.3)
+		local lamp = newCircle(container, lampSize, Color3.fromRGB(255, 196, 120), 0.93)
+		lamp.Position = UDim2.new(0.5, -lampSize / 2, 0, -math.floor(lampSize * 0.64))
+		TweenService:Create(
+			lamp,
+			TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ BackgroundTransparency = 0.89 }
+		):Play()
+
+		local steamCount = 0
+		local function spawnSteam()
+			if not fx then
+				return
+			end
+			local wisp = newCircle(container, 10, Color3.fromRGB(255, 246, 232), 0.8)
+			wisp.Size = UDim2.fromOffset(9, 24)
+			local baseX = rng:NextInteger(math.floor(width * 0.08), math.floor(width * 0.92))
+			wisp.Position = UDim2.fromOffset(baseX, height - 24)
+			steamCount = steamCount + 1
+			local lift = rng:NextNumber(2.6, 4)
+			TweenService:Create(
+				wisp,
+				TweenInfo.new(lift, Enum.EasingStyle.Sine, Enum.EasingDirection.Out),
+				{
+					Position = UDim2.fromOffset(baseX + rng:NextInteger(-14, 14), height - 130),
+					Size = UDim2.fromOffset(16, 40),
+					BackgroundTransparency = 1,
+				}
+			):Play()
+			task.delay(lift, function()
+				steamCount = math.max(0, steamCount - 1)
+				wisp:Destroy()
+			end)
+		end
+
+		task.spawn(function()
+			while fxAlive and container.Parent do
+				if steamCount < 7 then
+					pcall(spawnSteam)
+				end
+				task.wait(rng:NextNumber(0.5, 0.9))
+			end
+		end)
+		connectRipples(main, container, Color3.fromRGB(255, 214, 160))
+	end
+
+	local function startRealisticFx()
+		local container, main = makeFxContainer("RealisticFX", 16)
+		if not container then
+			return
+		end
+		fx = container
+		fxAlive = true
+
+		local width = math.max(main.AbsoluteSize.X, 500)
+		local height = math.max(main.AbsoluteSize.Y, 340)
+		local white = Color3.fromRGB(255, 255, 255)
+
+		local fog = solid(container, white, 0, UDim2.fromScale(1, 1))
+		fadeGradient(fog, 45, { { 0, 0.9 }, { 0.5, 0.96 }, { 1, 0.92 } })
+
+		local bokehColors = {
+			Color3.fromRGB(255, 214, 150),
+			Color3.fromRGB(150, 200, 255),
+			Color3.fromRGB(255, 180, 190),
+		}
+		for index = 1, 8 do
+			local color = bokehColors[(index - 1) % 3 + 1]
+			local size = rng:NextInteger(22, 56)
+			local bokeh = newCircle(container, size, color, 0.92)
+			local bx = rng:NextNumber(0.04, 0.94)
+			local by = rng:NextNumber(0.05, 0.9)
+			bokeh.Position = UDim2.new(bx, 0, by, 0)
+			local bokehRim = Instance.new("UIStroke")
+			bokehRim.Color = color
+			bokehRim.Thickness = 1
+			bokehRim.Transparency = 0.86
+			bokehRim.Parent = bokeh
+			TweenService:Create(
+				bokeh,
+				TweenInfo.new(rng:NextNumber(6, 10), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{ Position = UDim2.new(bx, rng:NextInteger(-16, 16), by, rng:NextInteger(-12, 12)) }
+			):Play()
+		end
+
+		local beam = solid(container, Color3.fromRGB(255, 240, 210), 0, UDim2.new(0, 180, 1.9, 0), UDim2.new(0.04, 0, -0.45, 0))
+		beam.Rotation = -24
+		fadeGradient(beam, 90, { { 0, 0.9 }, { 0.7, 0.96 }, { 1, 1 } })
+		TweenService:Create(
+			beam,
+			TweenInfo.new(16, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Position = UDim2.new(0.1, 0, -0.45, 0) }
+		):Play()
+
+		for _ = 1, 12 do
+			local size = rng:NextInteger(2, 3)
+			local mote = newCircle(container, size, Color3.fromRGB(255, 246, 226), 0.5)
+			local mx = rng:NextNumber(0.04, 0.4)
+			local my = rng:NextNumber(0.05, 0.85)
+			mote.Position = UDim2.new(mx, 0, my, 0)
+			TweenService:Create(
+				mote,
+				TweenInfo.new(rng:NextNumber(5, 9), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+				{
+					Position = UDim2.new(mx, rng:NextInteger(-22, 22), my, rng:NextInteger(-30, 30)),
+					BackgroundTransparency = 0.85,
+				}
+			):Play()
+		end
+
+		local glare = solid(container, white, 0, UDim2.new(0, 120, 1.9, 0), UDim2.new(0.08, 0, -0.4, 0))
+		glare.Rotation = 20
+		fadeGradient(glare, 0, { { 0, 1 }, { 0.45, 0.93 }, { 0.55, 0.93 }, { 1, 1 } })
+		TweenService:Create(
+			glare,
+			TweenInfo.new(14, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Position = UDim2.new(0.55, 0, -0.4, 0) }
+		):Play()
+
+		local black = Color3.fromRGB(0, 0, 0)
+		local top = solid(container, black, 0, UDim2.new(1, 0, 0, 60))
+		fadeGradient(top, 90, { { 0, 0.62 }, { 1, 1 } })
+		local bottom = solid(container, black, 0, UDim2.new(1, 0, 0, 70), UDim2.new(0, 0, 1, -70))
+		fadeGradient(bottom, 90, { { 0, 1 }, { 1, 0.55 } })
+		local left = solid(container, black, 0, UDim2.new(0, 60, 1, 0))
+		fadeGradient(left, 0, { { 0, 0.66 }, { 1, 1 } })
+		local right = solid(container, black, 0, UDim2.new(0, 60, 1, 0), UDim2.new(1, -60, 0, 0))
+		fadeGradient(right, 0, { { 0, 1 }, { 1, 0.66 } })
+
+		local dropCount = 0
+		local function spawnDroplet()
+			if not container.Parent then
+				return
+			end
+			local size = rng:NextInteger(5, 13)
+			local x = rng:NextNumber(0.03, 0.97)
+			local y = rng:NextNumber(0.04, 0.8)
+			local slides = rng:NextInteger(1, 100) <= 45
+
+			local trail = nil
+			if slides then
+				trail = solid(container, Color3.fromRGB(205, 226, 244), 0, UDim2.fromOffset(2, 0), UDim2.new(x, math.floor(size / 2) - 1, y, size))
+				fadeGradient(trail, 90, { { 0, 1 }, { 1, 0.8 } })
+			end
+
+			local drop = newCircle(container, size, Color3.fromRGB(205, 226, 244), 1)
+			drop.Position = UDim2.new(x, 0, y, 0)
+			local dropGradient = Instance.new("UIGradient")
+			dropGradient.Rotation = 90
+			dropGradient.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.88),
+				NumberSequenceKeypoint.new(0.55, 0.78),
+				NumberSequenceKeypoint.new(1, 0.5),
+			})
+			dropGradient.Parent = drop
+			local dropRim = Instance.new("UIStroke")
+			dropRim.Color = white
+			dropRim.Thickness = 1
+			dropRim.Transparency = 1
+			dropRim.Parent = drop
+			local shine = newCircle(drop, 3, white, 0.1)
+			shine.Size = UDim2.fromScale(0.3, 0.3)
+			shine.Position = UDim2.fromScale(0.2, 0.16)
+
+			dropCount = dropCount + 1
+			TweenService:Create(drop, TweenInfo.new(0.5), { BackgroundTransparency = 0 }):Play()
+			TweenService:Create(dropRim, TweenInfo.new(0.5), { Transparency = 0.55 }):Play()
+
+			local life
+			if slides then
+				task.wait(rng:NextNumber(1, 3.5))
+				if not container.Parent then
+					return
+				end
+				local dist = math.min(rng:NextInteger(40, 120), math.floor(height * (1 - y)) - size)
+				dist = math.max(dist, 20)
+				local travel = rng:NextNumber(0.9, 1.6)
+				TweenService:Create(
+					drop,
+					TweenInfo.new(travel, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+					{ Position = UDim2.new(x, 0, y, dist) }
+				):Play()
+				TweenService:Create(
+					trail,
+					TweenInfo.new(travel, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+					{ Size = UDim2.fromOffset(2, dist) }
+				):Play()
+				life = travel
+			else
+				life = rng:NextNumber(6, 12)
+			end
+
+			task.wait(life)
+			if not container.Parent then
+				return
+			end
+			TweenService:Create(drop, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+			TweenService:Create(dropRim, TweenInfo.new(0.6), { Transparency = 1 }):Play()
+			TweenService:Create(shine, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+			if trail then
+				TweenService:Create(trail, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+			end
+			task.wait(0.65)
+			dropCount = math.max(0, dropCount - 1)
+			drop:Destroy()
+			if trail then
+				trail:Destroy()
+			end
+		end
+
+		task.spawn(function()
+			while fxAlive and container.Parent do
+				if dropCount < 18 then
+					task.spawn(function()
+						pcall(spawnDroplet)
+					end)
+				end
+				task.wait(rng:NextNumber(0.5, 1.2))
+			end
+		end)
+
+		connectRipples(main, container, Color3.fromRGB(200, 222, 242))
+	end
+
+	local fxBuilders = {
+		Aqua = startAquaFx,
+		Retro = startRetroFx,
+		Wii = startWiiFx,
+		Relax = startRelaxFx,
+		Cafeteria = startCafeFx,
+		Realistic = startRealisticFx,
+	}
+
+	local function applyThemeNow(name)
+		local target = themes[name]
+		if not target or name == currentName then
+			return
+		end
+		local from = themes[currentName]
+		local map = buildMap(from, target)
+		local panelKeys = panelKeySet(from)
+
+		for _, key in ipairs(libraryKeys) do
+			Library.Theme[key] = target.colors[key]
+		end
+		Library.Settings.Transparency = target.transparency
+
+		for _, root in ipairs(getRoots()) do
+			hookRoot(root)
+			applyTree(root, map, from, target, panelKeys)
+		end
+		for _, card in ipairs(getCards()) do
+			applyTree(card, map, from, target, panelKeys)
+		end
+
+		currentName = name
+		stopFx()
+		local builder = fxBuilders[name]
+		if builder then
+			builder()
+		end
+	end
+
+	local switching = false
+	local pendingName = nil
+
+	local function setTheme(name)
+		if switching then
+			pendingName = name
+			return
+		end
+		switching = true
+		pcall(applyThemeNow, name)
+		switching = false
+		if pendingName then
+			local nextName = pendingName
+			pendingName = nil
+			setTheme(nextName)
+		end
+	end
+
+	Library._onNewGui = function(gui)
+		if currentName == "Medieval" then
+			return
+		end
+		task.defer(applyNewTree, gui)
+		task.delay(0.4, applyNewTree, gui)
+	end
+
+	for _, root in ipairs(getRoots()) do
+		hookRoot(root)
+	end
+
+	local function watchContainer(container)
+		container.ChildAdded:Connect(function(child)
+			task.defer(function()
+				if isThemeRoot(child) then
+					hookRoot(child)
+					if currentName ~= "Medieval" then
+						task.wait(0.1)
+						applyNewTree(child)
+						task.delay(0.5, applyNewTree, child)
+					end
+				end
+			end)
+		end)
+	end
+
+	watchContainer(CoreGui)
+	local playerGui = lp:FindFirstChildOfClass("PlayerGui")
+	if playerGui then
+		watchContainer(playerGui)
+	end
+
+	Themes67:AddButton({
+		Name = "Medieval[Default]",
+		Info = "Dark charcoal panels with dark metal borders and copper accents",
+		Callback = function()
+			setTheme("Medieval")
+		end,
+	})
+
+	Themes67:AddButton({
+		Name = "Aqua",
+		Info = "Underwater look with bubbles, waves, light rays and glassy blue panels",
+		Callback = function()
+			setTheme("Aqua")
+		end,
+	})
+
+	Themes67:AddButton({
+		Name = "Retro",
+		Info = "Neon purple and magenta with VHS scanlines, tracking bar, glitches and tape overlay",
+		Callback = function()
+			setTheme("Retro")
+		end,
+	})
+
+	Themes67:AddButton({
+		Name = "Wii",
+		Info = "Clean white and sky blue glossy panels with soft rounded corners and floating light orbs",
+		Callback = function()
+			setTheme("Wii")
+		end,
+	})
+
+	Themes67:AddButton({
+		Name = "Dark Relax",
+		Info = "Calm deep blue night mode with a slow aurora, twinkling stars, a soft moon and shooting stars",
+		Callback = function()
+			setTheme("Relax")
+		end,
+	})
+
+	Themes67:AddButton({
+		Name = "Cafeteria",
+		Info = "Warm espresso and cream colors with a soft lamp glow and rising steam",
+		Callback = function()
+			setTheme("Cafeteria")
+		end,
+	})
+
+	Themes67:AddButton({
+		Name = "Realistic",
+		Info = "Frosted graphite glass with rain droplets, bokeh lights, a light beam with dust and soft shadows",
+		Callback = function()
+			setTheme("Realistic")
+		end,
+	})
 end)
 
 return Library
