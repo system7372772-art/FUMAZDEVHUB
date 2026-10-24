@@ -10624,6 +10624,8 @@ function CP.snapshot()
         painted = CP.painted,
         count = CP.count,
         session = CP.session,
+        folder = CP.folder,
+        imported = CP.imported,
         W = CP.W,
         H = CP.H,
         axis = CP.axis,
@@ -10648,6 +10650,8 @@ function CP.load(i)
     CP.painted = c.painted
     CP.count = c.count
     CP.session = c.session
+    CP.folder = c.folder
+    CP.imported = c.imported
     CP.W, CP.H, CP.axis = c.W, c.H, c.axis
     CP.center, CP.rotation = c.center, c.rotation
     CP.jsonText = c.jsonText
@@ -10666,7 +10670,7 @@ function CP.rescan()
 
     local lp = game:GetService("Players").LocalPlayer
     local root = workspace:FindFirstChild("Bricks")
-    local folder = root and root:FindFirstChild(lp.Name)
+    local folder = CP.folder or (root and root:FindFirstChild(lp.Name))
 
     if not folder then
         PaintStatus:Set("workspace.Bricks." .. lp.Name .. " not found")
@@ -10752,6 +10756,11 @@ function CP.rescan()
         end
     end
 
+    if CP.imported then
+        ax = -(CP.W - 1) / 2
+        ay = -(CP.H - 1) / 2
+    end
+
     local bricks, count = {}, 0
 
     for _, p in ipairs(plane) do
@@ -10812,6 +10821,315 @@ Canvas:AddButton({
     Callback = function()
         rotationAxis = "Z"
     end
+})
+
+local ImportState = {
+    selecting = false,
+    first = nil,
+    second = nil,
+    boxFirst = nil,
+    boxSecond = nil,
+    conn = nil,
+    button = nil
+}
+
+local function ImportClearBoxes()
+    if ImportState.boxFirst then
+        ImportState.boxFirst:Destroy()
+        ImportState.boxFirst = nil
+    end
+
+    if ImportState.boxSecond then
+        ImportState.boxSecond:Destroy()
+        ImportState.boxSecond = nil
+    end
+
+    ImportState.first = nil
+    ImportState.second = nil
+end
+
+local function ImportStop()
+    ImportState.selecting = false
+
+    if ImportState.conn then
+        ImportState.conn:Disconnect()
+        ImportState.conn = nil
+    end
+
+    if ImportState.button then
+        ImportState.button.Text = "Select Corners"
+    end
+end
+
+local function ImportBox(brick, color)
+    local box = Instance.new("SelectionBox")
+    box.Adornee = brick
+    box.Color3 = color
+    box.LineThickness = 0.08
+    box.SurfaceTransparency = 1
+    box.Parent = game:GetService("CoreGui")
+    return box
+end
+
+local function ImportPick(brick)
+    if ImportState.first and not ImportState.second then
+        if brick == ImportState.first then
+            return
+        end
+
+        ImportState.second = brick
+        ImportState.boxSecond = ImportBox(brick, Color3.fromRGB(60, 255, 90))
+        PaintStatus:Set("Import: corner 2 set (green). Press Confirm Import")
+        return
+    end
+
+    ImportClearBoxes()
+
+    ImportState.first = brick
+    ImportState.boxFirst = ImportBox(brick, Color3.fromRGB(255, 60, 60))
+    PaintStatus:Set("Import: corner 1 set (red). Pick the opposite corner")
+end
+
+local function ImportBrickAt(position)
+    local root = workspace:FindFirstChild("Bricks")
+    local camera = workspace.CurrentCamera
+
+    if not (root and camera) then
+        return nil
+    end
+
+    local ray = camera:ScreenPointToRay(position.X, position.Y)
+    local params = RaycastParams.new()
+    params.FilterType = Enum.RaycastFilterType.Include
+    params.FilterDescendantsInstances = {root}
+
+    local hit = workspace:Raycast(ray.Origin, ray.Direction * 1000, params)
+
+    if hit and hit.Instance and hit.Instance:IsA("BasePart") then
+        return hit.Instance
+    end
+
+    return nil
+end
+
+local function ImportStart()
+    if _G.CanvaRunning or CP.painting or CP.conn then
+        PaintStatus:Set("Stop the canvas first")
+        return
+    end
+
+    ImportStop()
+    ImportClearBoxes()
+
+    ImportState.selecting = true
+
+    if ImportState.button then
+        ImportState.button.Text = "Selecting..."
+    end
+
+    local importUIS = game:GetService("UserInputService")
+    local importMouse = game:GetService("Players").LocalPlayer:GetMouse()
+
+    PaintStatus:Set("Import: tap the first corner brick (unequip your tools)")
+
+    ImportState.conn = importUIS.InputBegan:Connect(function(input, processed)
+        if processed or not ImportState.selecting then
+            return
+        end
+
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+
+        local position = input.Position
+
+        task.defer(function()
+            local brick = ImportBrickAt(position)
+
+            if not brick then
+                local target = importMouse.Target
+                local root = workspace:FindFirstChild("Bricks")
+
+                if target and root and target:IsA("BasePart") and target:IsDescendantOf(root) then
+                    brick = target
+                end
+            end
+
+            if brick then
+                ImportPick(brick)
+            end
+        end)
+    end)
+end
+
+local function ImportConfirm()
+    if _G.CanvaRunning or CP.painting or CP.conn then
+        PaintStatus:Set("Stop the canvas first")
+        return
+    end
+
+    local first = ImportState.first
+    local second = ImportState.second
+
+    if not (first and second and first.Parent and second.Parent) then
+        PaintStatus:Set("Import: select both corners first")
+        return
+    end
+
+    local root = workspace:FindFirstChild("Bricks")
+    local camera = workspace.CurrentCamera
+
+    if not (root and camera) then
+        PaintStatus:Set("Import: workspace.Bricks not found")
+        return
+    end
+
+    local origin = first.Position
+    local delta = second.Position - origin
+    local flat = {}
+
+    for _, axis in ipairs({"X", "Y", "Z"}) do
+        if math.abs(delta[axis]) < 0.75 then
+            flat[#flat + 1] = axis
+        end
+    end
+
+    if #flat == 0 then
+        PaintStatus:Set("Import: the corners are not on the same flat plane")
+        return
+    end
+
+    if #flat > 1 then
+        PaintStatus:Set("Import: pick two opposite corners, not a line")
+        return
+    end
+
+    local normalAxis = flat[1]
+    local axisVector = Vector3.new(
+        normalAxis == "X" and 1 or 0,
+        normalAxis == "Y" and 1 or 0,
+        normalAxis == "Z" and 1 or 0
+    )
+
+    local cameraPosition = camera.CFrame.Position
+    local side = (cameraPosition - origin):Dot(axisVector) >= 0 and 1 or -1
+    local normal = axisVector * side
+
+    local up
+
+    if normalAxis == "Y" then
+        local look = camera.CFrame.LookVector
+
+        if math.abs(look.X) > math.abs(look.Z) then
+            up = Vector3.new(look.X > 0 and 1 or -1, 0, 0)
+        else
+            up = Vector3.new(0, 0, look.Z > 0 and 1 or -1)
+        end
+    else
+        up = Vector3.new(0, 1, 0)
+    end
+
+    local right = up:Cross(normal)
+    local rotation = CFrame.fromMatrix(Vector3.zero, right, up, normal)
+
+    local u = delta:Dot(right)
+    local v = delta:Dot(up)
+
+    local importW = math.floor(math.abs(u) + 0.5) + 1
+    local importH = math.floor(math.abs(v) + 0.5) + 1
+
+    if importW > 500 or importH > 500 then
+        PaintStatus:Set("Import: canvas too big (max 500x500)")
+        return
+    end
+
+    local minU = math.min(0, u)
+    local minV = math.min(0, v)
+    local bottomLeft = origin + right * minU + up * minV
+
+    local center = bottomLeft + rotation * Vector3.new(
+        (importW - 1) / 2,
+        (importH - 1) / 2,
+        0
+    )
+
+    local inverse = rotation:Inverse()
+    local bricks, raw, count = {}, {}, 0
+
+    for _, obj in ipairs(root:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name == "Brick" then
+            local rel = inverse * (obj.Position - center)
+
+            if math.abs(rel.X) <= (importW - 1) / 2 + 0.45
+            and math.abs(rel.Y) <= (importH - 1) / 2 + 0.45
+            and math.abs(rel.Z) <= 0.45 then
+                local fx = rel.X + (importW - 1) / 2
+                local fy = rel.Y + (importH - 1) / 2
+                local gx = math.round(fx)
+                local gy = math.round(fy)
+
+                if gx >= 0 and gx < importW and gy >= 0 and gy < importH
+                and math.abs(fx - gx) < 0.3 and math.abs(fy - gy) < 0.3 then
+                    local k = gx .. ":" .. gy
+
+                    if not bricks[k] then
+                        count += 1
+                    end
+
+                    bricks[k] = obj
+                    raw[obj] = true
+                end
+            end
+        end
+    end
+
+    if count == 0 then
+        PaintStatus:Set("Import: no bricks found between the corners")
+        return
+    end
+
+    CP.snapshot()
+    CP.index = #CP.list + 1
+    CP.list[CP.index] = {}
+    CP.jsonText = nil
+    CP.bricks = bricks
+    CP.raw = raw
+    CP.painted = {}
+    CP.count = count
+    CP.W, CP.H, CP.axis = importW, importH, "X"
+    CP.center, CP.rotation = center, rotation
+    CP.folder = root
+    CP.imported = true
+    CP.session = nil
+
+    ImportStop()
+    ImportClearBoxes()
+
+    PaintStatus:Set(
+        CP.tag() .. "Imported canvas " .. importW .. "x" .. importH
+        .. " (" .. count .. " bricks)"
+    )
+end
+
+ImportState.button = Canvas:AddButton({
+    Name = "Select Corners",
+    Info = "Tap two opposite corner bricks of a canvas that already exists. Corner 1 gets a red outline and corner 2 a green one",
+    Callback = function()
+        if ImportState.selecting then
+            ImportStop()
+            ImportClearBoxes()
+            PaintStatus:Set("Import: selection cancelled")
+        else
+            ImportStart()
+        end
+    end
+})
+
+Canvas:AddButton({
+    Name = "Confirm Import",
+    Info = "Imports every brick between the two selected corners as a canvas you can paint",
+    Callback = ImportConfirm
 })
 
 local function StartCanvas(resume)
@@ -10996,6 +11314,8 @@ local function StartCanvas(resume)
             CP.painted = {}
             CP.count = 0
             CP.W, CP.H, CP.axis = WIDTH, HEIGHT, rotationAxis
+            CP.folder = nil
+            CP.imported = nil
             CP.center, CP.rotation = center, rotation
             CP.session = {
                 W = WIDTH,
