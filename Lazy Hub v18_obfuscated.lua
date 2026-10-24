@@ -10560,6 +10560,18 @@ local HeightBox = Canvas:AddTextbox({
     Info = "Canvas height"
 })
 
+local ChunksToggle = Canvas:AddToggle({
+    Name = "Chunks",
+    Info = "Build the canvas in square chunks that adapt to the width and height",
+    Default = false
+})
+
+local FastToggle = Canvas:AddToggle({
+    Name = "Fast Mode",
+    Info = "Always looks for the fastest route: stands in the middle of reach sized tiles and places every brick of the tile from one spot, shrinking the tiles on its own if bricks are missing. Works with or without Chunks",
+    Default = false
+})
+
 local CP = {
     bricks = {},
     painted = {},
@@ -10832,6 +10844,9 @@ local function StartCanvas(resume)
     if resume then
         WIDTH, HEIGHT = CP.session.W, CP.session.H
     end
+
+    local useChunks = ChunksToggle:Get() == true
+    local useFast = FastToggle:Get() == true
 
     _G.CanvaRunning = true
 
@@ -11126,7 +11141,324 @@ local function StartCanvas(resume)
 
         local built = 0
 
-        if mode == "SideToSide" then
+        local function pickChunkSize()
+            local largest = math.max(WIDTH,HEIGHT)
+
+            if largest <= 16 then
+                return largest
+            end
+
+            local limit = math.min(WIDTH,HEIGHT)
+            local maxSize = math.min(16,limit)
+            local minSize = math.min(4,limit)
+
+            local best = maxSize
+            local bestBad = math.huge
+
+            for size = maxSize,minSize,-1 do
+                local remW = WIDTH % size
+                local remH = HEIGHT % size
+                local bad = 0
+
+                if remW > 0 and remW < size / 2 then
+                    bad += 1
+                end
+
+                if remH > 0 and remH < size / 2 then
+                    bad += 1
+                end
+
+                if bad < bestBad then
+                    best = size
+                    bestBad = bad
+                end
+            end
+
+            return best
+        end
+
+        local function gridOrder(x0,y0,x1,y1,size)
+            local list = {}
+            local countX = math.ceil((x1 - x0 + 1) / size)
+            local countY = math.ceil((y1 - y0 + 1) / size)
+
+            local function rect(i,j)
+                return {
+                    x0 + i * size,
+                    y0 + j * size,
+                    math.min(x1,x0 + (i + 1) * size - 1),
+                    math.min(y1,y0 + (j + 1) * size - 1)
+                }
+            end
+
+            if mode == "SideToSide" then
+                for j = 0,countY - 1 do
+                    local first,last,step = 0,countX - 1,1
+
+                    if j % 2 == 1 then
+                        first,last,step = countX - 1,0,-1
+                    end
+
+                    for i = first,last,step do
+                        list[#list + 1] = rect(i,j)
+                    end
+                end
+            else
+                for i = 0,countX - 1 do
+                    local first,last,step = 0,countY - 1,1
+
+                    if i % 2 == 1 then
+                        first,last,step = countY - 1,0,-1
+                    end
+
+                    for j = first,last,step do
+                        list[#list + 1] = rect(i,j)
+                    end
+                end
+            end
+
+            return list
+        end
+
+        local function buildChunk(x0,y0,x1,y1)
+            if mode == "SideToSide" then
+                for y = y0,y1 do
+                    if not running() then
+                        return
+                    end
+
+                    if (y - y0) % 2 == 0 then
+                        for x = x0,x1 do
+                            if not running() then
+                                return
+                            end
+
+                            if place(x,y) then
+                                built += 1
+                            end
+                        end
+                    else
+                        for x = x1,x0,-1 do
+                            if not running() then
+                                return
+                            end
+
+                            if place(x,y) then
+                                built += 1
+                            end
+                        end
+                    end
+
+                    task.wait(0.15)
+                end
+            else
+                for x = x0,x1 do
+                    if not running() then
+                        return
+                    end
+
+                    if (x - x0) % 2 == 0 then
+                        for y = y0,y1 do
+                            if not running() then
+                                return
+                            end
+
+                            if place(x,y) then
+                                built += 1
+                            end
+                        end
+                    else
+                        for y = y1,y0,-1 do
+                            if not running() then
+                                return
+                            end
+
+                            if place(x,y) then
+                                built += 1
+                            end
+                        end
+                    end
+
+                    task.wait(0.15)
+                end
+            end
+        end
+
+        local function placeFast(x,y)
+            if not running() then
+                return false
+            end
+
+            local k = key(x,y)
+
+            if placed[k] then
+                return true
+            end
+
+            event:FireServer(
+                workspace.Terrain,
+                Enum.NormalId.Top,
+                positionFor(x,y),
+                "detail"
+            )
+
+            placed[k] = true
+            blocksSinceScan += 1
+
+            return true
+        end
+
+        local function runStop(rect)
+            local x0,y0,x1,y1 = rect[1],rect[2],rect[3],rect[4]
+            local pending = {}
+
+            for y = y0,y1 do
+                for x = x0,x1 do
+                    if not placed[key(x,y)] then
+                        pending[#pending + 1] = {x,y}
+                    end
+                end
+            end
+
+            if #pending == 0 then
+                return true
+            end
+
+            if not running() then
+                return false
+            end
+
+            local midX = math.floor((x0 + x1) / 2)
+            local midY = math.floor((y0 + y1) / 2)
+
+            hrp.CFrame = CFrame.new(
+                positionFor(midX,midY) + Vector3.new(0,2,-3)
+            )
+
+            hrp.AssemblyLinearVelocity = Vector3.zero
+            hrp.AssemblyAngularVelocity = Vector3.zero
+
+            task.wait(0.1)
+
+            for index,cell in ipairs(pending) do
+                if not running() then
+                    return false
+                end
+
+                if placeFast(cell[1],cell[2]) then
+                    built += 1
+                end
+
+                if index % 6 == 0 then
+                    task.wait()
+                end
+            end
+
+            if blocksSinceScan >= 200 then
+                task.wait(0.05)
+
+                if not running() then
+                    return false
+                end
+
+                scanBricks()
+            end
+
+            return true
+        end
+
+        local function fastStops(tile)
+            local stops = {}
+
+            if useChunks then
+                for _,chunk in ipairs(gridOrder(0,0,WIDTH - 1,HEIGHT - 1,pickChunkSize())) do
+                    for _,rect in ipairs(gridOrder(chunk[1],chunk[2],chunk[3],chunk[4],tile)) do
+                        stops[#stops + 1] = rect
+                    end
+                end
+            else
+                stops = gridOrder(0,0,WIDTH - 1,HEIGHT - 1,tile)
+            end
+
+            return stops
+        end
+
+        local function countMissing()
+            local missing = 0
+
+            for y = 0,HEIGHT - 1 do
+                for x = 0,WIDTH - 1 do
+                    if not placed[key(x,y)] then
+                        missing += 1
+                    end
+                end
+            end
+
+            return missing
+        end
+
+        if useFast then
+
+            local tiles = {10,6,3}
+            local startIndex = 1
+
+            for index,value in ipairs(tiles) do
+                if value == CP.fastTile then
+                    startIndex = index
+                end
+            end
+
+            for index = startIndex,#tiles do
+                if not running() then
+                    break
+                end
+
+                local tile = tiles[index]
+
+                PaintStatus:Set(CP.tag() .. "Fast mode: tiles of " .. tile)
+
+                for _,rect in ipairs(fastStops(tile)) do
+                    if not runStop(rect) then
+                        break
+                    end
+                end
+
+                if not running() then
+                    break
+                end
+
+                task.wait(0.35)
+                scanBricks()
+
+                local missing = countMissing()
+                local allowed = math.max(3,math.floor(WIDTH * HEIGHT * 0.02))
+
+                if missing <= allowed or index == #tiles then
+                    CP.fastTile = tile
+                    break
+                end
+            end
+
+        elseif useChunks then
+
+            local size = pickChunkSize()
+            local order = gridOrder(0,0,WIDTH - 1,HEIGHT - 1,size)
+
+            for index,chunk in ipairs(order) do
+                if not running() then
+                    break
+                end
+
+                PaintStatus:Set(
+                    CP.tag() .. "Chunk " .. index .. "/" .. #order
+                    .. " (" .. size .. "x" .. size .. ")"
+                )
+
+                buildChunk(chunk[1],chunk[2],chunk[3],chunk[4])
+                task.wait(0.1)
+            end
+
+        elseif mode == "SideToSide" then
 
             for y = 0,HEIGHT - 1 do
                 if not running() then
