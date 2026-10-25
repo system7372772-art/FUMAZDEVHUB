@@ -14688,6 +14688,15 @@ pcall(function()
 		end
 	end
 
+	designs["RoTool"] = function(tool, handle, color)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.12, 1.15, 1.15), CFrame.new(0, 0, -1.5) * ALONG_Z, color, NEON)
+		addPiece(tool, handle, "Cylinder", Vector3.new(0.16, 0.82, 0.82), CFrame.new(0, 0, -1.5) * ALONG_Z, DARK, METAL)
+		addPiece(tool, handle, "Ball", Vector3.new(0.3, 0.3, 0.3), CFrame.new(0, 0, -1.5), color, NEON)
+		addPiece(tool, handle, "Ball", Vector3.new(0.2, 0.2, 0.2), CFrame.new(0, 0.58, -1.5), Color3.new(1, 1, 1), NEON)
+		addPiece(tool, handle, "Wedge", Vector3.new(0.14, 0.3, 0.22), CFrame.new(0.58, 0, -1.5) * CFrame.Angles(0, 0, math.rad(90)), Color3.new(1, 1, 1), NEON)
+		addPiece(tool, handle, "Wedge", Vector3.new(0.14, 0.3, 0.22), CFrame.new(-0.58, 0, -1.5) * CFrame.Angles(0, 0, math.rad(-90)), Color3.new(1, 1, 1), NEON)
+	end
+
 	local function newTool(name, tip, color)
 		local tool = Instance.new("Tool")
 		tool.Name = name
@@ -15043,6 +15052,7 @@ pcall(function()
 	local createModeration
 	local createGiver
 	local createTrap
+	local createRoTool
 
 	pcall(function()
 		local panel = createPanel("CloneToolGui", "Clone Tool", 220)
@@ -16546,6 +16556,435 @@ pcall(function()
 		createTrap = zone.create
 	end)
 
+	pcall(function()
+		local DAGGER = "DaggerOfShatteredDimensions"
+		local GEAR_ID = "71037101"
+		local snapSteps = { 90, 45, 15, 5, 0 }
+		local snapIndex = 3
+
+		local panel = createPanel("RoToolGui", "RoTool", 230)
+		local status = panel.status
+		panel:label("Tap a brick, spin the rings, Confirm")
+		local rotationLabel = panel:label("Rotation: 0, 0, 0")
+
+		local selection = nil
+		local originalCFrame = nil
+		local preview = nil
+		local gizmo = nil
+		local arcs = nil
+		local busy = false
+		local active = 0
+		local lastHandleTime = 0
+		local box = makeSelectionBox(Color3.fromRGB(255, 140, 60), 0.06)
+		local previewBox = makeSelectionBox(Color3.fromRGB(90, 255, 140), 0.05)
+
+		local function snapLabel()
+			local value = snapSteps[snapIndex]
+			return value > 0 and ("Snap: " .. value .. " deg") or "Snap: free"
+		end
+
+		local function updateReadout()
+			if preview and originalCFrame then
+				local rx, ry, rz = originalCFrame:ToObjectSpace(preview.CFrame):ToOrientation()
+				rotationLabel.Text = string.format(
+					"Rotation: %d, %d, %d",
+					math.round(math.deg(rx)),
+					math.round(math.deg(ry)),
+					math.round(math.deg(rz))
+				)
+			else
+				rotationLabel.Text = "Rotation: 0, 0, 0"
+			end
+		end
+
+		local function clearPreview()
+			if arcs then
+				arcs:Destroy()
+				arcs = nil
+			end
+			if gizmo then
+				gizmo:Destroy()
+				gizmo = nil
+			end
+			if preview then
+				preview:Destroy()
+				preview = nil
+			end
+			previewBox.Adornee = nil
+			updateReadout()
+		end
+
+		local function buildPreview(part)
+			clearPreview()
+			originalCFrame = part.CFrame
+
+			preview = Instance.new("Part")
+			preview.Name = "RoToolPreview"
+			preview.Anchored = true
+			preview.CanCollide = false
+			preview.CanQuery = false
+			preview.CanTouch = false
+			preview.CastShadow = false
+			preview.Size = part.Size
+			preview.Color = part.Color
+			preview.Material = part.Material
+			preview.Transparency = 0.45
+			preview.CFrame = originalCFrame
+			preview.Parent = workspace
+			previewBox.Adornee = preview
+
+			local side = math.max(part.Size.X, part.Size.Y, part.Size.Z)
+			local gizmoSize = math.clamp(side * 2.4, 4, 12)
+			gizmo = Instance.new("Part")
+			gizmo.Name = "RoToolGizmo"
+			gizmo.Anchored = true
+			gizmo.CanCollide = false
+			gizmo.CanQuery = false
+			gizmo.CanTouch = false
+			gizmo.CastShadow = false
+			gizmo.Transparency = 1
+			gizmo.Size = Vector3.new(gizmoSize, gizmoSize, gizmoSize)
+			gizmo.CFrame = originalCFrame
+			gizmo.Parent = workspace
+
+			arcs = Instance.new("ArcHandles")
+			arcs.Adornee = gizmo
+			arcs.Color3 = Color3.fromRGB(255, 140, 60)
+			arcs.Parent = CoreGui
+
+			local startCFrame = gizmo.CFrame
+
+			arcs.MouseButton1Down:Connect(function()
+				startCFrame = gizmo.CFrame
+				lastHandleTime = tick()
+			end)
+
+			arcs.MouseDrag:Connect(function(axis, relativeAngle)
+				if not gizmo or not preview then
+					return
+				end
+				lastHandleTime = tick()
+				local angle = relativeAngle
+				local snap = snapSteps[snapIndex]
+				if snap > 0 then
+					local step = math.rad(snap)
+					angle = math.round(angle / step) * step
+				end
+				local turned = startCFrame * CFrame.fromAxisAngle(Vector3.FromAxis(axis), angle)
+				gizmo.CFrame = turned
+				preview.CFrame = turned
+				updateReadout()
+			end)
+
+			updateReadout()
+		end
+
+		local function findDagger()
+			local char = lp.Character
+			local backpack = lp:FindFirstChild("Backpack")
+			return (char and char:FindFirstChild(DAGGER)) or (backpack and backpack:FindFirstChild(DAGGER))
+		end
+
+		local function waitFor(check, seconds)
+			local limit = tick() + seconds
+			while tick() < limit do
+				local result = check()
+				if result then
+					return result
+				end
+				task.wait(0.15)
+			end
+			return check()
+		end
+
+		local function holdTool(tool)
+			local char = lp.Character
+			local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+			if not (char and humanoid and tool) then
+				return false
+			end
+			if tool.Parent ~= char then
+				pcall(function()
+					humanoid:EquipTool(tool)
+				end)
+				if tool.Parent ~= char then
+					tool.Parent = char
+				end
+			end
+			return tool.Parent == char
+		end
+
+		local function holdEnlighten()
+			local char = lp.Character
+			local backpack = lp:FindFirstChild("Backpack")
+			if char and char:FindFirstChild("The Arkenstone") then
+				return true
+			end
+			local arken = backpack and backpack:FindFirstChild("The Arkenstone")
+			if arken then
+				return holdTool(arken)
+			end
+			return false
+		end
+
+		local function anchorOnce(part, wanted)
+			for _ = 1, 2 do
+				if not part.Parent then
+					return false
+				end
+				if part.Anchored == wanted then
+					return true
+				end
+				paintFire(part, Enum.NormalId.Top, getPos(), "material", nil, "anchor", "")
+				local limit = tick() + 1.2
+				while tick() < limit do
+					task.wait(0.1)
+					if part.Parent and part.Anchored == wanted then
+						return true
+					end
+				end
+			end
+			return part.Parent ~= nil and part.Anchored == wanted
+		end
+
+		local function enforce(part, target)
+			if not part.Parent or part.Anchored then
+				return
+			end
+			pcall(function()
+				part.CFrame = target
+				part.AssemblyLinearVelocity = Vector3.zero
+				part.AssemblyAngularVelocity = Vector3.zero
+			end)
+		end
+
+		local function rotationMatches(part, target)
+			local _, angle = (part.CFrame.Rotation:Inverse() * target.Rotation):ToAxisAngle()
+			return math.abs(angle) < 0.05
+		end
+
+		local function rotateBrick(part, target)
+	status.Text = "1/7 Checking the gear"
+	local dagger = findDagger()
+	if not dagger then
+		if not holdEnlighten() then
+			status.Text = "You need The Arkenstone to send commands"
+			return
+		end
+		task.wait(0.4)
+		status.Text = "1/7 Getting the gear"
+		chat(";gear me " .. GEAR_ID)
+		dagger = waitFor(findDagger, 10)
+		if not dagger then
+			status.Text = "The gear did not arrive"
+			return
+		end
+	end
+	if not part.Parent then
+		status.Text = "The brick no longer exists"
+		return
+	end
+	status.Text = "2/7 Anchor (unanchoring the brick)"
+	if not anchorOnce(part, false) then
+		status.Text = "Could not unanchor the brick"
+		return
+	end
+	
+	status.Text = "3/7 Using the gear"
+	if not holdTool(dagger) then
+		status.Text = "Could not equip the dagger"
+		pcall(anchorOnce, part, true)
+		return
+	end
+	local remote = dagger:WaitForChild("Remote", 4)
+	if not remote then
+		status.Text = "The dagger has no Remote"
+		pcall(anchorOnce, part, true)
+		return
+	end
+	task.wait(1)
+	remote:FireServer(Enum.KeyCode.Q)
+	enforce(part, target)
+	
+	status.Text = "4/7 Waiting 5 seconds"
+	for remaining = 5, 1, -1 do
+		status.Text = "4/7 Waiting " .. remaining .. "s"
+		for _ = 1, 5 do
+			enforce(part, target)
+			task.wait(0.2)
+		end
+	end
+	
+	status.Text = "5/7 Collide, collide"
+	paintFire(part, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
+	task.wait(0.2)
+	paintFire(part, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
+	enforce(part, target)
+	
+	status.Text = "6/7 Final Wait & Force"
+	for remaining = 3, 1, -1 do
+		status.Text = "6/7 Waiting " .. remaining .. "s"
+		for _ = 1, 5 do
+			enforce(part, target)
+			task.wait(0.2)
+		end
+	end
+	enforce(part, target)
+	task.wait(0.5)
+	enforce(part, target)
+	
+	status.Text = "7/7 Anchor"
+	local anchored = anchorOnce(part, true)
+	enforce(part, target)
+	if not anchored then
+		status.Text = "Finished, but the brick is not anchored"
+	elseif rotationMatches(part, target) then
+		status.Text = "Done. The brick has the preview rotation"
+	else
+		status.Text = "Done, but the rotation was not confirmed"
+	end
+end
+
+		local function hideIfIdle()
+			if active == 0 and not busy then
+				panel.gui.Enabled = false
+				box.Adornee = nil
+				clearPreview()
+			end
+		end
+
+		local snapButton
+		snapButton = panel:button(snapLabel(), function()
+			snapIndex = snapIndex % #snapSteps + 1
+			snapButton.Text = snapLabel()
+		end)
+
+		panel:row({
+			{
+				"Reset",
+				function()
+					if busy or not (preview and gizmo and originalCFrame) then
+						return
+					end
+					gizmo.CFrame = originalCFrame
+					preview.CFrame = originalCFrame
+					updateReadout()
+					status.Text = "Rotation reset"
+				end,
+			},
+			{
+				"Cancel",
+				function()
+					if busy then
+						status.Text = "Wait for the rotation to end"
+						return
+					end
+					selection = nil
+					box.Adornee = nil
+					clearPreview()
+					status.Text = "Selection cleared"
+				end,
+			},
+		})
+
+		panel:button("Confirm", function()
+			if busy then
+				return
+			end
+			if not (selection and selection.Parent and preview) then
+				status.Text = "Tap a brick first"
+				return
+			end
+			busy = true
+			local part = selection
+			local target = preview.CFrame
+			if arcs then
+				arcs.Adornee = nil
+			end
+			task.spawn(function()
+				local ok = pcall(rotateBrick, part, target)
+				if not ok then
+					status.Text = "Something failed. Anchoring the brick again"
+					pcall(anchorOnce, part, true)
+				end
+				busy = false
+				selection = nil
+				box.Adornee = nil
+				clearPreview()
+				task.delay(4, hideIfIdle)
+			end)
+		end)
+
+		createRoTool = function()
+			local connections = {}
+			local tool = newTool(
+				"RoTool",
+				"Tap a brick, spin the preview with the rings and rotate the block, too easy, u need enlighten",
+				Color3.fromRGB(255, 140, 60)
+			)
+			local equipped = false
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					active = active + 1
+					panel.gui.Enabled = true
+					if selection and selection.Parent and not busy then
+						box.Adornee = selection
+						buildPreview(selection)
+					end
+					if not busy then
+						status.Text = "Tap a brick, spin the rings, Confirm"
+					end
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					if not equipped then
+						return
+					end
+					equipped = false
+					active = math.max(0, active - 1)
+					hideIfIdle()
+				end)
+			)
+
+			table.insert(
+				connections,
+				mouse.Button1Down:Connect(function()
+					if not equipped or busy then
+						return
+					end
+					local target = mouse.Target
+					local hit = mouse.Hit.Position
+					task.delay(0.05, function()
+						if busy or tick() - lastHandleTime < 0.3 then
+							return
+						end
+						if target and target.Parent and isSelectable(target, hit) then
+							selection = target
+							box.Adornee = target
+							buildPreview(target)
+							status.Text = "Brick selected. Spin the rings, then Confirm"
+						end
+					end)
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				if equipped then
+					active = math.max(0, active - 1)
+				end
+				hideIfIdle()
+			end)
+
+			return tool
+		end
+	end)
+
 	local function addToolButton(name, info, creator)
 		Extras:AddButton({
 			Name = name,
@@ -16582,6 +17021,10 @@ pcall(function()
 
 	addToolButton("Trap editor tool", "Spleef, Delete, Toxify, Disco and Guess traps on blocks", function()
 		return createTrap()
+	end)
+
+	addToolButton("RoTool", "Spin a preview of a brick with rotation rings, then rotate the real brick with CFrame, the dagger gear, collide twice and an anchor after 10 seconds", function()
+		return createRoTool()
 	end)
 end)
 
