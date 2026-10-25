@@ -16828,64 +16828,6 @@ pcall(function()
 			return part.Parent ~= nil and part.Anchored == wanted
 		end
 
-		local near = nil
-
-		local function stopNear(returnHome)
-			if not near then
-				return
-			end
-			local state = near
-			near = nil
-			state.alive = false
-			if returnHome and state.home then
-				local char = lp.Character
-				local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-				local root = getHrp()
-				if root and char == state.character and humanoid and humanoid.Health > 0 then
-					pcall(function()
-						root.CFrame = state.home
-						root.AssemblyLinearVelocity = Vector3.zero
-						root.AssemblyAngularVelocity = Vector3.zero
-					end)
-				end
-			end
-		end
-
-		local function startNear(position)
-			stopNear(false)
-			local root = getHrp()
-			if not root then
-				return
-			end
-			local state = {
-				alive = true,
-				home = root.CFrame,
-				character = lp.Character,
-				position = position,
-			}
-			near = state
-
-			local function bring()
-				local current = getHrp()
-				if not current then
-					return
-				end
-				if (current.Position - state.position).Magnitude > 8 then
-					current.CFrame = CFrame.new(state.position + Vector3.new(0, 2, -3))
-					current.AssemblyLinearVelocity = Vector3.zero
-					current.AssemblyAngularVelocity = Vector3.zero
-				end
-			end
-
-			bring()
-			task.spawn(function()
-				while state.alive do
-					pcall(bring)
-					task.wait(0.25)
-				end
-			end)
-		end
-
 		local function placedCorrectly(part, target)
 			local _, angle = (part.CFrame.Rotation:Inverse() * target.Rotation):ToAxisAngle()
 			return math.abs(angle) < 0.05 and (part.Position - target.Position).Magnitude < 0.6
@@ -16922,8 +16864,6 @@ pcall(function()
 				pcall(sethiddenproperty, lp, "SimulationRadius", math.huge)
 			end
 
-			status.Text = "2/7 Moving next to the brick"
-			startNear(target.Position)
 			startLock(part, target)
 
 			status.Text = "2/7 Anchor (unanchoring the brick)"
@@ -17090,7 +17030,6 @@ pcall(function()
 					end
 				end
 				releaseLock()
-				stopNear(true)
 				busy = false
 				abortRequested = false
 				selection = nil
