@@ -16561,6 +16561,7 @@ pcall(function()
 		local GEAR_ID = "71037101"
 		local snapSteps = { 90, 45, 15, 5, 0 }
 		local snapIndex = 3
+		local ABORT = "RoToolAbort"
 
 		local panel = createPanel("RoToolGui", "RoTool", 230)
 		local status = panel.status
@@ -16573,8 +16574,10 @@ pcall(function()
 		local gizmo = nil
 		local arcs = nil
 		local busy = false
+		local abortRequested = false
 		local active = 0
 		local lastHandleTime = 0
+		local lock = nil
 		local box = makeSelectionBox(Color3.fromRGB(255, 140, 60), 0.06)
 		local previewBox = makeSelectionBox(Color3.fromRGB(90, 255, 140), 0.05)
 
@@ -16679,10 +16682,24 @@ pcall(function()
 			updateReadout()
 		end
 
-		local function findDagger()
+		local function quarterTurn(axisName)
+			if busy or not (gizmo and preview) then
+				return
+			end
+			local turned = gizmo.CFrame * CFrame.fromAxisAngle(Vector3.FromAxis(Enum.Axis[axisName]), math.rad(90))
+			gizmo.CFrame = turned
+			preview.CFrame = turned
+			updateReadout()
+		end
+
+		local function findOwnedTool(name)
 			local char = lp.Character
 			local backpack = lp:FindFirstChild("Backpack")
-			return (char and char:FindFirstChild(DAGGER)) or (backpack and backpack:FindFirstChild(DAGGER))
+			return (char and char:FindFirstChild(name)) or (backpack and backpack:FindFirstChild(name))
+		end
+
+		local function findDagger()
+			return findOwnedTool(DAGGER)
 		end
 
 		local function waitFor(check, seconds)
@@ -16716,15 +16733,79 @@ pcall(function()
 
 		local function holdEnlighten()
 			local char = lp.Character
-			local backpack = lp:FindFirstChild("Backpack")
 			if char and char:FindFirstChild("The Arkenstone") then
 				return true
 			end
-			local arken = backpack and backpack:FindFirstChild("The Arkenstone")
+			local arken = findOwnedTool("The Arkenstone")
 			if arken then
 				return holdTool(arken)
 			end
 			return false
+		end
+
+		local function sleep(seconds)
+			local limit = tick() + seconds
+			repeat
+				if abortRequested then
+					error(ABORT)
+				end
+				local char = lp.Character
+				local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+				if not humanoid or humanoid.Health <= 0 then
+					error(ABORT)
+				end
+				task.wait(0.05)
+			until tick() >= limit
+		end
+
+		local function countdown(seconds, label)
+			for remaining = seconds, 1, -1 do
+				status.Text = label .. " (" .. remaining .. "s)"
+				sleep(1)
+			end
+		end
+
+		local function releaseLock()
+			if not lock then
+				return
+			end
+			local state = lock
+			lock = nil
+			for _, connection in ipairs(state.connections) do
+				connection:Disconnect()
+			end
+			if state.part and state.part.Parent then
+				pcall(function()
+					state.part.AssemblyLinearVelocity = Vector3.zero
+					state.part.AssemblyAngularVelocity = Vector3.zero
+					state.part.CanCollide = state.canCollide
+				end)
+			end
+		end
+
+		local function startLock(part, target)
+			releaseLock()
+			local state = {
+				part = part,
+				target = target,
+				canCollide = part.CanCollide,
+				connections = {},
+			}
+			lock = state
+			local function hold()
+				if state ~= lock or not part.Parent or part.Anchored then
+					return
+				end
+				pcall(function()
+					part.CanCollide = false
+					part.CFrame = state.target
+					part.AssemblyLinearVelocity = Vector3.zero
+					part.AssemblyAngularVelocity = Vector3.zero
+				end)
+			end
+			table.insert(state.connections, RunService.Stepped:Connect(hold))
+			table.insert(state.connections, RunService.Heartbeat:Connect(hold))
+			return state
 		end
 
 		local function anchorOnce(part, wanted)
@@ -16747,103 +16828,108 @@ pcall(function()
 			return part.Parent ~= nil and part.Anchored == wanted
 		end
 
-		local function enforce(part, target)
-			if not part.Parent or part.Anchored then
+		local function placedCorrectly(part, target)
+			local _, angle = (part.CFrame.Rotation:Inverse() * target.Rotation):ToAxisAngle()
+			return math.abs(angle) < 0.05 and (part.Position - target.Position).Magnitude < 0.6
+		end
+
+		local function runSequence(part, target)
+			status.Text = "1/7 Checking the gear"
+			if not findOwnedTool("Paint") then
+				return false, "You need the Paint tool"
+			end
+
+			local dagger = findDagger()
+			if not dagger then
+				if not holdEnlighten() then
+					return false, "You need The Arkenstone to send commands"
+				end
+				sleep(0.4)
+				status.Text = "1/7 Getting the gear"
+				chat(";gear me " .. GEAR_ID)
+				dagger = waitFor(findDagger, 10)
+				if not dagger then
+					return false, "The gear did not arrive"
+				end
+			end
+
+			if not part.Parent then
+				return false, "The brick no longer exists"
+			end
+
+			pcall(function()
+				lp.SimulationRadius = math.huge
+			end)
+			if sethiddenproperty then
+				pcall(sethiddenproperty, lp, "SimulationRadius", math.huge)
+			end
+
+			startLock(part, target)
+
+			status.Text = "2/7 Anchor (unanchoring the brick)"
+			if not anchorOnce(part, false) then
+				return false, "Could not unanchor the brick"
+			end
+
+			status.Text = "3/7 Using the gear"
+			if not holdTool(dagger) then
+				return false, "Could not equip the dagger"
+			end
+			local remote = dagger:WaitForChild("Remote", 4)
+			if not remote then
+				return false, "The dagger has no Remote"
+			end
+			sleep(1)
+			remote:FireServer(Enum.KeyCode.Q)
+
+			countdown(7, "4/7 Holding the brick")
+
+			status.Text = "5/7 Collide, collide"
+			paintFire(part, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
+			sleep(0.2)
+			paintFire(part, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
+
+			countdown(3, "6/7 Final hold")
+			sleep(0.5)
+
+			for attempt = 1, 3 do
+				status.Text = attempt == 1 and "7/7 Anchor" or ("7/7 Anchor, retry " .. attempt .. "/3")
+				local anchored = anchorOnce(part, true)
+				sleep(0.4)
+				if anchored and placedCorrectly(part, target) then
+					return true, "Done. The brick has the preview rotation"
+				end
+				if attempt < 3 then
+					status.Text = "Rotation not confirmed, trying again"
+					if not anchorOnce(part, false) then
+						break
+					end
+					sleep(1.2)
+				end
+			end
+
+			if part.Anchored then
+				return true, "Done, but the rotation was not confirmed"
+			end
+			return false, "Finished, but the brick is not anchored"
+		end
+
+		local function restoreBrick(part, home)
+			if not part.Parent then
 				return
 			end
-			pcall(function()
-				part.CFrame = target
-				part.AssemblyLinearVelocity = Vector3.zero
-				part.AssemblyAngularVelocity = Vector3.zero
-			end)
+			if part.Anchored then
+				return
+			end
+			if lock then
+				lock.target = home
+			else
+				startLock(part, home)
+			end
+			task.wait(0.3)
+			anchorOnce(part, true)
+			task.wait(0.3)
 		end
-
-		local function rotationMatches(part, target)
-			local _, angle = (part.CFrame.Rotation:Inverse() * target.Rotation):ToAxisAngle()
-			return math.abs(angle) < 0.05
-		end
-
-		local function rotateBrick(part, target)
-	status.Text = "1/7 Checking the gear"
-	local dagger = findDagger()
-	if not dagger then
-		if not holdEnlighten() then
-			status.Text = "You need The Arkenstone to send commands"
-			return
-		end
-		task.wait(0.4)
-		status.Text = "1/7 Getting the gear"
-		chat(";gear me " .. GEAR_ID)
-		dagger = waitFor(findDagger, 10)
-		if not dagger then
-			status.Text = "The gear did not arrive"
-			return
-		end
-	end
-	if not part.Parent then
-		status.Text = "The brick no longer exists"
-		return
-	end
-	status.Text = "2/7 Anchor (unanchoring the brick)"
-	if not anchorOnce(part, false) then
-		status.Text = "Could not unanchor the brick"
-		return
-	end
-	
-	status.Text = "3/7 Using the gear"
-	if not holdTool(dagger) then
-		status.Text = "Could not equip the dagger"
-		pcall(anchorOnce, part, true)
-		return
-	end
-	local remote = dagger:WaitForChild("Remote", 4)
-	if not remote then
-		status.Text = "The dagger has no Remote"
-		pcall(anchorOnce, part, true)
-		return
-	end
-	task.wait(1)
-	remote:FireServer(Enum.KeyCode.Q)
-	enforce(part, target)
-	
-	status.Text = "4/7 Waiting 9 seconds"
-	for remaining = 9, 1, -1 do
-		status.Text = "4/7 Waiting " .. remaining .. "s"
-		for _ = 1, 5 do
-			enforce(part, target)
-			task.wait(0.2)
-		end
-	end
-	
-	status.Text = "5/7 Collide, collide"
-	paintFire(part, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
-	task.wait(0.2)
-	paintFire(part, Enum.NormalId.Top, getPos(), "material", Color3.new(), "collide", "")
-	enforce(part, target)
-	
-	status.Text = "6/7 Final Wait & Force"
-	for remaining = 3, 1, -1 do
-		status.Text = "6/7 Waiting " .. remaining .. "s"
-		for _ = 1, 5 do
-			enforce(part, target)
-			task.wait(0.2)
-		end
-	end
-	enforce(part, target)
-	task.wait(0.5)
-	enforce(part, target)
-	
-	status.Text = "7/7 Anchor"
-	local anchored = anchorOnce(part, true)
-	enforce(part, target)
-	if not anchored then
-		status.Text = "Finished, but the brick is not anchored"
-	elseif rotationMatches(part, target) then
-		status.Text = "Done. The brick has the preview rotation"
-	else
-		status.Text = "Done"
-	end
-end
 
 		local function hideIfIdle()
 			if active == 0 and not busy then
@@ -16852,6 +16938,27 @@ end
 				clearPreview()
 			end
 		end
+
+		panel:row({
+			{
+				"X 90",
+				function()
+					quarterTurn("X")
+				end,
+			},
+			{
+				"Y 90",
+				function()
+					quarterTurn("Y")
+				end,
+			},
+			{
+				"Z 90",
+				function()
+					quarterTurn("Z")
+				end,
+			},
+		})
 
 		local snapButton
 		snapButton = panel:button(snapLabel(), function()
@@ -16876,7 +16983,8 @@ end
 				"Cancel",
 				function()
 					if busy then
-						status.Text = "Wait for the rotation to end"
+						abortRequested = true
+						status.Text = "Stopping, the brick will be restored"
 						return
 					end
 					selection = nil
@@ -16896,18 +17004,34 @@ end
 				return
 			end
 			busy = true
+			abortRequested = false
 			local part = selection
 			local target = preview.CFrame
+			local home = originalCFrame
 			if arcs then
 				arcs.Adornee = nil
 			end
 			task.spawn(function()
-				local ok = pcall(rotateBrick, part, target)
-				if not ok then
-					status.Text = "Something failed. Anchoring the brick again"
-					pcall(anchorOnce, part, true)
+				local ok, result, message = pcall(runSequence, part, target)
+				if ok then
+					if result == false then
+						local touched = lock ~= nil
+						pcall(restoreBrick, part, home)
+						status.Text = touched and (message .. ". Brick restored") or message
+					else
+						status.Text = message
+					end
+				else
+					pcall(restoreBrick, part, home)
+					if tostring(result):find(ABORT, 1, true) then
+						status.Text = "Stopped. The brick was restored"
+					else
+						status.Text = "Something failed. The brick was restored"
+					end
 				end
+				releaseLock()
 				busy = false
+				abortRequested = false
 				selection = nil
 				box.Adornee = nil
 				clearPreview()
