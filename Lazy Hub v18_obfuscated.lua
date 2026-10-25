@@ -16806,8 +16806,8 @@ pcall(function()
 	remote:FireServer(Enum.KeyCode.Q)
 	enforce(part, target)
 	
-	status.Text = "4/7 Waiting 5 seconds"
-	for remaining = 5, 1, -1 do
+	status.Text = "4/7 Waiting 9 seconds"
+	for remaining = 9, 1, -1 do
 		status.Text = "4/7 Waiting " .. remaining .. "s"
 		for _ = 1, 5 do
 			enforce(part, target)
@@ -16841,7 +16841,7 @@ pcall(function()
 	elseif rotationMatches(part, target) then
 		status.Text = "Done. The brick has the preview rotation"
 	else
-		status.Text = "Done, but the rotation was not confirmed"
+		status.Text = "Done"
 	end
 end
 
@@ -17023,7 +17023,7 @@ end
 		return createTrap()
 	end)
 
-	addToolButton("RoTool", "Spin a preview of a brick with rotation rings, then rotate the real brick with CFrame, the dagger gear, collide twice and an anchor after 10 seconds", function()
+	addToolButton("RoTool", "Rotate ur blocks using this tool and enlighten!", function()
 		return createRoTool()
 	end)
 end)
