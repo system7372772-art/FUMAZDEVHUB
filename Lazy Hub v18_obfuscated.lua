@@ -14697,6 +14697,9 @@ pcall(function()
 		addPiece(tool, handle, "Wedge", Vector3.new(0.14, 0.3, 0.22), CFrame.new(-0.58, 0, -1.5) * CFrame.Angles(0, 0, math.rad(-90)), Color3.new(1, 1, 1), NEON)
 	end
 
+
+	designs["RoTool Cframe"] = designs["RoTool"]
+
 	local function newTool(name, tip, color)
 		local tool = Instance.new("Tool")
 		tool.Name = name
@@ -15053,6 +15056,7 @@ pcall(function()
 	local createGiver
 	local createTrap
 	local createRoTool
+	local createRoToolCframe
 
 	pcall(function()
 		local panel = createPanel("CloneToolGui", "Clone Tool", 220)
@@ -17109,6 +17113,592 @@ pcall(function()
 		end
 	end)
 
+	pcall(function()
+		local ABORT = "RoToolCframeAbort"
+		local snapSteps = { 90, 45, 15, 5, 0 }
+		local snapIndex = 3
+
+		local panel = createPanel("RoToolCframeGui", "RoTool Cframe", 230)
+		local status = panel.status
+		panel:label("Tap an unanchored brick, spin the rings")
+		local rotationLabel = panel:label("Rotation: 0, 0, 0")
+
+		local selection = nil
+		local originalCFrame = nil
+		local preview = nil
+		local gizmo = nil
+		local arcs = nil
+		local busy = false
+		local abortRequested = false
+		local active = 0
+		local lastHandleTime = 0
+		local stayClose = true
+		local near = nil
+		local holds = {}
+		local box = makeSelectionBox(Color3.fromRGB(170, 110, 255), 0.06)
+		local previewBox = makeSelectionBox(Color3.fromRGB(90, 255, 140), 0.05)
+
+		local function snapLabel()
+			local value = snapSteps[snapIndex]
+			return value > 0 and ("Snap: " .. value .. " deg") or "Snap: free"
+		end
+
+		local function updateReadout()
+			if preview and originalCFrame then
+				local rx, ry, rz = originalCFrame:ToObjectSpace(preview.CFrame):ToOrientation()
+				rotationLabel.Text = string.format(
+					"Rotation: %d, %d, %d",
+					math.round(math.deg(rx)),
+					math.round(math.deg(ry)),
+					math.round(math.deg(rz))
+				)
+			else
+				rotationLabel.Text = "Rotation: 0, 0, 0"
+			end
+		end
+
+		local function clearPreview()
+			if arcs then
+				arcs:Destroy()
+				arcs = nil
+			end
+			if gizmo then
+				gizmo:Destroy()
+				gizmo = nil
+			end
+			if preview then
+				preview:Destroy()
+				preview = nil
+			end
+			previewBox.Adornee = nil
+			updateReadout()
+		end
+
+		local function buildPreview(part)
+			clearPreview()
+			originalCFrame = part.CFrame
+
+			preview = Instance.new("Part")
+			preview.Name = "RoToolCframePreview"
+			preview.Anchored = true
+			preview.CanCollide = false
+			preview.CanQuery = false
+			preview.CanTouch = false
+			preview.CastShadow = false
+			preview.Size = part.Size
+			preview.Color = part.Color
+			preview.Material = part.Material
+			preview.Transparency = 0.45
+			preview.CFrame = originalCFrame
+			preview.Parent = workspace
+			previewBox.Adornee = preview
+
+			local side = math.max(part.Size.X, part.Size.Y, part.Size.Z)
+			local gizmoSize = math.clamp(side * 2.4, 4, 12)
+			gizmo = Instance.new("Part")
+			gizmo.Name = "RoToolCframeGizmo"
+			gizmo.Anchored = true
+			gizmo.CanCollide = false
+			gizmo.CanQuery = false
+			gizmo.CanTouch = false
+			gizmo.CastShadow = false
+			gizmo.Transparency = 1
+			gizmo.Size = Vector3.new(gizmoSize, gizmoSize, gizmoSize)
+			gizmo.CFrame = originalCFrame
+			gizmo.Parent = workspace
+
+			arcs = Instance.new("ArcHandles")
+			arcs.Adornee = gizmo
+			arcs.Color3 = Color3.fromRGB(170, 110, 255)
+			arcs.Parent = CoreGui
+
+			local startCFrame = gizmo.CFrame
+
+			arcs.MouseButton1Down:Connect(function()
+				startCFrame = gizmo.CFrame
+				lastHandleTime = tick()
+			end)
+
+			arcs.MouseDrag:Connect(function(axis, relativeAngle)
+				if not gizmo or not preview then
+					return
+				end
+				lastHandleTime = tick()
+				local angle = relativeAngle
+				local snap = snapSteps[snapIndex]
+				if snap > 0 then
+					local step = math.rad(snap)
+					angle = math.round(angle / step) * step
+				end
+				local turned = startCFrame * CFrame.fromAxisAngle(Vector3.FromAxis(axis), angle)
+				gizmo.CFrame = turned
+				preview.CFrame = turned
+				updateReadout()
+			end)
+
+			updateReadout()
+		end
+
+		local function quarterTurn(axisName)
+			if busy or not (gizmo and preview) then
+				return
+			end
+			local turned = gizmo.CFrame * CFrame.fromAxisAngle(Vector3.FromAxis(Enum.Axis[axisName]), math.rad(90))
+			gizmo.CFrame = turned
+			preview.CFrame = turned
+			updateReadout()
+		end
+
+		local function sleep(seconds)
+			local limit = tick() + seconds
+			repeat
+				if abortRequested then
+					error(ABORT)
+				end
+				local char = lp.Character
+				local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+				if not humanoid or humanoid.Health <= 0 then
+					error(ABORT)
+				end
+				task.wait(0.05)
+			until tick() >= limit
+		end
+
+		local function pingSeconds()
+			local ok, value = pcall(function()
+				return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
+			end)
+			if ok and type(value) == "number" and value > 0 then
+				return value / 1000
+			end
+			local okPing, oneWay = pcall(function()
+				return lp:GetNetworkPing()
+			end)
+			if okPing and type(oneWay) == "number" then
+				return oneWay * 2
+			end
+			return 0.15
+		end
+
+		local function lag()
+			return math.clamp(pingSeconds() * 1.5 + 0.12, 0.2, 2)
+		end
+
+		local function boostSimulation()
+			for _, property in ipairs({ "SimulationRadius", "MaximumSimulationRadius" }) do
+				pcall(function()
+					lp[property] = math.huge
+				end)
+				if sethiddenproperty then
+					pcall(sethiddenproperty, lp, property, math.huge)
+				end
+			end
+		end
+
+		local function ownsPart(part)
+			if isnetworkowner then
+				local ok, result = pcall(isnetworkowner, part)
+				if ok then
+					return result == true
+				end
+			end
+			return nil
+		end
+
+		local function claimOwnership(part, seconds)
+			local limit = tick() + seconds
+			while tick() < limit do
+				boostSimulation()
+				local owned = ownsPart(part)
+				if owned == true then
+					return true
+				end
+				if owned == nil then
+					sleep(math.min(seconds, 1.5))
+					return nil
+				end
+				sleep(0.1)
+			end
+			return ownsPart(part)
+		end
+
+		local function stopNear(returnHome)
+			if not near then
+				return
+			end
+			local state = near
+			near = nil
+			for _, connection in ipairs(state.connections) do
+				connection:Disconnect()
+			end
+			if returnHome and state.home then
+				local char = lp.Character
+				local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+				local root = getHrp()
+				if root and char == state.character and humanoid and humanoid.Health > 0 then
+					pcall(function()
+						root.CFrame = state.home
+						root.AssemblyLinearVelocity = Vector3.zero
+						root.AssemblyAngularVelocity = Vector3.zero
+					end)
+				end
+			end
+		end
+
+		local function startNear(position)
+			stopNear(false)
+			local root = getHrp()
+			if not root then
+				return
+			end
+			local state = {
+				home = root.CFrame,
+				character = lp.Character,
+				position = position,
+				connections = {},
+			}
+			near = state
+
+			local function pin()
+				if state ~= near then
+					return
+				end
+				local current = getHrp()
+				if not current then
+					return
+				end
+				pcall(function()
+					current.CFrame = CFrame.new(state.position) * current.CFrame.Rotation
+					current.AssemblyLinearVelocity = Vector3.zero
+					current.AssemblyAngularVelocity = Vector3.zero
+				end)
+			end
+
+			pin()
+			table.insert(state.connections, RunService.Stepped:Connect(pin))
+			table.insert(state.connections, RunService.Heartbeat:Connect(pin))
+		end
+
+		local function releaseHold(part)
+			local state = holds[part]
+			if not state then
+				return
+			end
+			holds[part] = nil
+			if state.connection then
+				state.connection:Disconnect()
+			end
+			for _, object in ipairs(state.objects) do
+				pcall(function()
+					object:Destroy()
+				end)
+			end
+			if part.Parent then
+				pcall(function()
+					part.CanCollide = state.canCollide
+				end)
+			end
+		end
+
+		local function releaseAll()
+			local parts = {}
+			for part in pairs(holds) do
+				parts[#parts + 1] = part
+			end
+			for _, part in ipairs(parts) do
+				releaseHold(part)
+			end
+			stopNear(true)
+		end
+
+		local function applyAlign(part, target)
+			releaseHold(part)
+
+			local attachment = Instance.new("Attachment")
+			attachment.Name = "RoToolCframeAttachment"
+			attachment.Parent = part
+
+			local holdPosition = part.Position
+
+			local position = Instance.new("AlignPosition")
+			position.Name = "RoToolCframePosition"
+			position.Mode = Enum.PositionAlignmentMode.OneAttachment
+			position.Attachment0 = attachment
+			position.Position = holdPosition
+			position.MaxForce = math.huge
+			position.MaxVelocity = math.huge
+			position.Responsiveness = 200
+			position.Parent = part
+
+			local orientation = Instance.new("AlignOrientation")
+			orientation.Name = "RoToolCframeOrientation"
+			orientation.Mode = Enum.OrientationAlignmentMode.OneAttachment
+			orientation.Attachment0 = attachment
+			orientation.CFrame = target.Rotation
+			orientation.MaxTorque = math.huge
+			orientation.MaxAngularVelocity = math.huge
+			orientation.Responsiveness = 200
+			orientation.Parent = part
+
+			local state = {
+				objects = { attachment, position, orientation },
+				canCollide = part.CanCollide,
+			}
+			state.connection = RunService.Heartbeat:Connect(function()
+				if not part.Parent then
+					releaseHold(part)
+					return
+				end
+				pcall(function()
+					position.Position = holdPosition
+				end)
+			end)
+			holds[part] = state
+		end
+
+		local function rotationError(part, target)
+			local _, angle = (part.CFrame.Rotation:Inverse() * target.Rotation):ToAxisAngle()
+			return math.abs(angle)
+		end
+
+		local function runConfirm(part, target)
+			if not part.Parent then
+				return false, "The brick no longer exists"
+			end
+			if part.Anchored then
+				return false, "The brick is anchored. Only unanchored bricks can be rotated"
+			end
+
+			status.Text = string.format("1/4 Ping %d ms, timing the steps", math.floor(pingSeconds() * 1000 + 0.5))
+			boostSimulation()
+			if stayClose then
+				local side = math.max(part.Size.X, part.Size.Y, part.Size.Z)
+				startNear(part.Position + Vector3.new(0, side / 2 + 3.2, 0))
+				sleep(lag())
+			end
+
+			status.Text = "2/4 Taking network ownership"
+			local owned = claimOwnership(part, 6)
+			if owned == false then
+				return false, "Could not get network ownership of the brick"
+			end
+			sleep(lag())
+
+			status.Text = "3/4 Rotating with AlignOrientation"
+			applyAlign(part, target)
+			local limit = tick() + 4 + lag() * 2
+			while tick() < limit and rotationError(part, target) > 0.03 do
+				sleep(0.05)
+			end
+			sleep(lag() * 2)
+
+			status.Text = "4/4 Checking the result"
+			if part.Parent and rotationError(part, target) < 0.05 then
+				return true, "Done. The brick is rotated and held. Press Release to let it go"
+			end
+			releaseHold(part)
+			return false, "The rotation was not confirmed. Check the ownership of the brick"
+		end
+
+		local function hideIfIdle()
+			if active > 0 or busy then
+				return
+			end
+			panel.gui.Enabled = false
+			box.Adornee = nil
+			clearPreview()
+			stopNear(true)
+		end
+
+		panel:row({
+			{
+				"X 90",
+				function()
+					quarterTurn("X")
+				end,
+			},
+			{
+				"Y 90",
+				function()
+					quarterTurn("Y")
+				end,
+			},
+			{
+				"Z 90",
+				function()
+					quarterTurn("Z")
+				end,
+			},
+		})
+
+		local snapButton
+		snapButton = panel:button(snapLabel(), function()
+			snapIndex = snapIndex % #snapSteps + 1
+			snapButton.Text = snapLabel()
+		end)
+
+		local closeButton
+		closeButton = panel:button("Stay close: ON", function()
+			stayClose = not stayClose
+			closeButton.Text = stayClose and "Stay close: ON" or "Stay close: OFF"
+			setButtonState(closeButton, stayClose)
+		end)
+		setButtonState(closeButton, true)
+
+		panel:row({
+			{
+				"Reset",
+				function()
+					if busy or not (preview and gizmo and originalCFrame) then
+						return
+					end
+					gizmo.CFrame = originalCFrame
+					preview.CFrame = originalCFrame
+					updateReadout()
+					status.Text = "Rotation reset"
+				end,
+			},
+			{
+				"Cancel",
+				function()
+					if busy then
+						abortRequested = true
+						status.Text = "Stopping"
+						return
+					end
+					selection = nil
+					box.Adornee = nil
+					clearPreview()
+					status.Text = "Selection cleared"
+				end,
+			},
+		})
+
+		panel:button("Confirm", function()
+			if busy then
+				return
+			end
+			if not (selection and selection.Parent and preview) then
+				status.Text = "Tap an unanchored brick first"
+				return
+			end
+			busy = true
+			abortRequested = false
+			local part = selection
+			local target = preview.CFrame
+			if arcs then
+				arcs.Adornee = nil
+			end
+			task.spawn(function()
+				local ok, result, message = pcall(runConfirm, part, target)
+				if ok then
+					status.Text = message
+					if result == false then
+						releaseHold(part)
+						stopNear(true)
+					end
+				else
+					releaseHold(part)
+					stopNear(true)
+					if tostring(result):find(ABORT, 1, true) then
+						status.Text = "Stopped"
+					else
+						status.Text = "Something failed"
+					end
+				end
+				busy = false
+				abortRequested = false
+				selection = nil
+				box.Adornee = nil
+				clearPreview()
+				task.delay(4, hideIfIdle)
+			end)
+		end)
+
+		panel:button("Release", function()
+			if busy then
+				status.Text = "Wait for the rotation to end"
+				return
+			end
+			releaseAll()
+			status.Text = "Released. Bricks are free again"
+			task.delay(2, hideIfIdle)
+		end)
+
+		createRoToolCframe = function()
+			local connections = {}
+			local tool = newTool(
+				"RoTool Cframe",
+				"Tap an unanchored brick, spin the preview with the rings and rotate it with AlignOrientation",
+				Color3.fromRGB(170, 110, 255)
+			)
+			local equipped = false
+
+			table.insert(
+				connections,
+				tool.Equipped:Connect(function()
+					equipped = true
+					active = active + 1
+					panel.gui.Enabled = true
+					if selection and selection.Parent and not busy then
+						box.Adornee = selection
+						buildPreview(selection)
+					end
+					if not busy then
+						status.Text = "Tap an unanchored brick, spin the rings"
+					end
+				end)
+			)
+
+			table.insert(
+				connections,
+				tool.Unequipped:Connect(function()
+					if not equipped then
+						return
+					end
+					equipped = false
+					active = math.max(0, active - 1)
+					hideIfIdle()
+				end)
+			)
+
+			table.insert(
+				connections,
+				mouse.Button1Down:Connect(function()
+					if not equipped or busy then
+						return
+					end
+					local target = mouse.Target
+					local hit = mouse.Hit.Position
+					task.delay(0.05, function()
+						if busy or tick() - lastHandleTime < 0.3 then
+							return
+						end
+						if target and target.Parent and isSelectable(target, hit) then
+							if target.Anchored then
+								status.Text = "That brick is anchored. Pick an unanchored one"
+								return
+							end
+							selection = target
+							box.Adornee = target
+							buildPreview(target)
+							status.Text = "Brick selected. Spin the rings, then Confirm"
+						end
+					end)
+				end)
+			)
+
+			bindCleanup(tool, connections, function()
+				if equipped then
+					active = math.max(0, active - 1)
+				end
+				hideIfIdle()
+			end)
+
+			return tool
+		end
+	end)
+
 	local function addToolButton(name, info, creator)
 		Extras:AddButton({
 			Name = name,
@@ -17150,8 +17740,13 @@ pcall(function()
 	addToolButton("RoTool", "Rotate ur blocks using this tool and enlighten!", function()
 		return createRoTool()
 	end)
-end)
 
+
+	addToolButton("RoTool [Cframe]", "Rotate blocks without bkit or enlighten", function()
+		return createRoToolCframe()
+	end)
+
+end)
 
 pcall(function()
 	local Players = game:GetService("Players")
