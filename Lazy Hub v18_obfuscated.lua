@@ -12067,6 +12067,10 @@ local function CPPrepare(skipJson)
         return false
     end
 
+    if CP.textMode then
+        return CP.pixels ~= nil
+    end
+
     if skipJson then
         return true
     end
@@ -12369,6 +12373,303 @@ Canvas:AddButton({
         CPRun()
     end
 })
+
+do
+    local TEXT_FONT = {
+
+        A = {".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"},
+        B = {"####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."},
+        C = {".###.", "#...#", "#....", "#....", "#....", "#...#", ".###."},
+        D = {"####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####."},
+        E = {"#####", "#....", "#....", "####.", "#....", "#....", "#####"},
+        F = {"#####", "#....", "#....", "####.", "#....", "#....", "#...."},
+        G = {".###.", "#...#", "#....", "#.###", "#...#", "#...#", ".####"},
+        H = {"#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"},
+        I = {".###.", "..#..", "..#..", "..#..", "..#..", "..#..", ".###."},
+        J = {"..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.."},
+        K = {"#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#"},
+        L = {"#....", "#....", "#....", "#....", "#....", "#....", "#####"},
+        M = {"#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#"},
+        N = {"#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#"},
+        O = {".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."},
+        P = {"####.", "#...#", "#...#", "####.", "#....", "#....", "#...."},
+        Q = {".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#"},
+        R = {"####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#"},
+        S = {".####", "#....", "#....", ".###.", "....#", "....#", "####."},
+        T = {"#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."},
+        U = {"#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."},
+        V = {"#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.."},
+        W = {"#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#"},
+        X = {"#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#"},
+        Y = {"#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.."},
+        Z = {"#####", "....#", "...#.", "..#..", ".#...", "#....", "#####"},
+        ["0"] = {".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."},
+        ["1"] = {"..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."},
+        ["2"] = {".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"},
+        ["3"] = {"#####", "...#.", "..#..", "...#.", "....#", "#...#", ".###."},
+        ["4"] = {"...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."},
+        ["5"] = {"#####", "#....", "####.", "....#", "....#", "#...#", ".###."},
+        ["6"] = {"..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."},
+        ["7"] = {"#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."},
+        ["8"] = {".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."},
+        ["9"] = {".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."},
+        ["?"] = {".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."},
+        ["!"] = {"..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#.."},
+        ["."] = {".....", ".....", ".....", ".....", ".....", ".....", "..#.."},
+        [","] = {".....", ".....", ".....", ".....", "..#..", "..#..", ".#..."},
+        [":"] = {".....", "..#..", ".....", ".....", ".....", "..#..", "....."},
+        ["-"] = {".....", ".....", ".....", "#####", ".....", ".....", "....."},
+        ["+"] = {".....", "..#..", "..#..", "#####", "..#..", "..#..", "....."},
+        ["/"] = {"....#", "...#.", "...#.", "..#..", ".#...", ".#...", "#...."},
+        ["'"] = {"..#..", "..#..", ".....", ".....", ".....", ".....", "....."},
+        [" "] = {".....", ".....", ".....", ".....", ".....", ".....", "....."},
+        a = {".....", ".....", ".###.", "....#", ".####", "#...#", ".####"},
+        b = {"#....", "#....", "####.", "#...#", "#...#", "#...#", "####."},
+        c = {".....", ".....", ".###.", "#....", "#....", "#...#", ".###."},
+        d = {"....#", "....#", ".####", "#...#", "#...#", "#...#", ".####"},
+        e = {".....", ".....", ".###.", "#...#", "#####", "#....", ".###."},
+        f = {"..##.", ".#..#", ".#...", "####.", ".#...", ".#...", ".#..."},
+        g = {".....", ".####", "#...#", "#...#", ".####", "....#", ".###."},
+        h = {"#....", "#....", "####.", "#...#", "#...#", "#...#", "#...#"},
+        i = {"..#..", ".....", ".##..", "..#..", "..#..", "..#..", ".###."},
+        j = {"...#.", ".....", "..##.", "...#.", "...#.", "#..#.", ".##.."},
+        k = {"#....", "#....", "#..#.", "#.#..", "##...", "#.#..", "#..#."},
+        l = {".##..", "..#..", "..#..", "..#..", "..#..", "..#..", ".###."},
+        m = {".....", ".....", "##.#.", "#.#.#", "#.#.#", "#...#", "#...#"},
+        n = {".....", ".....", "####.", "#...#", "#...#", "#...#", "#...#"},
+        o = {".....", ".....", ".###.", "#...#", "#...#", "#...#", ".###."},
+        p = {".....", "####.", "#...#", "#...#", "####.", "#....", "#...."},
+        q = {".....", ".####", "#...#", "#...#", ".####", "....#", "....#"},
+        r = {".....", ".....", "#.##.", "##..#", "#....", "#....", "#...."},
+        s = {".....", ".....", ".####", "#....", ".###.", "....#", "####."},
+        t = {".#...", ".#...", "####.", ".#...", ".#...", ".#..#", "..##."},
+        u = {".....", ".....", "#...#", "#...#", "#...#", "#..##", ".##.#"},
+        v = {".....", ".....", "#...#", "#...#", "#...#", ".#.#.", "..#.."},
+        w = {".....", ".....", "#...#", "#...#", "#.#.#", "#.#.#", ".#.#."},
+        x = {".....", ".....", "#...#", ".#.#.", "..#..", ".#.#.", "#...#"},
+        y = {".....", "#...#", "#...#", ".####", "....#", "....#", ".###."},
+        z = {".....", ".....", "#####", "...#.", "..#..", ".#...", "#####"},
+    }
+
+    local SMALL_GLYPHS = {}
+
+    for key, rows in pairs(TEXT_FONT) do
+        local small = {}
+
+        for index, row in ipairs({1, 2, 4, 6, 7}) do
+            local bits = ""
+
+            for _, col in ipairs({1, 3, 5}) do
+                bits = bits .. rows[row]:sub(col, col)
+            end
+
+            small[index] = bits
+        end
+
+        SMALL_GLYPHS[key] = small
+    end
+
+    local FONTS = {
+        {glyphs = TEXT_FONT, w = 5, h = 7},
+        {glyphs = SMALL_GLYPHS, w = 3, h = 5},
+    }
+
+    local TextInput = Canvas:AddTextbox({
+        Placeholder = "Text to draw",
+        Info = "Text to paint as pixel art on the canvas. Keeps upper and lower case and shrinks the letters and uses several lines if it does not fit"
+    })
+
+    local function CPTextGrid(text, W, H)
+        local function wrap(font, scale)
+            local advance = font.w + 1
+            local maxChars = math.floor((W / scale + 1) / advance)
+
+            if maxChars < 1 then
+                return nil
+            end
+
+            local lines = {}
+            local cur = ""
+
+            for word in text:gmatch("%S+") do
+                local rest = word
+
+                while #rest > maxChars do
+                    if cur ~= "" then
+                        lines[#lines + 1] = cur
+                        cur = ""
+                    end
+                    lines[#lines + 1] = rest:sub(1, maxChars)
+                    rest = rest:sub(maxChars + 1)
+                end
+
+                if cur == "" then
+                    cur = rest
+                elseif #cur + 1 + #rest <= maxChars then
+                    cur = cur .. " " .. rest
+                else
+                    lines[#lines + 1] = cur
+                    cur = rest
+                end
+            end
+
+            if cur ~= "" then
+                lines[#lines + 1] = cur
+            end
+
+            return lines
+        end
+
+        local font = nil
+        local scale = 1
+        local best = nil
+
+        for _, candidate in ipairs(FONTS) do
+            for size = math.max(1, math.floor(H / candidate.h)), 1, -1 do
+                local lines = wrap(candidate, size)
+
+                if lines and #lines > 0 and (#lines * (candidate.h + 1) - 1) * size <= H then
+                    font = candidate
+                    scale = size
+                    best = lines
+                    break
+                end
+            end
+
+            if font then
+                break
+            end
+        end
+
+        local truncated = false
+
+        if not font then
+            font = FONTS[2]
+            scale = 1
+            best = wrap(font, 1) or {}
+            local maxLines = math.floor((H + 1) / (font.h + 1))
+
+            if #best > maxLines then
+                for index = #best, maxLines + 1, -1 do
+                    best[index] = nil
+                end
+                truncated = true
+            end
+        end
+
+        local on = {}
+        local stride = (font.h + 1) * scale
+        local totalHeight = #best * stride - scale
+        local startY = math.floor((H - totalHeight) / 2)
+
+        for lineIndex, line in ipairs(best) do
+            local lineWidth = (#line * (font.w + 1) - 1) * scale
+            local startX = math.floor((W - lineWidth) / 2)
+            local top = startY + (lineIndex - 1) * stride
+
+            for index = 1, #line do
+                local ch = line:sub(index, index)
+                local rows = font.glyphs[ch] or font.glyphs["?"]
+                local originX = startX + (index - 1) * (font.w + 1) * scale
+
+                for row = 1, font.h do
+                    local bits = rows[row]
+
+                    for col = 1, font.w do
+                        if bits:sub(col, col) == "#" then
+                            for dy = 0, scale - 1 do
+                                for dx = 0, scale - 1 do
+                                    local px = originX + (col - 1) * scale + dx
+                                    local py = top + (row - 1) * scale + dy
+
+                                    if px >= 0 and px < W and py >= 0 and py < H then
+                                        on[py] = on[py] or {}
+                                        on[py][px] = true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        local pixels = {}
+
+        for row = 1, H do
+            local line = {}
+            local marks = on[row - 1]
+
+            for col = 1, W do
+                line[col] = (marks and marks[col - 1]) and "#000000" or "#ffffff"
+            end
+
+            pixels[row] = line
+        end
+
+        return pixels, scale, #best, truncated, font.w .. "x" .. font.h
+    end
+
+    local function CPPaintText()
+        if CP.painting then
+            PaintStatus:Set("Stop painting first")
+            return
+        end
+
+        CP.rescan()
+
+        if CP.count == 0 then
+            PaintStatus:Set("Build the canvas first (Start Canvas)")
+            return
+        end
+
+        local text = TextInput:Get() or ""
+        text = text:gsub("^%s+", ""):gsub("%s+$", "")
+
+        if text == "" then
+            PaintStatus:Set("Write a text first")
+            return
+        end
+
+        local imageW, imageH = CP.W, CP.H
+
+        if CP.axis == "Z" then
+            imageW, imageH = CP.H, CP.W
+        end
+
+        local pixels, scale, lines, truncated, fontName = CPTextGrid(text, imageW, imageH)
+
+        CP.pixels = pixels
+        CP.jw = imageW
+        CP.jh = imageH
+        CP.frames = { pixels }
+        CP.frame = 1
+        CP.painted = {}
+        CP.textMode = true
+
+        CPRun()
+
+        CP.textMode = false
+
+        if not CP.painting then
+            return
+        end
+
+        PaintStatus:Set(string.format(
+            "Text: %d line(s), scale %d, font %s%s",
+            lines,
+            scale,
+            fontName,
+            truncated and " (cut, text too long for the canvas)" or ""
+        ))
+    end
+
+    Canvas:AddButton({
+        Name = "Paint Text",
+        Info = "Draws the text above as pixel art fitted to the canvas, with smaller letters and several lines if needed, keeping upper and lower case, then paints it",
+        Callback = CPPaintText
+    })
+end
 
 local function CPStep(step)
     if CP.painting then
