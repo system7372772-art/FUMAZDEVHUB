@@ -17122,6 +17122,7 @@ pcall(function()
 		local status = panel.status
 		panel:label("Tap an unanchored brick, spin the rings")
 		local rotationLabel = panel:label("Rotation: 0, 0, 0")
+		local ownLabel = panel:label("Ownership: off")
 
 		local selection = nil
 		local originalCFrame = nil
@@ -17379,6 +17380,66 @@ pcall(function()
 			table.insert(state.connections, RunService.Heartbeat:Connect(pin))
 		end
 
+		local keeper = nil
+
+		local function stopKeeper()
+			if keeper then
+				keeper.connection:Disconnect()
+				keeper = nil
+			end
+			ownLabel.Text = "Ownership: off"
+		end
+
+		local function startKeeper(part)
+			stopKeeper()
+			if stayClose and not near then
+				local side = math.max(part.Size.X, part.Size.Y, part.Size.Z)
+				startNear(part.Position + Vector3.new(0, side / 2 + 3.2, 0))
+			end
+			local state = { part = part, elapsed = 0, gained = 0, lost = 0, last = nil, nudges = 0 }
+			keeper = state
+			state.connection = RunService.Heartbeat:Connect(function(dt)
+				if keeper ~= state then
+					return
+				end
+				if not part.Parent then
+					stopKeeper()
+					ownLabel.Text = "Ownership: brick is gone"
+					return
+				end
+				state.elapsed = state.elapsed + dt
+				if state.elapsed < 0.2 then
+					return
+				end
+				state.elapsed = 0
+				boostSimulation()
+				local owned = ownsPart(part)
+				if owned ~= state.last then
+					if owned == true then
+						state.gained = state.gained + 1
+					elseif owned == false then
+						state.lost = state.lost + 1
+					end
+					state.last = owned
+				end
+				if owned == false and not part.Anchored then
+					state.nudges = state.nudges + 1
+					pcall(function()
+						part.AssemblyLinearVelocity = Vector3.new(0, 0.05, 0)
+						part.AssemblyAngularVelocity = Vector3.zero
+					end)
+				end
+				local stats = string.format("(gained %d, lost %d)", state.gained, state.lost)
+				if owned == true then
+					ownLabel.Text = "Ownership: YES " .. stats
+				elseif owned == false then
+					ownLabel.Text = string.format("Ownership: NO, reclaiming (%d) %s", state.nudges, stats)
+				else
+					ownLabel.Text = "Ownership: cannot verify (no isnetworkowner)"
+				end
+			end)
+		end
+
 		local function releaseHold(part)
 			local state = holds[part]
 			if not state then
@@ -17401,6 +17462,7 @@ pcall(function()
 		end
 
 		local function releaseAll()
+			stopKeeper()
 			local parts = {}
 			for part in pairs(holds) do
 				parts[#parts + 1] = part
@@ -17507,7 +17569,9 @@ pcall(function()
 			panel.gui.Enabled = false
 			box.Adornee = nil
 			clearPreview()
-			stopNear(true)
+			if not keeper then
+				stopNear(true)
+			end
 		end
 
 		panel:row({
@@ -17569,6 +17633,7 @@ pcall(function()
 					selection = nil
 					box.Adornee = nil
 					clearPreview()
+					stopKeeper()
 					status.Text = "Selection cleared"
 				end,
 			},
@@ -17682,6 +17747,7 @@ pcall(function()
 							selection = target
 							box.Adornee = target
 							buildPreview(target)
+							startKeeper(target)
 							status.Text = "Brick selected. Spin the rings, then Confirm"
 						end
 					end)
