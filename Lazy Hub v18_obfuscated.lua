@@ -12245,6 +12245,78 @@ local function CPPaintTP(root, event, list, label)
     end
 end
 
+CP.paintAura = function(root, event, list, label)
+    local range = 170
+    local normal = Vector3.new(0, 0, 1)
+
+    if CP.rotation then
+        normal = CP.rotation:VectorToWorldSpace(Vector3.new(0, 0, 1))
+    end
+
+    local total = #list
+    local done = 0
+    local index = 1
+
+    root.Anchored = true
+
+    while index <= total and CP.painting and root.Parent do
+        local anchor = nil
+
+        while index <= total and not anchor do
+            if list[index].brick.Parent then
+                anchor = list[index].brick.Position
+            else
+                index += 1
+            end
+        end
+
+        if not anchor then
+            break
+        end
+
+        root.CFrame = CFrame.new(anchor + normal * 6 + Vector3.new(0, 2, 0))
+        root.AssemblyLinearVelocity = Vector3.zero
+        root.AssemblyAngularVelocity = Vector3.zero
+
+        task.wait(0.1)
+
+        local painted = 0
+
+        while index <= total and CP.painting and root.Parent do
+            local item = list[index]
+
+            if not item.brick.Parent then
+                index += 1
+            elseif (item.brick.Position - anchor).Magnitude > range then
+                break
+            else
+                local face = item.brick.CFrame:PointToWorldSpace(Vector3.new(0, 0, item.brick.Size.Z / 2))
+
+                task.wait(0.08)
+
+                if not CP.painting or not root.Parent or not item.brick.Parent then
+                    break
+                end
+
+                event:FireServer(item.brick, Enum.NormalId.Back, face, "color", item.color, "smooth", "")
+
+                CP.tries[item.k] = (CP.tries[item.k] or 0) + 1
+                done += 1
+                painted += 1
+                index += 1
+
+                if painted % 5 == 0 then
+                    PaintStatus:Set(CPFrameTag() .. label .. " " .. done .. "/" .. total)
+                end
+            end
+        end
+    end
+
+    if root.Parent then
+        root.Anchored = false
+    end
+end
+
 local function CPRun(white, play)
     CP.white = false
 
@@ -12258,7 +12330,8 @@ local function CPRun(white, play)
         local lp = game:GetService("Players").LocalPlayer
         local char = lp.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
-        local useTool = CP.method == "tool"
+        local useAura = CP.method == "aura"
+        local useTool = CP.method == "tool" or useAura
         local toolName = useTool and "Paint" or "PaintBucket"
         local tool = (char and char:FindFirstChild(toolName))
             or lp.Backpack:FindFirstChild(toolName)
@@ -12299,6 +12372,14 @@ local function CPRun(white, play)
 
         CP.white = white == true
 
+        local function paintList(list, label)
+            if useAura then
+                CP.paintAura(root, remote, list, label)
+            else
+                CPPaintTP(root, remote, list, label)
+            end
+        end
+
         local loop = play and CP.frames and #CP.frames > 1
         local done, total, missing = 0, 0, 0
 
@@ -12311,7 +12392,7 @@ local function CPRun(white, play)
                 PaintStatus:Set(CPFrameTag() .. "Painting 0/" .. #list)
 
                 if #list > 0 then
-                    CPPaintTP(root, remote, list, "Painting")
+                    paintList(list, "Painting")
                 end
 
                 local pass = 0
@@ -12326,7 +12407,7 @@ local function CPRun(white, play)
                     end
 
                     pass += 1
-                    CPPaintTP(root, remote, list, "Fix " .. pass)
+                    paintList(list, "Fix " .. pass)
                 end
 
                 missing = #CPBuildList(true)
@@ -12359,10 +12440,16 @@ end
 
 Canvas:AddButton({
     Name = "Paint Method",
-    Info = "Switches between the PaintBucket remote and the Paint tool with teleport to each brick",
+    Info = "Cycles between the Paint tool with teleport, the PaintBucket remote and the Paint aura (stands within range, no teleport per brick)",
     Callback = function()
-        CP.method = CP.method == "tool" and "bucket" or "tool"
-        PaintStatus:Set(CP.method == "tool" and "Paint method: Paint tool with teleport" or "Paint method: PaintBucket")
+        local nextMethod = { tool = "bucket", bucket = "aura", aura = "tool" }
+        local names = {
+            tool = "Paint tool with teleport",
+            bucket = "PaintBucket",
+            aura = "Paint aura (range, no teleport per brick)",
+        }
+        CP.method = nextMethod[CP.method] or "tool"
+        PaintStatus:Set("Paint method: " .. names[CP.method])
     end
 })
 
