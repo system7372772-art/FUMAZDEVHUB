@@ -22643,6 +22643,8 @@ local function notify()
 end
 
 local gui=Instance.new("ScreenGui")
+
+gui:SetAttribute("LegacySkin", true)
 gui.ResetOnSpawn=false
 gui.Parent=player:WaitForChild("PlayerGui")
 
@@ -23019,6 +23021,8 @@ local svDragging = false
 local hueDragging = false
 
 local gui = Instance.new("ScreenGui")
+
+gui:SetAttribute("LegacySkin", true)
 gui.Name = "AdvancedPaintGui"
 gui.ResetOnSpawn = false
 gui.Enabled = false
@@ -24019,6 +24023,9 @@ local idkwhattonamets={
 
 
 local gui=Instance.new("ScreenGui")
+
+
+gui:SetAttribute("LegacySkin", true)
 gui.ResetOnSpawn=false
 gui.Parent=game.CoreGui
 
