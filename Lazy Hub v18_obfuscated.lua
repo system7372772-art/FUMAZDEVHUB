@@ -1235,7 +1235,7 @@ function Library:CreateWindow(options)
 		["local player"] = "person", ["canvas"] = "palette", ["building"] = "bricks",
 		["gears"] = "cog", ["utils"] = "pickaxe", ["customize"] = "sparkle",
 		["griefing"] = "skull", ["extras"] = "gift", ["themes"] = "contrast",
-		["auras"] = "aura", ["world"] = "globe", ["users"] = "users", ["topbar"] = "sliders"
+		["auras"] = "aura", ["world"] = "globe", ["users"] = "users", ["topbar"] = "sliders", ["skybox"] = "aura"
 	}
 
 	local ICONS = {
@@ -22334,5 +22334,2063 @@ pcall(function()
 		end,
 	})
 end)
+
+local SkyboxOG = OG:AddGroup({
+	Name = "Skybox🌌",
+	Info = "Skybox🌌",
+	Side = "Right"
+})
+
+Main67:AddButton({
+	Name = "Spawn a Shadow block Bug Glitch",
+	Info = "Spawns a black shadow block that makes the brightness glitch for players on max graphics",
+	Callback = function()
+	loadstring(game:HttpGet("https://pastebin.com/raw/Rp8uLNQi"))()
+	end
+})
+
+Main67:AddButton({
+	Name = "/Kick command",
+	Info = "Kick people using the crash method, needs bkit and enlighten",
+	Callback = function()
+		local Players=game:GetService("Players")
+local TextChatService=game:GetService("TextChatService")
+local StarterGui=game:GetService("StarterGui")
+
+local player=Players.LocalPlayer
+local char=player.Character or player.CharacterAdded:Wait()
+local humanoid=char:WaitForChild("Humanoid")
+local root=char:WaitForChild("HumanoidRootPart")
+
+local function equip(name)
+	local tool=player.Backpack:FindFirstChild(name)
+	if tool then
+		tool.Parent=char
+		task.wait(.2)
+	end
+end
+
+local function unequip()
+	humanoid:UnequipTools()
+	task.wait(.2)
+end
+
+local function chat(msg)
+	if TextChatService.ChatVersion==Enum.ChatVersion.TextChatService then
+		TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
+	else
+		game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg,"All")
+	end
+end
+
+local function notify()
+	StarterGui:SetCore("SendNotification",{
+		Title="Completed!",
+		Text="process sucefully completed, now, use /Kick [username] to kick ppl",
+		Duration=3
+	})
+end
+
+equip("The Arkenstone")
+
+task.wait(.3)
+
+chat(";Freeze me")
+task.wait(1)
+chat(";Glitch me")
+
+task.wait(1)
+
+equip("Build")
+
+local buildEvent=char:WaitForChild("Build"):WaitForChild("Script"):WaitForChild("Event")
+local buildPos=root.Position+Vector3.new(0,-3,0)
+
+buildEvent:FireServer(
+	workspace.Terrain,
+	Enum.NormalId.Top,
+	buildPos,
+	"normal"
+)
+
+task.wait(.5)
+
+local brick
+
+for i=1,50 do
+	local folder=workspace:FindFirstChild("Bricks")
+
+	if folder then
+		local myFolder=folder:FindFirstChild(player.Name)
+
+		if myFolder then
+			for _,v in ipairs(myFolder:GetChildren()) do
+				if v:IsA("BasePart") and (v.Position-buildPos).Magnitude<8 then
+					brick=v
+					break
+				end
+			end
+		end
+	end
+
+	if brick then
+		break
+	end
+
+	task.wait(.1)
+end
+
+if not brick then
+	return
+end
+
+unequip()
+
+equip("Shape")
+
+local shapeEvent=char:WaitForChild("Shape"):WaitForChild("Script"):WaitForChild("Event")
+
+local function grow(face)
+	for i=1,8 do
+		shapeEvent:FireServer(
+			brick,
+			face,
+			brick.Position,
+			"increase"
+		)
+		task.wait(.05)
+	end
+end
+
+grow(Enum.NormalId.Front)
+task.wait(.3)
+
+grow(Enum.NormalId.Left)
+task.wait(.3)
+
+grow(Enum.NormalId.Bottom)
+
+task.wait(1)
+
+unequip()
+
+equip("Paint")
+
+local paintEvent=char:WaitForChild("Paint"):WaitForChild("Script"):WaitForChild("Event")
+local spam=string.rep("🥚",500)
+
+for _,side in ipairs({
+	Enum.NormalId.Top,
+	Enum.NormalId.Bottom,
+	Enum.NormalId.Front,
+	Enum.NormalId.Back,
+	Enum.NormalId.Left,
+	Enum.NormalId.Right
+}) do
+	paintEvent:FireServer(
+		brick,
+		side,
+		brick.Position,
+		"both",
+		nil,
+		"spray",
+		spam
+	)
+
+	task.wait(.5)
+end
+
+task.wait(1)
+
+paintEvent:FireServer(
+	brick,
+	Enum.NormalId.Top,
+	brick.Position,
+	"both",
+	nil,
+	"collide",
+	""
+)
+
+task.wait(1)
+
+unequip()
+
+equip("Build")
+
+local buildLoopEvent=char:WaitForChild("Build"):WaitForChild("Script"):WaitForChild("Event")
+local start=os.clock()
+
+while os.clock()-start<30 and brick and brick.Parent do
+	buildLoopEvent:FireServer(
+		brick,
+		Enum.NormalId.Top,
+		brick.Position,
+		"normal"
+	)
+
+	task.wait(.05)
+end
+
+task.wait(1)
+
+unequip()
+
+equip("The Arkenstone")
+
+task.wait(.3)
+
+chat(";unfreeze me")
+
+task.wait(1)
+
+chat(";tospawn me")
+
+task.wait(1)
+
+notify()
+
+player.Chatted:Connect(function(msg)
+	local args=msg:split(" ")
+
+	if args[1] and args[1]:lower()=="/kick" and args[2] then
+
+		equip("The Arkenstone")
+
+		task.wait(.3)
+
+		chat(";freeze "..args[2])
+		task.wait(1)
+
+		chat(";glitch "..args[2])
+		task.wait(1)
+
+		chat(";blind "..args[2])
+		task.wait(1)
+
+		chat(";mute "..args[2])
+	end
+end)
+	end
+})
+
+Anti67:AddButton({
+	Name = "Anti Crash Machine Lag",
+	Info = "Removes overlapping bricks to reduce crash machine lag",
+	Callback = function()
+		local folder = workspace:WaitForChild("Bricks")
+
+local function getOverlap(a, b)
+	local ap, as = a.Position, a.Size
+	local bp, bs = b.Position, b.Size
+
+	return math.abs(ap.X - bp.X) < (as.X + bs.X) / 2
+		and math.abs(ap.Y - bp.Y) < (as.Y + bs.Y) / 2
+		and math.abs(ap.Z - bp.Z) < (as.Z + bs.Z) / 2
+end
+
+while task.wait(0.5) do
+	local bricks = {}
+
+	for _, v in ipairs(folder:GetDescendants()) do
+		if v:IsA("BasePart") and v.Name == "Brick" and not v.CanCollide then
+			table.insert(bricks, v)
+		end
+	end
+
+	local removed = {}
+
+	for i = 1, #bricks do
+		local a = bricks[i]
+
+		if a.Parent and not removed[a] then
+			for j = i + 1, #bricks do
+				local b = bricks[j]
+
+				if b.Parent and not removed[b] and getOverlap(a, b) then
+					removed[b] = true
+					b:Destroy()
+				end
+			end
+		end
+	end
+end
+	end
+})
+
+CM67:AddButton({
+	Name = "Crash machine with bkit v2",
+	Info = "Crash machine with bkit v2",
+	Callback = function()
+		local Players=game:GetService("Players")
+local UserInputService=game:GetService("UserInputService")
+local StarterGui=game:GetService("StarterGui")
+
+local player=Players.LocalPlayer
+local mouse=player:GetMouse()
+
+_G.Stop=false
+_G.SelectedBrick=nil
+_G.Confirmed=false
+_G.BrickCount=0
+
+local function notify()
+	StarterGui:SetCore("SendNotification",{
+		Title="ERROR",
+		Text="The brick needs to have no collide",
+		Duration=3
+	})
+end
+
+local gui=Instance.new("ScreenGui")
+gui.ResetOnSpawn=false
+gui.Parent=player:WaitForChild("PlayerGui")
+
+local frame=Instance.new("Frame")
+frame.Size=UDim2.new(0,420,0,220)
+frame.Position=UDim2.new(0.5,-210,0.5,-110)
+frame.BackgroundColor3=Color3.fromRGB(20,20,20)
+frame.BorderSizePixel=0
+frame.Parent=gui
+
+local corner=Instance.new("UICorner")
+corner.CornerRadius=UDim.new(0,10)
+corner.Parent=frame
+
+local stroke=Instance.new("UIStroke")
+stroke.Thickness=2
+stroke.Color=Color3.new(0,0,0)
+stroke.Transparency=0.4
+stroke.Parent=frame
+
+local title=Instance.new("TextLabel")
+title.Size=UDim2.new(0.7,0,0,28)
+title.Position=UDim2.new(0,10,0,0)
+title.BackgroundTransparency=1
+title.Text="CRASH MACHINE BRICKS"
+title.TextColor3=Color3.new(1,1,1)
+title.Font=Enum.Font.Code
+title.TextSize=16
+title.TextXAlignment=Enum.TextXAlignment.Left
+title.Parent=frame
+
+local count=Instance.new("TextLabel")
+count.Size=UDim2.new(0.3,-10,0,28)
+count.Position=UDim2.new(0.7,0,0,0)
+count.BackgroundTransparency=1
+count.Text="Bricks: 0"
+count.TextColor3=Color3.new(1,1,1)
+count.Font=Enum.Font.Code
+count.TextSize=14
+count.TextXAlignment=Enum.TextXAlignment.Right
+count.Parent=frame
+
+local function button(t,y)
+	local b=Instance.new("TextButton")
+	b.Size=UDim2.new(1,-20,0,45)
+	b.Position=UDim2.new(0,10,0,y)
+	b.BackgroundColor3=Color3.fromRGB(25,25,25)
+	b.TextColor3=Color3.new(1,1,1)
+	b.Text=t
+	b.Font=Enum.Font.Code
+	b.TextSize=14
+	b.BorderSizePixel=0
+	b.Parent=frame
+
+	local c=Instance.new("UICorner")
+	c.CornerRadius=UDim.new(0,6)
+	c.Parent=b
+
+	return b
+end
+
+local selectBtn=button("Select",40)
+local confirmBtn=button("Confirm",90)
+local cancelBtn=button("Cancel",140)
+
+local outline=Instance.new("SelectionBox")
+outline.Color3=Color3.fromRGB(170,0,255)
+outline.LineThickness=.05
+outline.Parent=workspace
+
+local selecting=false
+
+selectBtn.MouseButton1Click:Connect(function()
+	selecting=true
+end)
+
+cancelBtn.MouseButton1Click:Connect(function()
+	selecting=false
+	_G.SelectedBrick=nil
+	_G.Confirmed=false
+	_G.Stop=true
+	_G.BrickCount=0
+	count.Text="Bricks: 0"
+	outline.Adornee=nil
+end)
+
+confirmBtn.MouseButton1Click:Connect(function()
+	if _G.SelectedBrick then
+		if _G.SelectedBrick.CanCollide then
+			notify()
+			return
+		end
+
+		_G.Confirmed=true
+		selecting=false
+		outline.Adornee=nil
+	end
+end)
+
+mouse.Button1Down:Connect(function()
+	if selecting then
+		local t=mouse.Target
+
+		if t and t:IsA("BasePart") and t.Name=="Brick" then
+			if t.CanCollide then
+				notify()
+				return
+			end
+
+			_G.SelectedBrick=t
+			outline.Adornee=t
+		end
+	end
+end)
+
+local function equip(name)
+	local char=player.Character or player.CharacterAdded:Wait()
+	local tool=player.Backpack:FindFirstChild(name)
+
+	if tool then
+		tool.Parent=char
+	end
+end
+
+local spam=string.rep("🥚",500)
+
+local function paint(brick)
+	equip("Paint")
+	task.wait(.2)
+
+	local char=player.Character or player.CharacterAdded:Wait()
+	local event=char:WaitForChild("Paint"):WaitForChild("Script"):WaitForChild("Event")
+
+	for _,side in ipairs({
+		Enum.NormalId.Top,
+		Enum.NormalId.Bottom,
+		Enum.NormalId.Front,
+		Enum.NormalId.Back,
+		Enum.NormalId.Left,
+		Enum.NormalId.Right
+	}) do
+		event:FireServer(
+			brick,
+			side,
+			brick.Position,
+			"both",
+			nil,
+			"spray",
+			spam
+		)
+
+		task.wait(0.5)
+	end
+end
+
+local function build(brick)
+	_G.Stop=false
+	_G.BrickCount=0
+	count.Text="Bricks: 0"
+
+	equip("Build")
+	task.wait(.2)
+
+	local char=player.Character or player.CharacterAdded:Wait()
+	local event=char:WaitForChild("Build"):WaitForChild("Script"):WaitForChild("Event")
+
+	while not _G.Stop and brick and brick.Parent do
+		event:FireServer(
+			brick,
+			Enum.NormalId.Top,
+			brick.Position,
+			"normal"
+		)
+
+		_G.BrickCount+=1
+		count.Text="Bricks: ".._G.BrickCount
+
+		task.wait(.05)
+	end
+end
+
+local dragging=false
+local dragStart
+local startPos
+
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+		dragging=true
+		dragStart=input.Position
+		startPos=frame.Position
+	end
+end)
+
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch then
+		if dragging then
+			local delta=input.Position-dragStart
+			frame.Position=UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset+delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset+delta.Y
+			)
+		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType==Enum.UserInputType.MouseButton1 then
+		dragging=false
+	end
+end)
+
+task.spawn(function()
+	while task.wait() do
+		if _G.Confirmed and _G.SelectedBrick then
+			local brick=_G.SelectedBrick
+			_G.Confirmed=false
+
+			paint(brick)
+
+			task.wait(1)
+
+			build(brick)
+		end
+	end
+end)
+	end
+})
+
+GriefingOG:AddButton({
+	Name = "Paint Spam in Terrain",
+	Info = "Spams the paint in the terrain",
+	Callback = function()
+		G = G or {}
+G.StopPaintLoopTrrain = false
+
+local player = game:GetService("Players").LocalPlayer
+local backpack = player:WaitForChild("Backpack")
+local events = backpack:WaitForChild("Events")
+local trrain = workspace:WaitForChild("Trrain")
+
+local function getRandomColor()
+	return Color3.new(math.random(), math.random(), math.random())
+end
+
+while not G.StopPaintLoopTrrain do
+	for _, chunk in ipairs(trrain:GetChildren()) do
+		if G.StopPaintLoopTrrain then
+			break
+		end
+
+		local mesh = chunk:FindFirstChild("Mesh")
+		if mesh then
+			events:FireServer(
+				chunk.Position,
+				Enum.NormalId.Top,
+				mesh,
+				getRandomColor(),
+				"Smooth"
+			)
+		end
+	end
+
+	task.wait(0.08)
+end
+	end
+})
+
+GriefingOG:AddButton({
+	Name = "Stop Paint Spam in terrain",
+	Info = "Stops the paint spam in the terrain",
+	Callback = function()
+		G.StopPaintLoopTrrain = true
+	end
+})
+
+GriefingOG:AddButton({
+	Name = "Toxify Aura",
+	Info = "Toxify aura",
+	Callback = function()
+		local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Events = LocalPlayer.Backpack:WaitForChild("Events")
+
+local RADIUS = 25
+local CHECK_INTERVAL = 0.1
+
+if not G then
+    G = {}
+end
+G.StopToxifySpamOg = false
+
+local function getDistance(pos1, pos2)
+    return (pos1 - pos2).Magnitude
+end
+
+local function getCubesInArea(centerPos)
+    local cubes = {}
+
+    local function searchParts(parent)
+        for _, child in pairs(parent:GetChildren()) do
+            if child:IsA("BasePart") and child.Name == "Cube" then
+                if getDistance(child.Position, centerPos) <= RADIUS then
+                    table.insert(cubes, child)
+                end
+            end
+            searchParts(child)
+        end
+    end
+
+    searchParts(workspace)
+    return cubes
+end
+
+local function spamToxify()
+    while not G.StopToxifySpamOg do
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+        if hrp then
+            for _, cube in pairs(getCubesInArea(hrp.Position)) do
+                if G.StopToxifySpamOg then
+                    break
+                end
+
+                pcall(function()
+                    Events:FireServer(
+                        cube.Position,
+                        Enum.NormalId.Left,
+                        cube,
+                        nil,
+                        "Smooth"
+                    )
+                end)
+
+                task.wait(0.05)
+            end
+        else
+            task.wait(1)
+        end
+
+        task.wait(CHECK_INTERVAL)
+    end
+end
+
+spamToxify()
+	end
+})
+
+GriefingOG:AddButton({
+	Name = "Stop Toxify Aura",
+	Info = "Stops the toxify aura",
+	Callback = function()
+		G.StopToxifySpamOg = true
+	end
+})
+
+CCOG:AddButton({
+	Name = "Advanced Paint",
+	Info = "Advanced paint interface",
+	Callback = function()
+		local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+local TOOL_NAME = "Paint"
+
+local hue, sat, val = 0, 0, 1
+local selectedColor = Color3.fromHSV(hue, sat, val)
+
+local svDragging = false
+local hueDragging = false
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "AdvancedPaintGui"
+gui.ResetOnSpawn = false
+gui.Enabled = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 260, 0, 347)
+frame.Position = UDim2.new(0.5, -130, 0.5, -173)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1.5
+stroke.Color = Color3.new(0, 0, 0)
+stroke.Transparency = 0.5
+stroke.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 32)
+title.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+title.Text = "Advanced Paint"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.Code
+title.TextSize = 14
+title.BorderSizePixel = 0
+title.Active = true
+title.Parent = frame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = title
+
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 10)
+titleFix.Position = UDim2.new(0, 0, 1, -10)
+titleFix.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+titleFix.BorderSizePixel = 0
+titleFix.ZIndex = 0
+titleFix.Parent = title
+
+local dragging, dragInput, startPos, startFrame
+
+title.InputBegan:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		startPos = i.Position
+		startFrame = frame.Position
+	end
+end)
+
+title.InputChanged:Connect(function(i)
+	if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
+		dragInput = i
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(i)
+	if dragging and i == dragInput then
+		local d = i.Position - startPos
+		frame.Position = UDim2.new(
+			startFrame.X.Scale, startFrame.X.Offset + d.X,
+			startFrame.Y.Scale, startFrame.Y.Offset + d.Y
+		)
+	end
+end)
+
+local svBox = Instance.new("Frame")
+svBox.Size = UDim2.new(0, 190, 0, 150)
+svBox.Position = UDim2.new(0, 15, 0, 45)
+svBox.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+svBox.BorderSizePixel = 0
+svBox.ClipsDescendants = true
+svBox.Parent = frame
+
+local svCorner = Instance.new("UICorner")
+svCorner.CornerRadius = UDim.new(0, 8)
+svCorner.Parent = svBox
+
+local svStroke = Instance.new("UIStroke")
+svStroke.Thickness = 1.5
+svStroke.Color = Color3.new(0, 0, 0)
+svStroke.Transparency = 0.5
+svStroke.Parent = svBox
+
+local whiteOverlay = Instance.new("Frame")
+whiteOverlay.Size = UDim2.new(1, 0, 1, 0)
+whiteOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
+whiteOverlay.BorderSizePixel = 0
+whiteOverlay.Parent = svBox
+
+local whiteGradient = Instance.new("UIGradient")
+whiteGradient.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 0),
+	NumberSequenceKeypoint.new(1, 1)
+})
+whiteGradient.Parent = whiteOverlay
+
+local blackOverlay = Instance.new("Frame")
+blackOverlay.Size = UDim2.new(1, 0, 1, 0)
+blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+blackOverlay.BorderSizePixel = 0
+blackOverlay.ZIndex = 2
+blackOverlay.Parent = svBox
+
+local blackGradient = Instance.new("UIGradient")
+blackGradient.Rotation = 90
+blackGradient.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 1),
+	NumberSequenceKeypoint.new(1, 0)
+})
+blackGradient.Parent = blackOverlay
+
+local svCursor = Instance.new("Frame")
+svCursor.Size = UDim2.new(0, 10, 0, 10)
+svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+svCursor.Position = UDim2.new(1, 0, 0, 0)
+svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+svCursor.BorderSizePixel = 0
+svCursor.ZIndex = 5
+svCursor.Parent = svBox
+
+local svCursorCorner = Instance.new("UICorner")
+svCursorCorner.CornerRadius = UDim.new(1, 0)
+svCursorCorner.Parent = svCursor
+
+local svCursorStroke = Instance.new("UIStroke")
+svCursorStroke.Thickness = 2
+svCursorStroke.Color = Color3.new(0, 0, 0)
+svCursorStroke.Parent = svCursor
+
+local hueStrip = Instance.new("Frame")
+hueStrip.Size = UDim2.new(0, 20, 0, 150)
+hueStrip.Position = UDim2.new(0, 215, 0, 45)
+hueStrip.BorderSizePixel = 0
+hueStrip.Parent = frame
+
+local hueCorner = Instance.new("UICorner")
+hueCorner.CornerRadius = UDim.new(0, 8)
+hueCorner.Parent = hueStrip
+
+local hueStroke = Instance.new("UIStroke")
+hueStroke.Thickness = 1.5
+hueStroke.Color = Color3.new(0, 0, 0)
+hueStroke.Transparency = 0.5
+hueStroke.Parent = hueStrip
+
+local hueGradient = Instance.new("UIGradient")
+hueGradient.Rotation = 90
+hueGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromHSV(0, 1, 1)),
+	ColorSequenceKeypoint.new(1/6, Color3.fromHSV(1/6, 1, 1)),
+	ColorSequenceKeypoint.new(2/6, Color3.fromHSV(2/6, 1, 1)),
+	ColorSequenceKeypoint.new(3/6, Color3.fromHSV(3/6, 1, 1)),
+	ColorSequenceKeypoint.new(4/6, Color3.fromHSV(4/6, 1, 1)),
+	ColorSequenceKeypoint.new(5/6, Color3.fromHSV(5/6, 1, 1)),
+	ColorSequenceKeypoint.new(1, Color3.fromHSV(1, 1, 1))
+})
+hueGradient.Parent = hueStrip
+
+local hueCursor = Instance.new("Frame")
+hueCursor.Size = UDim2.new(1, 4, 0, 4)
+hueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+hueCursor.Position = UDim2.new(0.5, 0, 0, 0)
+hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
+hueCursor.BorderSizePixel = 0
+hueCursor.ZIndex = 5
+hueCursor.Parent = hueStrip
+
+local hueCursorStroke = Instance.new("UIStroke")
+hueCursorStroke.Thickness = 2
+hueCursorStroke.Color = Color3.new(0, 0, 0)
+hueCursorStroke.Parent = hueCursor
+
+local previewSwatch = Instance.new("Frame")
+previewSwatch.Size = UDim2.new(0, 40, 0, 40)
+previewSwatch.Position = UDim2.new(0, 15, 0, 205)
+previewSwatch.BackgroundColor3 = selectedColor
+previewSwatch.BorderSizePixel = 0
+previewSwatch.Parent = frame
+
+local previewCorner = Instance.new("UICorner")
+previewCorner.CornerRadius = UDim.new(0, 8)
+previewCorner.Parent = previewSwatch
+
+local previewStroke = Instance.new("UIStroke")
+previewStroke.Thickness = 1.5
+previewStroke.Color = Color3.new(0, 0, 0)
+previewStroke.Transparency = 0.5
+previewStroke.Parent = previewSwatch
+
+local hexLabel = Instance.new("TextLabel")
+hexLabel.Size = UDim2.new(0, 130, 0, 40)
+hexLabel.Position = UDim2.new(0, 65, 0, 205)
+hexLabel.BackgroundTransparency = 1
+hexLabel.TextColor3 = Color3.new(1, 1, 1)
+hexLabel.Font = Enum.Font.Code
+hexLabel.TextSize = 14
+hexLabel.TextXAlignment = Enum.TextXAlignment.Left
+hexLabel.Text = "#FFFFFF"
+hexLabel.Parent = frame
+
+local TOGGLE_BG = Color3.fromRGB(35, 35, 35)
+
+local enabled = true
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, -30, 0, 34)
+toggleButton.Position = UDim2.new(0, 15, 0, 255)
+toggleButton.BackgroundColor3 = TOGGLE_BG
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Text = "Enable: ON"
+toggleButton.Font = Enum.Font.Code
+toggleButton.TextSize = 14
+toggleButton.BorderSizePixel = 0
+toggleButton.AutoButtonColor = false
+toggleButton.Parent = frame
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 8)
+toggleCorner.Parent = toggleButton
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Thickness = 1.5
+toggleStroke.Color = Color3.new(0, 0, 0)
+toggleStroke.Transparency = 0.5
+toggleStroke.Parent = toggleButton
+
+local function updateToggleDisplay()
+	if enabled then
+		toggleButton.Text = "Enable: ON"
+	else
+		toggleButton.Text = "Enable: OFF"
+	end
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	updateToggleDisplay()
+end)
+
+local pickColorArmed = false
+
+local pickColorButton = Instance.new("TextButton")
+pickColorButton.Size = UDim2.new(1, -30, 0, 34)
+pickColorButton.Position = UDim2.new(0, 15, 0, 297)
+pickColorButton.BackgroundColor3 = TOGGLE_BG
+pickColorButton.TextColor3 = Color3.new(1, 1, 1)
+pickColorButton.Text = "Pick Color"
+pickColorButton.Font = Enum.Font.Code
+pickColorButton.TextSize = 14
+pickColorButton.BorderSizePixel = 0
+pickColorButton.AutoButtonColor = false
+pickColorButton.Parent = frame
+
+local pickColorCorner = Instance.new("UICorner")
+pickColorCorner.CornerRadius = UDim.new(0, 8)
+pickColorCorner.Parent = pickColorButton
+
+local pickColorStroke = Instance.new("UIStroke")
+pickColorStroke.Thickness = 1.5
+pickColorStroke.Color = Color3.new(0, 0, 0)
+pickColorStroke.Transparency = 0.5
+pickColorStroke.Parent = pickColorButton
+
+local function setPickColorArmed(state)
+	pickColorArmed = state
+	if pickColorArmed then
+		pickColorButton.Text = "Pick Color: click a block"
+	else
+		pickColorButton.Text = "Pick Color"
+	end
+end
+
+pickColorButton.MouseButton1Click:Connect(function()
+	setPickColorArmed(not pickColorArmed)
+end)
+
+local function updateToolPreview()
+	local character = player.Character
+	if not character then return end
+
+	local tool = character:FindFirstChild(TOOL_NAME)
+	if not tool then return end
+
+	local preview = tool:FindFirstChild("Preview", true) or tool:FindFirstChild("Selection", true)
+	if preview and preview:IsA("BasePart") then
+		preview.Color = selectedColor
+	end
+end
+
+local function updateColorDisplay()
+	selectedColor = Color3.fromHSV(hue, sat, val)
+	previewSwatch.BackgroundColor3 = selectedColor
+	svBox.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+
+	local r = math.floor(selectedColor.R * 255 + 0.5)
+	local g = math.floor(selectedColor.G * 255 + 0.5)
+	local b = math.floor(selectedColor.B * 255 + 0.5)
+	hexLabel.Text = string.format("#%02X%02X%02X", r, g, b)
+
+	updateToolPreview()
+end
+
+svCursor.Position = UDim2.new(sat, 0, 1 - val, 0)
+hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
+updateColorDisplay()
+
+local function updateSVFromInput(inputPos)
+	local absPos = svBox.AbsolutePosition
+	local absSize = svBox.AbsoluteSize
+	if absSize.X <= 0 or absSize.Y <= 0 then return end
+
+	local relX = math.clamp((inputPos.X - absPos.X) / absSize.X, 0, 1)
+	local relY = math.clamp((inputPos.Y - absPos.Y) / absSize.Y, 0, 1)
+
+	sat = relX
+	val = 1 - relY
+
+	svCursor.Position = UDim2.new(relX, 0, relY, 0)
+	updateColorDisplay()
+end
+
+local function updateHueFromInput(inputPos)
+	local absPos = hueStrip.AbsolutePosition
+	local absSize = hueStrip.AbsoluteSize
+	if absSize.Y <= 0 then return end
+
+	local relY = math.clamp((inputPos.Y - absPos.Y) / absSize.Y, 0, 1)
+
+	hue = relY
+	hueCursor.Position = UDim2.new(0.5, 0, relY, 0)
+	updateColorDisplay()
+end
+
+svBox.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		svDragging = true
+		updateSVFromInput(input.Position)
+	end
+end)
+
+hueStrip.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		hueDragging = true
+		updateHueFromInput(input.Position)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		if svDragging then
+			updateSVFromInput(input.Position)
+		elseif hueDragging then
+			updateHueFromInput(input.Position)
+		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		svDragging = false
+		hueDragging = false
+	end
+end)
+
+local function isToolEquipped()
+	local character = player.Character
+	if not character then return false end
+	local tool = character:FindFirstChild(TOOL_NAME)
+	return tool ~= nil and tool:IsA("Tool")
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if not isToolEquipped() then return end
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1
+		and input.UserInputType ~= Enum.UserInputType.Touch then
+		return
+	end
+
+	local target = mouse.Target
+	if not target or not target:IsA("BasePart") then
+		return
+	end
+
+	if pickColorArmed then
+		hue, sat, val = target.Color:ToHSV()
+		svCursor.Position = UDim2.new(sat, 0, 1 - val, 0)
+		hueCursor.Position = UDim2.new(0.5, 0, hue, 0)
+		updateColorDisplay()
+		setPickColorArmed(false)
+		return
+	end
+
+	if not enabled then return end
+
+	local args = {
+		[1] = target.Position,
+		[2] = Enum.NormalId.Top,
+		[3] = target,
+		[4] = selectedColor,
+		[5] = "Smooth"
+	}
+
+	pcall(function()
+		local backpack = player:WaitForChild("Backpack", 2)
+		local events = backpack and backpack:WaitForChild("Events", 2)
+		events:FireServer(unpack(args))
+	end)
+end)
+
+local function onCharacterAdded(character)
+	local existingTool = character:FindFirstChild(TOOL_NAME)
+	if existingTool and existingTool:IsA("Tool") then
+		gui.Enabled = true
+		updateToolPreview()
+	end
+
+	character.ChildAdded:Connect(function(child)
+		if child:IsA("Tool") and child.Name == TOOL_NAME then
+			gui.Enabled = true
+			updateToolPreview()
+		end
+	end)
+
+	character.ChildRemoved:Connect(function(child)
+		if child:IsA("Tool") and child.Name == TOOL_NAME then
+			gui.Enabled = false
+			setPickColorArmed(false)
+		end
+	end)
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
+if player.Character then
+	onCharacterAdded(player.Character)
+end
+
+	end
+})
+
+SkyboxOG:AddButton({
+	Name = "Alternate Day Skybox",
+	Info = "Needs enlighten",
+	Callback = function()
+		local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+
+local plr = Players.LocalPlayer
+local backpack = plr:WaitForChild("Backpack")
+
+local function equipTool(name)
+	local char = plr.Character or plr.CharacterAdded:Wait()
+	local hum = char:WaitForChild("Humanoid")
+
+	local tool = backpack:FindFirstChild(name) or char:FindFirstChild(name)
+	if tool then
+		hum:EquipTool(tool)
+		return tool
+	end
+end
+
+local function chat(msg)
+	local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+	if ch then
+		ch:SendAsync(msg)
+	end
+end
+
+equipTool("The Arkenstone")
+
+task.wait(0.5)
+
+chat(";gear me 77443461")
+
+task.wait(0.8)
+
+chat("hour 24")
+
+task.wait(1)
+
+equipTool("SwordOfLight")
+
+task.wait(0.3)
+
+local args = {
+	[1] = Enum.KeyCode.Q
+}
+
+plr.Character:WaitForChild("SwordOfLight").Remote:FireServer(unpack(args))
+	end
+})
+
+SkyboxOG:AddButton({
+	Name = "Alternate Night Skybox",
+	Info = "Needs enlighten",
+	Callback = function()
+		local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+
+local plr = Players.LocalPlayer
+local backpack = plr:WaitForChild("Backpack")
+
+local function equipTool(name)
+	local char = plr.Character or plr.CharacterAdded:Wait()
+	local hum = char:WaitForChild("Humanoid")
+
+	local tool = backpack:FindFirstChild(name) or char:FindFirstChild(name)
+	if tool then
+		hum:EquipTool(tool)
+	end
+end
+
+local function chat(msg)
+	local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+	if ch then
+		ch:SendAsync(msg)
+	end
+end
+
+equipTool("The Arkenstone")
+
+task.wait(0.5)
+
+chat(";gear me 77443491")
+
+task.wait(0.8)
+
+chat("hour 12")
+
+task.wait(1)
+
+equipTool("SwordOfDarkness")
+
+task.wait(0.3)
+
+local args = {
+	[1] = Enum.KeyCode.Q
+}
+
+plr.Character:WaitForChild("SwordOfDarkness").Remote:FireServer(unpack(args))
+	end
+})
+
+ES67:AddButton({
+	Name = "create platform",
+	Info = "Creates the stash platform",
+	Callback = function()
+		local plataforma = Instance.new("Part")
+plataforma.Name = "ToolPlatform"
+plataforma.Size = Vector3.new(50, 1, 50)
+plataforma.Position = Vector3.new(500, 500, 500)
+plataforma.Anchored = true
+plataforma.Parent = workspace
+	end
+})
+
+ES67:AddButton({
+	Name = "Stash ur bkit",
+	Info = "Stash your bkit",
+	Callback = function()
+		local Players = game:GetService("Players")
+
+local player = Players.LocalPlayer
+local backpack = player:WaitForChild("Backpack")
+
+local TOOL_NAMES = {
+	Build = true,
+	Delete = true,
+	Paint = true,
+	Shape = true,
+	Shovel = true,
+	Sign = true
+}
+
+local function dropTool(tool)
+	local character = player.Character or player.CharacterAdded:Wait()
+
+	if tool.Parent ~= character then
+		tool.Parent = character
+		task.wait(0.1)
+	end
+
+	tool.Parent = workspace
+end
+
+for _, tool in ipairs(backpack:GetChildren()) do
+	if tool:IsA("Tool") and TOOL_NAMES[tool.Name] then
+		dropTool(tool)
+	end
+end
+
+local character = player.Character or player.CharacterAdded:Wait()
+
+for _, tool in ipairs(character:GetChildren()) do
+	if tool:IsA("Tool") and TOOL_NAMES[tool.Name] then
+		dropTool(tool)
+	end
+end
+
+task.wait(0.5)
+
+local plataforma = workspace:WaitForChild("ToolPlatform")
+
+local GROUP_OFFSETS = {
+	Build = Vector3.new(0, 0, 0),
+	Delete = Vector3.new(3, 0, 0),
+	Paint = Vector3.new(6, 0, 0),
+	Shape = Vector3.new(9, 0, 0),
+	Shovel = Vector3.new(12, 0, 0),
+	Sign = Vector3.new(15, 0, 0)
+}
+
+local active = {}
+local groupPositions = {}
+
+local function isLooseTool(tool)
+	return tool:IsA("Tool")
+		and TOOL_NAMES[tool.Name]
+		and tool.Parent == workspace
+end
+
+local function randomGroupPosition()
+	local sx = plataforma.Size.X / 2
+	local sz = plataforma.Size.Z / 2
+
+	return Vector3.new(
+		plataforma.Position.X + math.random(-sx * 100, sx * 100) / 100,
+		plataforma.Position.Y + 10,
+		plataforma.Position.Z + math.random(-sz * 100, sz * 100) / 100
+	)
+end
+
+local function getSetId()
+	local names = {}
+
+	for _, obj in ipairs(workspace:GetChildren()) do
+		if isLooseTool(obj) then
+			table.insert(names, obj.Name)
+		end
+	end
+
+	table.sort(names)
+
+	return table.concat(names, "|")
+end
+
+local function keepTool(tool)
+	if active[tool] then
+		return
+	end
+
+	active[tool] = true
+
+	task.spawn(function()
+		while active[tool] do
+			if tool.Parent ~= workspace then
+				local handle = tool:FindFirstChild("Handle")
+
+				if handle and handle:IsA("BasePart") then
+					handle.Anchored = false
+				end
+
+				break
+			end
+
+			local setId = getSetId()
+
+			if not groupPositions[setId] then
+				groupPositions[setId] = randomGroupPosition()
+			end
+
+			local pos = groupPositions[setId]
+			local offset = GROUP_OFFSETS[tool.Name] or Vector3.zero
+
+			local handle = tool:FindFirstChild("Handle")
+
+			if handle and handle:IsA("BasePart") then
+				handle.Anchored = true
+				handle.AssemblyLinearVelocity = Vector3.zero
+				handle.AssemblyAngularVelocity = Vector3.zero
+				handle.CFrame = CFrame.new(pos + offset)
+			end
+
+			task.wait()
+		end
+
+		active[tool] = nil
+	end)
+end
+
+for _, obj in ipairs(workspace:GetChildren()) do
+	if isLooseTool(obj) then
+		keepTool(obj)
+	end
+end
+
+workspace.ChildAdded:Connect(function(obj)
+	task.wait()
+
+	if isLooseTool(obj) then
+		keepTool(obj)
+	end
+end)
+
+workspace.DescendantRemoving:Connect(function(obj)
+	if obj:IsA("Tool") and active[obj] then
+		local handle = obj:FindFirstChild("Handle")
+
+		if handle and handle:IsA("BasePart") then
+			handle.Anchored = false
+		end
+
+		active[obj] = nil
+	end
+end)
+	end
+})
+
+ES67:AddButton({
+	Name = "Tp to stash",
+	Info = "Teleports to the stash",
+	Callback = function()
+		local player = game:GetService("Players").LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local plataforma = workspace:WaitForChild("ToolPlatform")
+
+hrp.CFrame = plataforma.CFrame + Vector3.new(0, 5, 0)
+	end
+})
+
+Extras:AddButton({
+	Name = "ItaScript V2(By itakito)",
+	Info = "Third party script by itakito, the key is not provided",
+	Callback = function()
+		loadstring(game:HttpGet("https://pastebin.com/raw/1hDKiihZ"))()
+	end
+})
+
+Extras:AddButton({
+	Name = "Copy Jobid",
+	Info = "Copies the job id",
+	Callback = function()
+		setclipboard(game.JobId)
+	end
+})
+
+Extras:AddButton({
+	Name = "Copy placeid",
+	Info = "Copies the place id",
+	Callback = function()
+		setclipboard(tostring(game.PlaceId))
+	end
+})
+
+Extras:AddButton({
+	Name = "SkyBox customize[Bkit needed]",
+	Info = "Skybox customize, needs bkit",
+	Callback = function()
+		local Players=game:GetService("Players")
+local TextChatService=game:GetService("TextChatService")
+local UserInputService=game:GetService("UserInputService")
+local TweenService=game:GetService("TweenService")
+
+local localplr=Players.LocalPlayer
+local tc=TextChatService.TextChannels
+
+local isog=workspace:FindFirstChild("Cubes")
+local adminteam=(isog and game.Teams.Admin) or game.Teams.Chosen
+
+local SelectedSide="Front"
+local MemeId="11894923077"
+
+local SideInfo={
+Front=Enum.NormalId.Back,
+Back=Enum.NormalId.Front,
+Left=Enum.NormalId.Right,
+Right=Enum.NormalId.Left,
+Top=Enum.NormalId.Bottom,
+Bottom=Enum.NormalId.Top
+}
+
+local SkyboxParts=workspace:FindFirstChild("Skybox")
+
+if not SkyboxParts then
+SkyboxParts=Instance.new("Folder")
+SkyboxParts.Name="Skybox"
+SkyboxParts.Parent=workspace
+end
+
+function getwc(plr1,plr2)
+
+local ui1,ui2=tostring(plr1.UserId),tostring(plr2.UserId)
+
+if not tc:FindFirstChild("RBXWhisper:"..ui1..ui2) then
+
+local t=tick()
+local a=0
+
+repeat
+
+if tick()>t then
+
+t=tick()+1
+a+=1
+
+coroutine.wrap(function()
+tc.RBXGeneral:SendAsync("/w "..plr2.DisplayName)
+end)()
+
+end
+
+task.wait()
+
+until tc:FindFirstChild("RBXWhisper:"..ui1..ui2)
+or tc:FindFirstChild("RBXWhisper:"..ui2..ui1)
+or a>5
+
+return tc:FindFirstChild("RBXWhisper:"..ui1..ui2)
+or tc:FindFirstChild("RBXWhisper:"..ui2..ui1)
+
+end
+
+return tc["RBXWhisper:"..ui1..ui2]
+
+end
+
+
+function hp()
+
+if localplr.Character and localplr.Character:FindFirstChild("The Arkenstone") then
+return true
+end
+
+if localplr.Backpack:FindFirstChild("The Arkenstone") then
+return true
+end
+
+return localplr.Team==adminteam
+
+end
+
+
+function eenl(unequipothers,equipenlighten)
+
+if not equipenlighten and localplr.Team==adminteam then
+return true
+end
+
+if unequipothers and localplr.Character then
+
+for _,v in ipairs(localplr.Character:GetChildren()) do
+
+if v:IsA("Tool") and v.Name~="The Arkenstone" then
+v.Parent=localplr.Backpack
+end
+
+end
+
+end
+
+
+if localplr.Character and localplr.Character:FindFirstChild("The Arkenstone") then
+return true,localplr.Character["The Arkenstone"]
+end
+
+
+if localplr.Backpack:FindFirstChild("The Arkenstone") then
+
+localplr.Backpack["The Arkenstone"].Parent=localplr.Character
+
+return true,localplr.Character["The Arkenstone"]
+
+end
+
+return false
+
+end
+
+
+function gcp(p,plr)
+
+local c=(plr and plr.Character) or localplr.Character
+
+p=p:lower()
+
+if p=="hrp" then
+p="HumanoidRootPart"
+elseif p=="hum" then
+p="Humanoid"
+end
+
+if c and c:FindFirstChild(p) then
+return c[p]
+end
+
+end
+
+
+function teleportto(cf)
+
+local hrp=gcp("hrp")
+
+if hrp then
+
+if typeof(cf)=="Vector3" then
+cf=CFrame.new(cf)
+end
+
+hrp.AssemblyLinearVelocity=Vector3.zero
+hrp.AssemblyAngularVelocity=Vector3.zero
+hrp.CFrame=cf
+
+end
+
+end
+
+
+function sayto(plr,text)
+
+if not plr then
+
+tc.RBXGeneral:SendAsync(text)
+
+else
+
+local wc=getwc(localplr,plr)
+
+if wc then
+wc:SendAsync(text)
+end
+
+end
+
+end
+
+
+function isolatenumbers(str)
+
+return str:gsub("%D+","")
+
+end
+
+
+function waitmemeify()
+
+local c=localplr.Character or localplr.CharacterAdded:Wait()
+
+return c:WaitForChild("Meme",10)
+
+end
+
+
+function getmemeify(returnblock)
+
+if localplr.Character and localplr.Character:FindFirstChild("Meme") then
+
+return returnblock and localplr.Character.Meme or isolatenumbers(localplr.Character.Meme.Front.Label.Image)
+
+end
+
+return false
+
+end
+
+
+local decalrotations={
+
+[Enum.NormalId.Top]={math.rad(90),0,0},
+[Enum.NormalId.Bottom]={math.rad(90),0,0},
+[Enum.NormalId.Left]={0,math.rad(90),0},
+[Enum.NormalId.Right]={0,math.rad(-90),0},
+[Enum.NormalId.Back]={math.rad(180),0,math.rad(180)},
+[Enum.NormalId.Front]={0,0,0}
+
+}
+
+
+local idkwhattonamets={
+
+[Enum.NormalId.Top]={"X","Z"},
+[Enum.NormalId.Bottom]={"X","Z"},
+[Enum.NormalId.Left]={"Z","Y"},
+[Enum.NormalId.Right]={"Z","Y"},
+[Enum.NormalId.Back]={"X","Y"},
+[Enum.NormalId.Front]={"X","Y"}
+
+}
+
+
+local gui=Instance.new("ScreenGui")
+gui.ResetOnSpawn=false
+gui.Parent=game.CoreGui
+
+
+local frame=Instance.new("Frame")
+frame.Size=UDim2.new(0,420,0,300)
+frame.Position=UDim2.new(.5,-210,.5,-150)
+frame.BackgroundColor3=Color3.fromRGB(20,20,20)
+frame.BorderSizePixel=0
+frame.ClipsDescendants=true
+frame.Parent=gui
+
+
+local corner=Instance.new("UICorner")
+corner.CornerRadius=UDim.new(0,10)
+corner.Parent=frame
+
+
+local stroke=Instance.new("UIStroke")
+stroke.Color=Color3.fromRGB(0,0,0)
+stroke.Transparency=0.5
+stroke.Thickness=1.5
+stroke.Parent=frame
+
+
+local title=Instance.new("TextLabel")
+title.Size=UDim2.new(1,0,0,35)
+title.BackgroundTransparency=1
+title.Text="Skybox Customize"
+title.TextColor3=Color3.new(1,1,1)
+title.Font=Enum.Font.Code
+title.TextSize=16
+title.Parent=frame
+
+
+local box=Instance.new("TextBox")
+box.Size=UDim2.new(1,-30,0,40)
+box.Position=UDim2.new(0,15,0,50)
+box.BackgroundColor3=Color3.fromRGB(30,30,30)
+box.TextColor3=Color3.new(1,1,1)
+box.PlaceholderText="Skybox ID"
+box.Text=MemeId
+box.Font=Enum.Font.Code
+box.TextSize=14
+box.BorderSizePixel=0
+box.Parent=frame
+
+
+local boxCorner=Instance.new("UICorner")
+boxCorner.CornerRadius=UDim.new(0,8)
+boxCorner.Parent=box
+
+
+local dropdown=Instance.new("TextButton")
+dropdown.Size=UDim2.new(0,180,0,35)
+dropdown.Position=UDim2.new(0,15,0,105)
+dropdown.BackgroundColor3=Color3.fromRGB(30,30,30)
+dropdown.TextColor3=Color3.new(1,1,1)
+dropdown.Text="Side: Front"
+dropdown.Font=Enum.Font.Code
+dropdown.TextSize=14
+dropdown.BorderSizePixel=0
+dropdown.Parent=frame
+
+
+local dropCorner=Instance.new("UICorner")
+dropCorner.CornerRadius=UDim.new(0,8)
+dropCorner.Parent=dropdown
+
+
+local list=Instance.new("ScrollingFrame")
+list.Size=UDim2.new(0,180,0,0)
+list.Position=UDim2.new(0,15,0,145)
+list.BackgroundColor3=Color3.fromRGB(25,25,25)
+list.BorderSizePixel=0
+list.Visible=true
+list.ClipsDescendants=true
+list.ScrollBarThickness=3
+list.ZIndex=20
+list.Parent=frame
+
+
+local listCorner=Instance.new("UICorner")
+listCorner.CornerRadius=UDim.new(0,8)
+listCorner.Parent=list
+
+
+local layout=Instance.new("UIListLayout")
+layout.Parent=list
+
+
+for _,v in ipairs({"Front","Back","Left","Right","Top","Bottom"}) do
+
+local b=Instance.new("TextButton")
+b.Size=UDim2.new(1,0,0,30)
+b.BackgroundColor3=Color3.fromRGB(30,30,30)
+b.Text=v
+b.TextColor3=Color3.new(1,1,1)
+b.Font=Enum.Font.Code
+b.TextSize=13
+b.BorderSizePixel=0
+b.ZIndex=30
+b.Parent=list
+
+b.MouseButton1Click:Connect(function()
+
+SelectedSide=v
+dropdown.Text="Side: "..v
+
+TweenService:Create(
+list,
+TweenInfo.new(.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
+{Size=UDim2.new(0,180,0,0)}
+):Play()
+
+end)
+
+end
+local opened=false
+
+dropdown.MouseButton1Click:Connect(function()
+
+opened=not opened
+
+local goal
+
+if opened then
+goal=UDim2.new(0,180,0,180)
+else
+goal=UDim2.new(0,180,0,0)
+end
+
+TweenService:Create(
+list,
+TweenInfo.new(.25,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),
+{Size=goal}
+):Play()
+
+end)
+
+
+local confirm=Instance.new("TextButton")
+confirm.Size=UDim2.new(1,-30,0,40)
+confirm.Position=UDim2.new(0,15,1,-55)
+confirm.BackgroundColor3=Color3.fromRGB(30,30,30)
+confirm.Text="CONFIRM"
+confirm.TextColor3=Color3.new(1,1,1)
+confirm.Font=Enum.Font.Code
+confirm.TextSize=14
+confirm.BorderSizePixel=0
+confirm.Parent=frame
+
+
+local confirmCorner=Instance.new("UICorner")
+confirmCorner.CornerRadius=UDim.new(0,8)
+confirmCorner.Parent=confirm
+
+
+local drag=false
+local dragStart
+local startPos
+
+
+title.InputBegan:Connect(function(i)
+
+if i.UserInputType==Enum.UserInputType.MouseButton1
+or i.UserInputType==Enum.UserInputType.Touch then
+
+drag=true
+dragStart=i.Position
+startPos=frame.Position
+
+end
+
+end)
+
+
+UserInputService.InputChanged:Connect(function(i)
+
+if drag and (i.UserInputType==Enum.UserInputType.MouseMovement
+or i.UserInputType==Enum.UserInputType.Touch) then
+
+local delta=i.Position-dragStart
+
+frame.Position=UDim2.new(
+startPos.X.Scale,
+startPos.X.Offset+delta.X,
+startPos.Y.Scale,
+startPos.Y.Offset+delta.Y
+)
+
+end
+
+end)
+
+
+UserInputService.InputEnded:Connect(function(i)
+
+if i.UserInputType==Enum.UserInputType.MouseButton1
+or i.UserInputType==Enum.UserInputType.Touch then
+
+drag=false
+
+end
+
+end)
+
+
+function createSkyboxSide(side)
+
+if not hp() then
+return
+end
+
+
+local skyId=isolatenumbers(box.Text)
+
+if skyId=="" then
+return
+end
+
+
+local size=180
+local half=size/2
+
+
+local data={
+
+Front={Vector3.new(0,0,-half),Vector3.new(size,size,1)},
+Back={Vector3.new(0,0,half),Vector3.new(size,size,1)},
+Left={Vector3.new(-half,0,0),Vector3.new(1,size,size)},
+Right={Vector3.new(half,0,0),Vector3.new(1,size,size)},
+Top={Vector3.new(0,half,0),Vector3.new(size,1,size)},
+Bottom={Vector3.new(0,-half,0),Vector3.new(size,1,size)}
+
+}
+
+
+local info=data[side]
+
+
+local old=SkyboxParts:FindFirstChild("Skybox_"..side)
+
+if old then
+old:Destroy()
+end
+
+
+local part=Instance.new("Part")
+
+part.Name="Skybox_"..side
+part.Anchored=true
+part.CanCollide=false
+part.CanTouch=false
+part.CanQuery=false
+part.Transparency=1
+part.Size=info[2]
+part.Position=info[1]
+part.Parent=SkyboxParts
+
+
+task.wait(.5)
+
+
+local normalId=SideInfo[side]
+
+
+pcall(function()
+
+
+if gcp("hum").RigType~=Enum.HumanoidRigType.R15 then
+
+sayto(nil,";r15 me")
+
+task.wait(3)
+
+end
+
+
+if not getmemeify() then
+
+eenl()
+
+sayto(nil,";memeify "..skyId)
+
+waitmemeify()
+
+end
+
+
+
+local axes=idkwhattonamets[normalId]
+local r=decalrotations[normalId]
+
+
+local surfaceCF=
+CFrame.new(
+part.Position+
+Vector3.FromNormalId(normalId)*(part.Size/2)
+)
+*
+CFrame.Angles(
+r[1],
+r[2],
+r[3]
+)
+
+
+local looping=true
+
+
+coroutine.wrap(function()
+
+while looping do
+
+teleportto(surfaceCF)
+
+task.wait()
+
+end
+
+end)()
+
+
+
+task.wait(2)
+
+
+eenl()
+
+sayto(nil,";width me "..tostring(size/6))
+
+task.wait(2)
+
+sayto(nil,";height me "..tostring(size/6))
+
+task.wait(2)
+
+
+sayto(nil,";noclip me")
+
+task.wait(2)
+
+sayto(nil,";freeze me")
+
+task.wait(1)
+
+sayto(nil,";clone me")
+
+task.wait(1)
+
+sayto(nil,";unfreeze me")
+
+
+looping=false
+
+
+end)
+
+
+end
+
+
+confirm.MouseButton1Click:Connect(function()
+
+MemeId=isolatenumbers(box.Text)
+
+createSkyboxSide(SelectedSide)
+
+end)
+
+	end
+})
 
 return Library
