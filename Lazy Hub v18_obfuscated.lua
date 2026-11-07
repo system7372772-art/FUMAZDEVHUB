@@ -462,7 +462,10 @@ Library.Settings = {
 	CornerRadius = 14,
 	AnimationSpeed = 0.18,
 	Tooltip = true,
-	TooltipMaxWidth = 600
+	TooltipMaxWidth = 600,
+	Topbar = false,
+	PopupWidth = 300,
+	TopbarKey = Enum.KeyCode.RightShift
 }
 
 Library.Flags = {}
@@ -1203,6 +1206,1889 @@ function Library:CreateWindow(options)
 			Size = UDim2.new(0,42,0,42)
 		},0.1)
 	end)
+
+	local HEADER_H = 34
+	local POPUP_W = Library.Settings.PopupWidth or 300
+	local TAIL = 126
+	local DARK = Color3.fromRGB(14, 14, 16)
+
+	local popupEntries = {}
+	local groupEntries = {}
+	local popupZ = 20
+	local openCounter = 0
+	local groupOrder = 0
+
+	local TB = {
+		Horizontal = false,
+		Names = false,
+		Locked = false,
+		Dock = "Left",
+		Scale = 1,
+		Opacity = 1,
+		Enabled = Library.Settings.Topbar == true
+	}
+
+	local GROUP_ICONS = {
+		["main"] = "compass", ["chat"] = "chat", ["raid"] = "dynamite", ["tools"] = "hammer",
+		["crash machine"] = "bolt", ["bypass tools"] = "key", ["antis"] = "shield",
+		["nostalgia"] = "cassette", ["enlighten stash"] = "gem", ["unanchor abuse"] = "chain",
+		["local player"] = "person", ["canvas"] = "palette", ["building"] = "bricks",
+		["gears"] = "cog", ["utils"] = "pickaxe", ["customize"] = "sparkle",
+		["griefing"] = "skull", ["extras"] = "gift", ["themes"] = "contrast",
+		["auras"] = "aura", ["world"] = "globe", ["users"] = "users", ["topbar"] = "sliders"
+	}
+
+	local ICONS = {
+		compass = {
+			".......KK.......",
+			"....KKKWWKKK....",
+			"...KWWWLLWWWK...",
+			"..KWLLDDDDLAWK..",
+			".KWLLDDDDAALLWK.",
+			".KWLDDDDAAADLMK.",
+			".KWDDDAAAADDDMK.",
+			"KWLDDDWKKADDDLWK",
+			"KWLDDWWKKDDDDLMK",
+			".KWDWWWWDDDDDMK.",
+			".KWLWWDDDDDDLMK.",
+			".KWWLDDDDDDLLMK.",
+			"..KWLLDDDDLLMK..",
+			"...KWMMLLMMMK...",
+			"....KKKWMKKK....",
+			".......KK......."
+		},
+		chat = {
+			"............KKK.",
+			"..KKKKKKKKKKCCCK",
+			".KWWWWWWWWWCAAAC",
+			"KWLLLLLLLLLCAAAB",
+			"KWLLLLLLLLLLCBBK",
+			"KWLLKKLKKLKKLLMK",
+			"KWLLKKLKKLKKLLMK",
+			"KWLLLLLLLLLLLLMK",
+			"KWLLLLLLLLLLLLMK",
+			"KWLLLLLLLLLLLLMK",
+			".KWLLLMMMMMMMMK.",
+			"..KWLMKKKKKKKK..",
+			"..KWMK..........",
+			"..KWK...........",
+			"...K............",
+			"................"
+		},
+		dynamite = {
+			"..........K.K...",
+			".........KCKWK..",
+			".......KKDDWWWK.",
+			"......KDDKKKWKCK",
+			"...KKKDKK.KCKCK.",
+			"..KLLLLLLK.K.K..",
+			"..KLDDDDDK......",
+			"..KCCCCCCK......",
+			".KCAAAAAACK.....",
+			".KWWWWWWWWK.....",
+			".KWLLLLLLMK.....",
+			".KWMMMMMMMK.....",
+			".KCAAAAAABK.....",
+			".KCAAAAAABK.....",
+			"..KCBBBBBK......",
+			"...KKKKKK......."
+		},
+		hammer = {
+			"................",
+			".KKKKKKKKKKKK...",
+			"KWWWWWWWWWWMMK..",
+			"KWLLLLLLLLLMDMK.",
+			"KWLLLLLLLLLMDK..",
+			"KWLLLLLLLLLMDK..",
+			"KWMMMMMMMMMMK...",
+			".KKKKKKLMDKK....",
+			"......KLMDK.....",
+			"......KLMDK.....",
+			"......KLMDK.....",
+			"......KCCCK.....",
+			"......KCABK.....",
+			"......KCABK.....",
+			"......KCBBK.....",
+			".......KKK......"
+		},
+		bolt = {
+			"................",
+			"........K.......",
+			".......KCK......",
+			"......KCBK......",
+			".....KCABK......",
+			"....KCAABKKKKK..",
+			"...KCAAAACCCCCK.",
+			"..KCAAAAAAAABK..",
+			".KCBBBBAAAABK...",
+			"..KKKKKCAABK....",
+			".....KCAABK.....",
+			".....KCABK......",
+			".....KCBK.......",
+			".....KCK........",
+			"......K.........",
+			"................"
+		},
+		key = {
+			"................",
+			"................",
+			"................",
+			"...KKKK.........",
+			"..KWWWWK........",
+			".KWLLLLWKKKKKKK.",
+			"KWLLWLLLWWWWWWWK",
+			"KWLLKKLLWLLLLLMK",
+			"KWLLKKLLWMMMMMMK",
+			"KWLLLLLLMKKWWKWK",
+			".KWLLLLMK.KWMKWK",
+			"..KWMMMK..KWMKWK",
+			"...KKKK....KK.K.",
+			"................",
+			"................",
+			"................"
+		},
+		shield = {
+			".KKKKKKKKKKKKK..",
+			"KWWWWWWWWWWWWWK.",
+			"KWLLLLLLLLLLLMK.",
+			"KWLMMMMMMMMMLMK.",
+			"KWLMDDDCCDDKLMK.",
+			"KWLMDDDCBDDKLMK.",
+			"KWLMCCCCCCCCLMK.",
+			"KWLMCBBBBBBBLMK.",
+			".KWLMDDCBDDKLMK.",
+			"..KWLMDCBDKLMK..",
+			"...KWLMCBKLMK...",
+			"....KWLCBLMK....",
+			".....KWLLMK.....",
+			"......KWMK......",
+			".......KK.......",
+			"................"
+		},
+		cassette = {
+			"................",
+			".KKKKKKKKKKKKKK.",
+			"KLLLLLLLLLLLLLLK",
+			"LMLLLLLLLLLLLLML",
+			"LMLLLDDLLLDDLLMD",
+			"LMLLDWDDLDWDDLMD",
+			"LMLLDDDDLDDDDLMD",
+			"LMLLLDDLLLDDLLMD",
+			"LMLLLLLLLLLLLLMD",
+			"LMMMDDDDDDDDMMMD",
+			"LMMMDKKDDKKDMMMD",
+			"LMMMDKKDDKKDMMMD",
+			"LMMMDDDDDDDDMMMD",
+			"KLDDDDDDDDDDDDDK",
+			".KKKKKKKKKKKKKK.",
+			"................"
+		},
+		gem = {
+			"....KKKKKKKK....",
+			"...KWWWWWWWWK...",
+			"..KWCCACCACCWK..",
+			"..KWCCACCACCAK..",
+			".KWCCACCCCACCWK.",
+			"KWAAAAAAAAAAAAWK",
+			"KCCCCBCCCCBCCCCK",
+			".KCAABAAAABAABK.",
+			"..KCAABAABAABK..",
+			"...KCABAABABK...",
+			"...KCAABBABK....",
+			"....KCAAAABK....",
+			".....KCAABK.....",
+			"......KCBK......",
+			".......KK.......",
+			"................"
+		},
+		chain = {
+			"................",
+			"..........KKKK..",
+			"........KKWWWWK.",
+			".......KWWMMLMK.",
+			"......KWLMKKWMK.",
+			"......KWMK.KWMK.",
+			"....KKWMLLKWMK..",
+			"...KLLWMMDWLMK..",
+			"..KLMDWLWWMMK...",
+			"..KLDKWMMMKK....",
+			".KLDK.KLDK......",
+			".KLDKKLMDK......",
+			".KLMLLDDK.......",
+			".KLDDDKK........",
+			"..KKKK..........",
+			"................"
+		},
+		person = {
+			"................",
+			"......KKKK......",
+			".....KWWWWK.....",
+			"....KWLLLLWK....",
+			"....KWLLLLMK....",
+			"....KWLLLLMK....",
+			"....KWLLLLMK....",
+			".....KWMMMK.....",
+			"...KKKKKKKKK....",
+			"..KLLLLLLLLLK...",
+			".KLMMMMMMMMMLK..",
+			"KLMMMMMMMMMMDK..",
+			"KLMMMMMMMMMMDK..",
+			"KLDDDDDDDDDDDK..",
+			".KKKKKKKKKKKK...",
+			"................"
+		},
+		palette = {
+			"................",
+			"................",
+			".....KKKKKK.....",
+			"...KKWWWWWWKK...",
+			"..KWWLCCLLBBWK..",
+			".KWLLLCCLLBBLWK.",
+			".KWLALLLLLLLLMK.",
+			"KWLAAALLLLLLLLWK",
+			"KWLLALLLLLLLLLMK",
+			"KWLLLLLLLLKLLLMK",
+			".KWLLLLLLKKKLMK.",
+			".KWLLLLLLKKKLMK.",
+			"..KWMLLLLLLMMK..",
+			"...KKWMMMMMKK...",
+			".....KKKKKK.....",
+			"................"
+		},
+		bricks = {
+			"................",
+			".KKKKKKKKKKKKKK.",
+			"KCCCCCCDCCCCCCCK",
+			"KCAAAABDCAAAAABK",
+			"KCBBBBBDCBBBBBBK",
+			"KDDDDDDDDDDDDDDK",
+			"KCCCDCCCCCCDCCCK",
+			"KCABDCAAAABDCABK",
+			"KCBBDCBBBBBDCBBK",
+			"KDDDDDDDDDDDDDDK",
+			"KCCCCCCDCCCCCCCK",
+			"KCAAAABDCAAAAABK",
+			"KCBBBBBDCBBBBBBK",
+			"KDDDDDDDDDDDDDDK",
+			".KKKKKKKKKKKKKK.",
+			"................"
+		},
+		cog = {
+			"......KKKK......",
+			"..KKKKWWWWKKKK..",
+			".KWWWKWLLMKWWWK.",
+			".KWLMKWLLMKWLMK.",
+			".KWMLWLLLLWLMMK.",
+			".KKKWLLLLLLMKKK.",
+			"KWWWLLLKKLLLWWWK",
+			"KWLLLLKDDKLLLLMK",
+			"KWLLLLKDDKLLLLMK",
+			"KWMMLLLKKLLLMMMK",
+			".KKKWLLLLLLMKKK.",
+			".KWWLMLLLLMLWWK.",
+			".KWLMKWLLMKWLMK.",
+			".KWMMKWLLMKWMMK.",
+			"..KKKKWMMMKKKK..",
+			"......KKKK......"
+		},
+		pickaxe = {
+			"................",
+			"................",
+			"................",
+			"..KKKKK.........",
+			".KWWWWWKK.......",
+			".KWLLLLWWK......",
+			"..KWMMMLLWK.....",
+			"...KKKKWAAWK....",
+			".....KLMAALWK...",
+			"....KLMDKWLMK...",
+			"...KLMDK.KWLWK..",
+			"..KLMDK..KWLMK..",
+			".KLMDK...KWLMK..",
+			"KLMDK....KWMMK..",
+			"LMDK......KKK...",
+			"KLK............."
+		},
+		sparkle = {
+			"......KWK.......",
+			"......KWK....K..",
+			"......KWK...KAK.",
+			".....KWLWK.KAAAK",
+			".....KWLMK..KAK.",
+			"...KKWLLLWKK.K..",
+			"KKKWWLLLLLWWKKK.",
+			"WWWLLLLLLLLLWWWK",
+			"KKKWMLLLLLMMKKK.",
+			"...KKWLLLMKK....",
+			".....KWLMK......",
+			"..K..KWLMK......",
+			".KAK..KWK.......",
+			"KAAAK.KWK.......",
+			".KAK..KWK.......",
+			"..K....K........"
+		},
+		skull = {
+			"......KKKK......",
+			"....KKWWWWKK....",
+			"...KWWLLLLWWK...",
+			"..KWLLLLLLLLWK..",
+			"..KWLLLLLLLLMK..",
+			"..KWLKKLLKKLMK..",
+			".KWLKKKLLKKKLWK.",
+			"..KWKKKLLKKKMK..",
+			"..KWLKLLLLKLMK..",
+			"..KWLLLKKLLLMK..",
+			"...KWLLLLLLMK...",
+			"...KWLKLKLKMK...",
+			"...KWLKLKLKMK...",
+			"...KWMMMMMMMK...",
+			"....KKKKKKKK....",
+			"................"
+		},
+		gift = {
+			"....KKK..KKK....",
+			"...KWWWKKWWWK...",
+			"..KWLMLWWLMLWK..",
+			"..KWMKWWWMKWMK..",
+			".KKWMKWWWMKWMKK.",
+			"KWWWWWMWWWWMWWWK",
+			"KWCCCCCWLCCCCCAK",
+			"KWCCCCCWLCCCCCAK",
+			"KWAAAAAWLAAAAAAK",
+			".KCAAAAWLAAAABK.",
+			".KCAAAAWLAAAABK.",
+			".KCAAAAWLAAAABK.",
+			".KCAAAAWLAAAABK.",
+			".KCAAAAWLAAAABK.",
+			".KCBBBBWLBBBBBK.",
+			"..KKKKKKKKKKKK.."
+		},
+		contrast = {
+			"................",
+			".....KKKKKK.....",
+			"...KKWWWMMMKK...",
+			"..KWWLLMMDDMMK..",
+			"..KWLLLMMDDDKK..",
+			".KWLLLLMMDDDDMK.",
+			".KWLLLLMMDDDDK..",
+			".KWLLLLMMDDDDK..",
+			".KWLLLLMMDDDDK..",
+			".KWLLLLMMDDDDK..",
+			".KWLLLLMMDDDDK..",
+			"..KWLLLMMDDDK...",
+			"..KWMLLMMDDKK...",
+			"...KKWMMMKK.....",
+			".....KKKK.......",
+			"................"
+		},
+		aura = {
+			".......KK.......",
+			"....KKKBBKKK....",
+			"...KBBBBBBBBK...",
+			"..KBBKKAAKKBBK..",
+			".KBBKAAAAAAKBBK.",
+			".KBKAAKKKKAAKBK.",
+			".KBKAKKWWKKAKBK.",
+			"KBBAAKWCCWKAABBK",
+			"KBBAAKWCCAKAABBK",
+			".KBKAKKWAKKAKBK.",
+			".KBKAAKKKKAAKBK.",
+			".KBBKAAAAAAKBBK.",
+			"..KBBKKAAKKBBK..",
+			"...KBBBBBBBBK...",
+			"....KKKBBKKK....",
+			".......KK......."
+		},
+		globe = {
+			"................",
+			".....KKKKKK.....",
+			"...KKLDDDDLKK...",
+			"..KLLMDMMDMLLK..",
+			"..KLDWDDDDDDDK..",
+			".KLMWDMMMMDMMLK.",
+			".KLMMDMMMMDMMDK.",
+			".KDDDDDDDDDDDDK.",
+			".KLMMDMMMMDMMDK.",
+			".KLMMDMMMMDMMDK.",
+			".KLMMDMMMMDMMDK.",
+			"..KLDDDDDDDDDK..",
+			"..KLDMDMMDMDDK..",
+			"...KKLDDDDDKK...",
+			".....KKKKKK.....",
+			"................"
+		},
+		users = {
+			"................",
+			"...........K....",
+			"...KKKKK.KKLKK..",
+			"..KKWWWKKLLMLLK.",
+			"..KWLLLWKLMMMDK.",
+			"..KWLLLMKLMMMDK.",
+			"..KWLLLMKKLDDK..",
+			"..KWMLLMKKKKK...",
+			"..KKKWMKKLLLLK..",
+			".KKWWLLWKKMMMLK.",
+			"KKWLLLLLWKKMMMLK",
+			"KWLLLLLLLWKMMMDK",
+			"KWLLLLLLLMKMMMDK",
+			"KWMMMMMMMMKDDDDK",
+			"KKKKKKKKKKKKKKK.",
+			"................"
+		},
+		sliders = {
+			"................",
+			"....KKK.........",
+			".KKKWWWKKKKKKKK.",
+			"KMMWLLLWMMMMMMMK",
+			".KKWLLLMKKKKKKK.",
+			"...KWMMK.KKKK...",
+			".KKKKKKKKCCCCKK.",
+			"KMMMMMMMMCAABMMK",
+			".KKKKKKKKCAABKK.",
+			"........KCBBBK..",
+			".....KKK.KKKK...",
+			".KKKKWWWKKKKKKK.",
+			"KMMMWLLLWMMMMMMK",
+			".KKKWLLLMKKKKKK.",
+			"....KWMMK.......",
+			".....KKK........"
+		},
+		close = {
+			"................",
+			"..KK.......KK...",
+			".KWWK.....KWWK..",
+			".KWLWK...KWLMK..",
+			"..KWLWK.KWLLMK..",
+			"...KWLWKWLLMK...",
+			"....KWLWLLMK....",
+			".....KWLLMK.....",
+			"....KWLLLMK.....",
+			"...KWLLMMLWK....",
+			"..KWLLMKKWLWK...",
+			".KWLLMK..KWLWK..",
+			".KWMMK....KWLWK.",
+			"..KKK......KWK..",
+			"............K...",
+			"................"
+		},
+		minus = {
+			"................",
+			"................",
+			"................",
+			"................",
+			"................",
+			"...KKKKKKKKKK...",
+			"..KWWWWWWWWWWK..",
+			"..KWLLLLLLLLMK..",
+			"..KWMMMMMMMMMK..",
+			"...KKKKKKKKKK...",
+			"................",
+			"................",
+			"................",
+			"................",
+			"................",
+			"................"
+		},
+		plus = {
+			"................",
+			"................",
+			"......KKK.......",
+			".....KWWWK......",
+			".....KWLMK......",
+			"...KKKWLMKKKK...",
+			"..KWWWLLLWWWWK..",
+			"..KWLLLLLLLLMK..",
+			"..KWMMLLLMMMMK..",
+			"...KKKWLMKKKK...",
+			".....KWLMK......",
+			".....KWLMK......",
+			".....KWMMK......",
+			"......KKK.......",
+			"................",
+			"................"
+		},
+		layoutRow = {
+			"................",
+			"................",
+			".KKKK.KKKK.KKKK.",
+			"KWWWWKLLLLKLLLLK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWLLMKLMMDKLMMDK",
+			"KWMMMKLDDDKLDDDK",
+			".KKKK.KKKK.KKKK.",
+			"................",
+			"................"
+		},
+		layoutCol = {
+			"...KKKKKKKKKK...",
+			"..KWWWWWWWWWWK..",
+			"..KWLLLLLLLLMK..",
+			"..KWLLLLLLLLMK..",
+			"..KWMMMMMMMMMK..",
+			"...KKKKKKKKKK...",
+			"..KLLLLLLLLLLK..",
+			"..KLMMMMMMMMDK..",
+			"..KLMMMMMMMMDK..",
+			"..KLDDDDDDDDDK..",
+			"...KKKKKKKKKK...",
+			"..KLLLLLLLLLLK..",
+			"..KLMMMMMMMMDK..",
+			"..KLMMMMMMMMDK..",
+			"..KLDDDDDDDDDK..",
+			"...KKKKKKKKKK..."
+		},
+		tile = {
+			".KKKKKK..KKKKKK.",
+			"KWWWWWWKKLLLLLLK",
+			"KWLLLLMKKLMMMMDK",
+			"KWLLLLMKKLMMMMDK",
+			"KWLLLLMKKLMMMMDK",
+			"KWLLLLMKKLMMMMDK",
+			"KWMMMMMKKLDDDDDK",
+			".KKKKKK..KKKKKK.",
+			".KKKKKK..KKKKKK.",
+			"KLLLLLLKKWWWWWWK",
+			"KLMMMMDKKWLLLLMK",
+			"KLMMMMDKKWLLLLMK",
+			"KLMMMMDKKWLLLLMK",
+			"KLMMMMDKKWLLLLMK",
+			"KLDDDDDKKWMMMMMK",
+			".KKKKKK..KKKKKK."
+		},
+		dockLeft = {
+			"................",
+			".KKKKKKKKKKKKKK.",
+			"KLLLLLLLLLLLLLLK",
+			"KLCCCDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCABDDDDDDDDDDK",
+			"KLCBBDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			".KKKKKKKKKKKKKK.",
+			"................"
+		},
+		dockRight = {
+			"................",
+			".KKKKKKKKKKKKKK.",
+			"KLLLLLLLLLLLLLLK",
+			"KLDDDDDDDDDCCCDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCABDK",
+			"KLDDDDDDDDDCBBDK",
+			"KLDDDDDDDDDDDDDK",
+			".KKKKKKKKKKKKKK.",
+			"................"
+		},
+		dockTop = {
+			"................",
+			".KKKKKKKKKKKKKK.",
+			"KLLLLLLLLLLLLLLK",
+			"KLCCCCCCCCCCCCDK",
+			"KLCAAAAAAAAAABDK",
+			"KLCBBBBBBBBBBBDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			".KKKKKKKKKKKKKK.",
+			"................"
+		},
+		dockBottom = {
+			"................",
+			".KKKKKKKKKKKKKK.",
+			"KLLLLLLLLLLLLLLK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLDDDDDDDDDDDDDK",
+			"KLCCCCCCCCCCCCDK",
+			"KLCAAAAAAAAAABDK",
+			"KLCBBBBBBBBBBBDK",
+			"KLDDDDDDDDDDDDDK",
+			".KKKKKKKKKKKKKK.",
+			"................"
+		},
+		default = {
+			".......K........",
+			"......KWK.......",
+			".....KWLWK......",
+			"....KWLLLWK.....",
+			"...KWLLLLLWK....",
+			"..KWLLLLLLLWK...",
+			".KWLLLLKKLLLWK..",
+			"KWLLLLKKKKLLLWK.",
+			".KWLLLKKKKLLMK..",
+			"..KWLLLKKLLMK...",
+			"...KWLLLLLMK....",
+			"....KWLLLMK.....",
+			".....KWLMK......",
+			"......KWK.......",
+			".......K........",
+			"................"
+		}
+	}
+
+	local function paletteFor()
+		local T = Library.Theme
+		local black = Color3.new(0, 0, 0)
+		return {
+			W = T.Text,
+			L = T.Text:Lerp(black, 0.14),
+			M = T.SubText,
+			D = T.SubText:Lerp(black, 0.42),
+			A = T.Accent,
+			B = T.Accent:Lerp(black, 0.42),
+			C = T.Accent:Lerp(Color3.new(1, 1, 1), 0.3),
+			K = DARK
+		}
+	end
+
+	local function drawIcon(parent, key, px)
+		local old = parent:FindFirstChild("Icon")
+		if old then
+			old:Destroy()
+		end
+
+		px = px or 2
+		local size = 16 * px
+
+		local holder = Instance.new("Frame")
+		holder.Name = "Icon"
+		holder.Size = UDim2.new(0, size, 0, size)
+		holder.Position = UDim2.new(0.5, -size / 2, 0.5, -size / 2)
+		holder.BackgroundTransparency = 1
+		holder.BorderSizePixel = 0
+		holder.Parent = parent
+
+		local palette = paletteFor()
+		local rows = ICONS[key] or ICONS.default
+
+		for y, row in ipairs(rows) do
+			local x = 1
+			while x <= 16 do
+				local ch = row:sub(x, x)
+				if ch == "." then
+					x += 1
+				else
+					local x2 = x
+					while x2 < 16 and row:sub(x2 + 1, x2 + 1) == ch do
+						x2 += 1
+					end
+
+					local piece = Instance.new("Frame")
+					piece.Size = UDim2.new(0, (x2 - x + 1) * px, 0, px)
+					piece.Position = UDim2.new(0, (x - 1) * px, 0, (y - 1) * px)
+					piece.BackgroundColor3 = palette[ch] or DARK
+					piece.BorderSizePixel = 0
+					piece.Parent = holder
+
+					x = x2 + 1
+				end
+			end
+		end
+
+		return holder
+	end
+
+	local function setIconPos(holder, left)
+		if not holder then
+			return
+		end
+
+		local size = holder.Size.X.Offset
+		if left then
+			holder.Position = UDim2.new(0, 6, 0.5, -size / 2)
+		else
+			holder.Position = UDim2.new(0.5, -size / 2, 0.5, -size / 2)
+		end
+	end
+
+	local function cleanName(text)
+		local stripped = tostring(text or ""):gsub("[\128-\255]", "")
+		return stripped:match("^%s*(.-)%s*$")
+	end
+
+	local function getViewport()
+		local camera = workspace.CurrentCamera
+		return camera and camera.ViewportSize or Vector2.new(1000, 700)
+	end
+
+	local function makeDraggable(handle, target, onBegin, canDrag)
+		local dragging = false
+		local dragStart, startPos, startAbs, moveConn
+
+		handle.InputBegan:Connect(function(input)
+			if input.UserInputType ~= Enum.UserInputType.MouseButton1
+			and input.UserInputType ~= Enum.UserInputType.Touch then
+				return
+			end
+
+			if onBegin then
+				onBegin()
+			end
+
+			if canDrag and not canDrag() then
+				return
+			end
+
+			dragging = true
+			dragStart = input.Position
+			startPos = target.Position
+			startAbs = target.AbsolutePosition
+
+			if moveConn then
+				moveConn:Disconnect()
+			end
+
+			moveConn = UserInputService.InputChanged:Connect(function(move)
+				if not dragging then
+					return
+				end
+
+				if move.UserInputType == Enum.UserInputType.MouseMovement
+				or move.UserInputType == Enum.UserInputType.Touch then
+					local delta = move.Position - dragStart
+					local vp = getViewport()
+					local size = target.AbsoluteSize
+
+					local nx = math.clamp(startAbs.X + delta.X, 60 - size.X, vp.X - 60)
+					local ny = math.clamp(startAbs.Y + delta.Y, 0, vp.Y - 40)
+
+					target.Position = UDim2.new(
+						startPos.X.Scale,
+						startPos.X.Offset + (nx - startAbs.X),
+						startPos.Y.Scale,
+						startPos.Y.Offset + (ny - startAbs.Y)
+					)
+				end
+			end)
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+					if moveConn then
+						moveConn:Disconnect()
+						moveConn = nil
+					end
+				end
+			end)
+		end)
+	end
+
+	local bar = Instance.new("Frame")
+	bar.Name = "GroupTopbar"
+	bar.AnchorPoint = Vector2.new(0, 0.5)
+	bar.Position = UDim2.new(0, 70, 0.5, 0)
+	bar.Size = UDim2.new(0, 54, 0, 150)
+	bar.BackgroundColor3 = Library.Theme.Secondary
+	bar.BackgroundTransparency = Library.Settings.Transparency
+	bar.BorderSizePixel = 0
+	bar.ZIndex = 5
+	bar.Visible = Library.Settings.Topbar == true
+	bar.Parent = gui
+
+	corner(bar, 18)
+	stroke(bar, Library.Theme.Border, 1)
+	surfaceGradient(bar)
+
+	local barScale = Instance.new("UIScale")
+	barScale.Scale = 1
+	barScale.Parent = bar
+
+	Window.Topbar = bar
+
+	local grip = Instance.new("Frame")
+	grip.Name = "Grip"
+	grip.Size = UDim2.new(1, 0, 0, 20)
+	grip.BackgroundTransparency = 1
+	grip.Active = true
+	grip.Parent = bar
+
+	local gripLine = Instance.new("Frame")
+	gripLine.AnchorPoint = Vector2.new(0.5, 0.5)
+	gripLine.BackgroundColor3 = Library.Theme.Border
+	gripLine.BorderSizePixel = 0
+	gripLine.Parent = grip
+	corner(gripLine, 2)
+
+	makeDraggable(grip, bar, nil, function()
+		return not TB.Locked
+	end)
+
+	local barList = Instance.new("ScrollingFrame")
+	barList.Name = "List"
+	barList.BackgroundTransparency = 1
+	barList.BorderSizePixel = 0
+	barList.ScrollBarThickness = 0
+	barList.CanvasSize = UDim2.new(0, 0, 0, 0)
+	barList.Parent = bar
+
+	local barLayout = Instance.new("UIListLayout")
+	barLayout.Padding = UDim.new(0, 6)
+	barLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	barLayout.Parent = barList
+
+	local barPadding = Instance.new("UIPadding")
+	barPadding.Parent = barList
+
+	local tail = Instance.new("Frame")
+	tail.Name = "Tail"
+	tail.BackgroundTransparency = 1
+	tail.Parent = bar
+
+	local tailLayout = Instance.new("UIListLayout")
+	tailLayout.Padding = UDim.new(0, 6)
+	tailLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	tailLayout.Parent = tail
+
+	local function tailButton(name, iconKey, order, tip)
+		local b = Instance.new("TextButton")
+		b.Name = name
+		b.Size = UDim2.new(0, 38, 0, 38)
+		b.BackgroundColor3 = Library.Theme.GroupBackground
+		b.Text = ""
+		b.AutoButtonColor = false
+		b.BorderSizePixel = 0
+		b.LayoutOrder = order
+		b.Parent = tail
+
+		corner(b, 10)
+		stroke(b, Library.Theme.Border, 1)
+		surfaceGradient(b)
+		drawIcon(b, iconKey, 2)
+
+		b.MouseEnter:Connect(function()
+			if not b:GetAttribute("Sunk") then
+				Anim(b, {BackgroundColor3 = Library.Theme.ToggleOff}, 0.1)
+			end
+		end)
+		b.MouseLeave:Connect(function()
+			sinkPress(b, false, 0.1)
+			if not b:GetAttribute("Sunk") then
+				Anim(b, {BackgroundColor3 = Library.Theme.GroupBackground}, 0.12)
+			end
+		end)
+		b.MouseButton1Down:Connect(function()
+			sinkPress(b, true, 0.05)
+		end)
+		b.MouseButton1Up:Connect(function()
+			sinkPress(b, false, 0.1)
+		end)
+
+		addTooltip(b, tip)
+		return b
+	end
+
+	local settingsBtn = tailButton("Settings", "sliders", 1, "Bar settings")
+	local orientBtn = tailButton("Orientation", "layoutRow", 2, "Switch orientation")
+	local closeAll = tailButton("CloseAll", "close", 3, "Close all windows")
+
+	local function itemSize()
+		if TB.Names then
+			return TB.Horizontal and Vector2.new(112, 40) or Vector2.new(136, 40)
+		end
+		return Vector2.new(42, 42)
+	end
+
+	local function visibleCount()
+		local n = 0
+		for _, e in ipairs(groupEntries) do
+			if e.Button.Visible then
+				n += 1
+			end
+		end
+		return n
+	end
+
+	local function refreshBar()
+		local vp = getViewport()
+		local sc = barScale.Scale
+		local item = itemSize()
+		local n = visibleCount()
+
+		if TB.Horizontal then
+			local list = n * (item.X + 6) + 8
+			local wanted = list + 20 + TAIL + 6
+			bar.Size = UDim2.new(0, math.clamp(wanted, 170, math.floor(vp.X * 0.86 / sc)), 0, 54)
+		else
+			local list = n * (item.Y + 6) + 8
+			local wanted = list + 20 + TAIL + 6
+			local width = TB.Names and 156 or 54
+			bar.Size = UDim2.new(0, width, 0, math.clamp(wanted, 170, math.floor(vp.Y * 0.84 / sc)))
+		end
+	end
+
+	local function applyMetrics()
+		local item = itemSize()
+
+		for _, e in ipairs(groupEntries) do
+			e.Button.Size = UDim2.new(0, item.X, 0, item.Y)
+			e.Label.Visible = TB.Names
+
+			setIconPos(e.Button:FindFirstChild("Icon"), TB.Names)
+		end
+
+		refreshBar()
+	end
+
+	local function applyOrientation()
+		if TB.Horizontal then
+			grip.Size = UDim2.new(0, 20, 1, 0)
+			gripLine.Position = UDim2.new(0.5, 2, 0.5, 0)
+			gripLine.Size = UDim2.new(0, 4, 0, 22)
+
+			barList.Position = UDim2.new(0, 20, 0, 0)
+			barList.Size = UDim2.new(1, -(20 + TAIL + 6), 1, 0)
+			barList.ScrollingDirection = Enum.ScrollingDirection.X
+			barList.AutomaticCanvasSize = Enum.AutomaticSize.X
+			barLayout.FillDirection = Enum.FillDirection.Horizontal
+			barLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+			barLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+			barPadding.PaddingTop = UDim.new(0, 0)
+			barPadding.PaddingBottom = UDim.new(0, 0)
+			barPadding.PaddingLeft = UDim.new(0, 4)
+			barPadding.PaddingRight = UDim.new(0, 4)
+
+			tail.AnchorPoint = Vector2.new(1, 0.5)
+			tail.Position = UDim2.new(1, -6, 0.5, 0)
+			tail.Size = UDim2.new(0, TAIL, 0, 38)
+			tailLayout.FillDirection = Enum.FillDirection.Horizontal
+			tailLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			tailLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+		else
+			grip.Size = UDim2.new(1, 0, 0, 20)
+			gripLine.Position = UDim2.new(0.5, 0, 0.5, 2)
+			gripLine.Size = UDim2.new(0, 22, 0, 4)
+
+			barList.Position = UDim2.new(0, 0, 0, 20)
+			barList.Size = UDim2.new(1, 0, 1, -(20 + TAIL + 6))
+			barList.ScrollingDirection = Enum.ScrollingDirection.Y
+			barList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+			barLayout.FillDirection = Enum.FillDirection.Vertical
+			barLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			barLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+			barPadding.PaddingTop = UDim.new(0, 4)
+			barPadding.PaddingBottom = UDim.new(0, 4)
+			barPadding.PaddingLeft = UDim.new(0, 0)
+			barPadding.PaddingRight = UDim.new(0, 0)
+
+			tail.AnchorPoint = Vector2.new(0.5, 1)
+			tail.Position = UDim2.new(0.5, 0, 1, -6)
+			tail.Size = UDim2.new(0, 38, 0, TAIL)
+			tailLayout.FillDirection = Enum.FillDirection.Vertical
+			tailLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+			tailLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+		end
+
+		barList.CanvasPosition = Vector2.new(0, 0)
+		drawIcon(orientBtn, TB.Horizontal and "layoutCol" or "layoutRow", 2)
+		applyMetrics()
+	end
+
+	local function dockBar(side)
+		TB.Dock = side
+
+		if side == "Left" then
+			TB.Horizontal = false
+			bar.AnchorPoint = Vector2.new(0, 0.5)
+			bar.Position = UDim2.new(0, 70, 0.5, 0)
+		elseif side == "Right" then
+			TB.Horizontal = false
+			bar.AnchorPoint = Vector2.new(1, 0.5)
+			bar.Position = UDim2.new(1, -14, 0.5, 0)
+		elseif side == "Top" then
+			TB.Horizontal = true
+			bar.AnchorPoint = Vector2.new(0.5, 0)
+			bar.Position = UDim2.new(0.5, 0, 0, 10)
+		else
+			TB.Horizontal = true
+			bar.AnchorPoint = Vector2.new(0.5, 1)
+			bar.Position = UDim2.new(0.5, 0, 1, -14)
+		end
+
+		applyOrientation()
+	end
+
+	barList.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseWheel and TB.Horizontal then
+			barList.CanvasPosition = Vector2.new(
+				math.max(0, barList.CanvasPosition.X - input.Position.Z * 48),
+				0
+			)
+		end
+	end)
+
+	orientBtn.MouseButton1Click:Connect(function()
+		buttonClickSound:Play()
+		TB.Horizontal = not TB.Horizontal
+		applyOrientation()
+	end)
+
+	local function fitPopup(entry)
+		local win = entry.Win
+		if not win or not win.Parent then
+			return
+		end
+
+		local height
+		if entry.Collapsed then
+			height = HEADER_H
+		else
+			local content = entry.Group.AbsoluteSize.Y + 16
+			height = math.clamp(HEADER_H + content, 90, math.floor(getViewport().Y * 0.72))
+		end
+
+		Anim(win, {Size = UDim2.new(0, POPUP_W, 0, height)}, 0.14)
+	end
+
+	local function bringToFront(entry)
+		popupZ += 1
+		if entry.Win then
+			entry.Win.ZIndex = popupZ
+		end
+	end
+
+	local function setButtonState(entry, open)
+		local btn = entry.Button
+		setSunk(btn, open, 0.1, 3)
+		Anim(btn, {
+			BackgroundColor3 = open and Library.Theme.GroupBackground or (entry.IdleColor or Library.Theme.Element)
+		}, 0.14)
+
+		if entry.Pip then
+			entry.Pip.Visible = open
+		end
+		if entry.Label then
+			Anim(entry.Label, {TextColor3 = open and Library.Theme.Text or Library.Theme.SubText}, 0.14)
+		end
+	end
+
+	local function headerButton(parent, iconKey, xOffset)
+		local b = Instance.new("TextButton")
+		b.Size = UDim2.new(0, 24, 0, 24)
+		b.Position = UDim2.new(1, xOffset, 0.5, -12)
+		b.BackgroundColor3 = Library.Theme.Element
+		b.Text = ""
+		b.AutoButtonColor = false
+		b.BorderSizePixel = 0
+		b.Parent = parent
+
+		corner(b, 8)
+		stroke(b, Library.Theme.Border, 1)
+		surfaceGradient(b)
+		drawIcon(b, iconKey, 1)
+
+		b.MouseEnter:Connect(function()
+			Anim(b, {BackgroundColor3 = Library.Theme.ToggleOff}, 0.1)
+		end)
+		b.MouseLeave:Connect(function()
+			Anim(b, {BackgroundColor3 = Library.Theme.Element}, 0.12)
+		end)
+		b.MouseButton1Down:Connect(function()
+			sinkPress(b, true, 0.05)
+		end)
+		b.MouseButton1Up:Connect(function()
+			sinkPress(b, false, 0.1)
+		end)
+
+		return b
+	end
+
+	local setOpen
+
+	local function buildPopup(entry)
+		local win = Instance.new("Frame")
+		win.Name = entry.Title .. "Popup"
+		win.Size = UDim2.new(0, POPUP_W, 0, 0)
+		win.BackgroundColor3 = Library.Theme.Background
+		win.BackgroundTransparency = 1
+		win.BorderSizePixel = 0
+		win.ClipsDescendants = true
+		win.Active = true
+		win.Visible = false
+		win.Parent = gui
+
+		corner(win, 14)
+		stroke(win, Library.Theme.Border, 2)
+		surfaceGradient(win)
+
+		entry.Win = win
+
+		local header = Instance.new("Frame")
+		header.Name = "Header"
+		header.Size = UDim2.new(1, 0, 0, HEADER_H)
+		header.BackgroundColor3 = Library.Theme.Secondary
+		header.BorderSizePixel = 0
+		header.Active = true
+		header.Parent = win
+
+		corner(header, 14)
+		surfaceGradient(header)
+
+		local headerFix = Instance.new("Frame")
+		headerFix.Size = UDim2.new(1, 0, 0, 12)
+		headerFix.Position = UDim2.new(0, 0, 1, -12)
+		headerFix.BackgroundColor3 = Library.Theme.Secondary
+		headerFix.BorderSizePixel = 0
+		headerFix.Parent = header
+
+		local iconHolder = Instance.new("Frame")
+		iconHolder.BackgroundTransparency = 1
+		iconHolder.Position = UDim2.new(0, 10, 0.5, -8)
+		iconHolder.Size = UDim2.new(0, 16, 0, 16)
+		iconHolder.Parent = header
+		drawIcon(iconHolder, entry.Icon, 1)
+
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.new(0, 34, 0, 0)
+		titleLabel.Size = UDim2.new(1, -100, 1, 0)
+		titleLabel.Text = entry.Title
+		titleLabel.TextColor3 = Library.Theme.Text
+		titleLabel.TextSize = 16
+		titleLabel.Font = Enum.Font.Garamond
+		titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+		titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		titleLabel.Parent = header
+
+		local closeBtn = headerButton(header, "close", -30)
+		local collapseBtn = headerButton(header, "minus", -58)
+
+		local body = Instance.new("ScrollingFrame")
+		body.Name = "Body"
+		body.Position = UDim2.new(0, 0, 0, HEADER_H)
+		body.Size = UDim2.new(1, 0, 1, -HEADER_H)
+		body.BackgroundTransparency = 1
+		body.BorderSizePixel = 0
+		body.ScrollBarThickness = 3
+		body.ScrollBarImageColor3 = Library.Theme.Border
+		body.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		body.CanvasSize = UDim2.new(0, 0, 0, 0)
+		body.ScrollingDirection = Enum.ScrollingDirection.Y
+		body.Parent = win
+
+		local bodyPadding = Instance.new("UIPadding")
+		bodyPadding.PaddingTop = UDim.new(0, 6)
+		bodyPadding.PaddingBottom = UDim.new(0, 8)
+		bodyPadding.PaddingLeft = UDim.new(0, 6)
+		bodyPadding.PaddingRight = UDim.new(0, 9)
+		bodyPadding.Parent = body
+
+		entry.Body = body
+
+		makeDraggable(header, win, function()
+			bringToFront(entry)
+		end)
+
+		win.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+				bringToFront(entry)
+			end
+		end)
+
+		closeBtn.MouseButton1Click:Connect(function()
+			buttonClickSound:Play()
+			setOpen(entry, false)
+		end)
+
+		collapseBtn.MouseButton1Click:Connect(function()
+			buttonClickSound:Play()
+			entry.Collapsed = not entry.Collapsed
+			drawIcon(collapseBtn, entry.Collapsed and "plus" or "minus", 1)
+			body.Visible = not entry.Collapsed
+			fitPopup(entry)
+		end)
+	end
+
+	local function placeFor(step)
+		local vp = getViewport()
+		local ap = bar.AbsolutePosition
+		local as = bar.AbsoluteSize
+		local x, y
+
+		if TB.Horizontal then
+			x = math.clamp(ap.X + step * 26, 10, math.max(10, vp.X - POPUP_W - 10))
+			if ap.Y < vp.Y / 2 then
+				y = ap.Y + as.Y + 14 + step * 26
+			else
+				y = math.max(10, ap.Y - 320 - step * 26)
+			end
+		else
+			y = math.clamp(ap.Y + step * 26, 10, math.max(10, vp.Y - 220))
+			if ap.X < vp.X / 2 then
+				x = ap.X + as.X + 14 + step * 26
+			else
+				x = math.max(10, ap.X - POPUP_W - 14 - step * 26)
+			end
+		end
+
+		return UDim2.new(0, x, 0, y)
+	end
+
+	setOpen = function(entry, state)
+		if state == entry.Open then
+			if state then
+				bringToFront(entry)
+			end
+			return
+		end
+
+		if state then
+			if not entry.Win then
+				buildPopup(entry)
+			end
+
+			local win = entry.Win
+			entry.Open = true
+
+			if not entry.Placed then
+				entry.Placed = true
+				win.Position = placeFor(openCounter % 6)
+				openCounter += 1
+			end
+
+			win.Size = UDim2.new(0, POPUP_W, 0, 0)
+			win.BackgroundTransparency = 1
+			win.Visible = true
+			entry.Body.Visible = not entry.Collapsed
+			entry.Group.Parent = entry.Body
+			bringToFront(entry)
+
+			Anim(win, {BackgroundTransparency = Library.Settings.Transparency}, 0.18)
+
+			if entry.SizeConn then
+				entry.SizeConn:Disconnect()
+			end
+			entry.SizeConn = entry.Group:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+				fitPopup(entry)
+			end)
+
+			task.delay(0.05, function()
+				if entry.Open then
+					fitPopup(entry)
+				end
+			end)
+
+			setButtonState(entry, true)
+		else
+			entry.Open = false
+
+			if entry.SizeConn then
+				entry.SizeConn:Disconnect()
+				entry.SizeConn = nil
+			end
+
+			local win = entry.Win
+			Anim(win, {
+				Size = UDim2.new(0, POPUP_W, 0, 0),
+				BackgroundTransparency = 1
+			}, 0.18)
+
+			task.delay(0.2, function()
+				if not entry.Open then
+					win.Visible = false
+					entry.Group.Parent = entry.Column
+				end
+			end)
+
+			setButtonState(entry, false)
+		end
+	end
+
+	closeAll.MouseButton1Click:Connect(function()
+		buttonClickSound:Play()
+		for _, entry in ipairs(popupEntries) do
+			setOpen(entry, false)
+		end
+	end)
+
+	local function arrangeWindows()
+		local vp = getViewport()
+		local ap = bar.AbsolutePosition
+		local as = bar.AbsoluteSize
+		local startX = (ap.X < vp.X / 2) and (ap.X + as.X + 14) or 14
+		local startY = TB.Horizontal and ((ap.Y < vp.Y / 2) and (ap.Y + as.Y + 14) or 14) or 14
+		local x, y = startX, startY
+		local colW = POPUP_W + 12
+		local maxY = vp.Y - 40
+
+		for _, entry in ipairs(popupEntries) do
+			if entry.Open and entry.Win then
+				local h = entry.Win.AbsoluteSize.Y
+				if y + h > maxY and y > startY then
+					x += colW
+					y = startY
+				end
+				if x + POPUP_W > vp.X then
+					x = 14
+				end
+
+				Anim(entry.Win, {Position = UDim2.new(0, x, 0, y)}, 0.25)
+				bringToFront(entry)
+				y += h + 10
+			end
+		end
+	end
+
+	local settingsFrame = Instance.new("Frame")
+	settingsFrame.Name = "TopbarSettings"
+	settingsFrame.Size = UDim2.new(1, 0, 0, 0)
+	settingsFrame.AutomaticSize = Enum.AutomaticSize.Y
+	settingsFrame.BackgroundColor3 = Library.Theme.GroupBackground
+	settingsFrame.BorderSizePixel = 0
+
+	corner(settingsFrame, 12)
+	stroke(settingsFrame, Library.Theme.Border, 1)
+	surfaceGradient(settingsFrame)
+
+	local sfPad = Instance.new("UIPadding")
+	sfPad.PaddingTop = UDim.new(0, 8)
+	sfPad.PaddingBottom = UDim.new(0, 10)
+	sfPad.PaddingLeft = UDim.new(0, 10)
+	sfPad.PaddingRight = UDim.new(0, 10)
+	sfPad.Parent = settingsFrame
+
+	local sfLayout = Instance.new("UIListLayout")
+	sfLayout.Padding = UDim.new(0, 8)
+	sfLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sfLayout.Parent = settingsFrame
+
+	local sfOrder = 0
+	local function nextOrder()
+		sfOrder += 1
+		return sfOrder
+	end
+
+	local function sectionLabel(text)
+		local l = Instance.new("TextLabel")
+		l.Size = UDim2.new(1, 0, 0, 16)
+		l.BackgroundTransparency = 1
+		l.Text = string.upper(text)
+		l.TextColor3 = Library.Theme.SubText
+		l.TextSize = 11
+		l.Font = Enum.Font.Garamond
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.LayoutOrder = nextOrder()
+		l.Parent = settingsFrame
+		return l
+	end
+
+	local function makeSlider(label, minV, maxV, startV, fmt, onChange)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 42)
+		row.BackgroundTransparency = 1
+		row.LayoutOrder = nextOrder()
+		row.Parent = settingsFrame
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(0.6, 0, 0, 18)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = label
+		lbl.TextColor3 = Library.Theme.Text
+		lbl.TextSize = 14
+		lbl.Font = Enum.Font.Garamond
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.Parent = row
+
+		local val = Instance.new("TextLabel")
+		val.Position = UDim2.new(0.6, 0, 0, 0)
+		val.Size = UDim2.new(0.4, 0, 0, 18)
+		val.BackgroundTransparency = 1
+		val.TextColor3 = Library.Theme.SubText
+		val.TextSize = 13
+		val.Font = Enum.Font.Garamond
+		val.TextXAlignment = Enum.TextXAlignment.Right
+		val.Parent = row
+
+		local hit = Instance.new("Frame")
+		hit.Position = UDim2.new(0, 0, 0, 18)
+		hit.Size = UDim2.new(1, 0, 0, 22)
+		hit.BackgroundTransparency = 1
+		hit.Active = true
+		hit.Parent = row
+
+		local track = Instance.new("Frame")
+		track.AnchorPoint = Vector2.new(0, 0.5)
+		track.Position = UDim2.new(0, 0, 0.5, 0)
+		track.Size = UDim2.new(1, 0, 0, 7)
+		track.BackgroundColor3 = Library.Theme.ToggleOff
+		track.BorderSizePixel = 0
+		track.Parent = hit
+		corner(track, 4)
+
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.new(0, 0, 1, 0)
+		fill.BackgroundColor3 = Library.Theme.Accent
+		fill.BorderSizePixel = 0
+		fill.Parent = track
+		corner(fill, 4)
+
+		local knob = Instance.new("Frame")
+		knob.AnchorPoint = Vector2.new(0.5, 0.5)
+		knob.Size = UDim2.new(0, 15, 0, 15)
+		knob.BackgroundColor3 = Library.Theme.Text
+		knob.BorderSizePixel = 0
+		knob.Parent = track
+		corner(knob, 8)
+		stroke(knob, Library.Theme.Border, 0)
+
+		local current = startV
+		local object = {}
+
+		local function set(v, silent)
+			current = math.clamp(v, minV, maxV)
+			local a = (current - minV) / (maxV - minV)
+			fill.Size = UDim2.new(a, 0, 1, 0)
+			knob.Position = UDim2.new(a, 0, 0.5, 0)
+			val.Text = fmt(current)
+			if not silent then
+				onChange(current)
+			end
+		end
+
+		local dragging = false
+		local moveConn
+
+		local function fromX(x)
+			local a = math.clamp((x - track.AbsolutePosition.X) / math.max(1, track.AbsoluteSize.X), 0, 1)
+			set(minV + a * (maxV - minV))
+		end
+
+		hit.InputBegan:Connect(function(input)
+			if input.UserInputType ~= Enum.UserInputType.MouseButton1
+			and input.UserInputType ~= Enum.UserInputType.Touch then
+				return
+			end
+
+			dragging = true
+			fromX(input.Position.X)
+
+			if moveConn then
+				moveConn:Disconnect()
+			end
+			moveConn = UserInputService.InputChanged:Connect(function(move)
+				if dragging and (move.UserInputType == Enum.UserInputType.MouseMovement
+				or move.UserInputType == Enum.UserInputType.Touch) then
+					fromX(move.Position.X)
+				end
+			end)
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+					if moveConn then
+						moveConn:Disconnect()
+						moveConn = nil
+					end
+				end
+			end)
+		end)
+
+		set(startV, true)
+
+		function object:Set(v)
+			set(v)
+		end
+		function object:Get()
+			return current
+		end
+
+		return object
+	end
+
+	local function makeSwitch(label, startState, onChange)
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, 0, 0, 26)
+		row.BackgroundTransparency = 1
+		row.LayoutOrder = nextOrder()
+		row.Parent = settingsFrame
+
+		local lbl = Instance.new("TextLabel")
+		lbl.Size = UDim2.new(1, -50, 1, 0)
+		lbl.BackgroundTransparency = 1
+		lbl.Text = label
+		lbl.TextColor3 = Library.Theme.Text
+		lbl.TextSize = 14
+		lbl.Font = Enum.Font.Garamond
+		lbl.TextXAlignment = Enum.TextXAlignment.Left
+		lbl.Parent = row
+
+		local sw = Instance.new("TextButton")
+		sw.AnchorPoint = Vector2.new(1, 0.5)
+		sw.Position = UDim2.new(1, 0, 0.5, 0)
+		sw.Size = UDim2.new(0, 40, 0, 20)
+		sw.Text = ""
+		sw.AutoButtonColor = false
+		sw.BackgroundColor3 = Library.Theme.ToggleOff
+		sw.BorderSizePixel = 0
+		sw.Parent = row
+		corner(sw, 10)
+		stroke(sw, Library.Theme.Border, 0)
+
+		local dot = Instance.new("Frame")
+		dot.AnchorPoint = Vector2.new(0, 0.5)
+		dot.Size = UDim2.new(0, 14, 0, 14)
+		dot.BackgroundColor3 = Library.Theme.Text
+		dot.BorderSizePixel = 0
+		dot.Parent = sw
+		corner(dot, 7)
+
+		local state = startState
+		local function render(animate)
+			local speed = animate and 0.14 or 0
+			Anim(sw, {BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.ToggleOff}, speed)
+			Anim(dot, {Position = state and UDim2.new(1, -17, 0.5, 0) or UDim2.new(0, 3, 0.5, 0)}, speed)
+		end
+		render(false)
+
+		sw.MouseButton1Click:Connect(function()
+			buttonClickSound:Play()
+			state = not state
+			render(true)
+			onChange(state)
+		end)
+	end
+
+	local function actionButton(text, iconKey, cb, order)
+		local b = Instance.new("TextButton")
+		b.Size = UDim2.new(1, 0, 0, 34)
+		b.BackgroundColor3 = Library.Theme.Element
+		b.Text = ""
+		b.AutoButtonColor = false
+		b.BorderSizePixel = 0
+		b.LayoutOrder = order or nextOrder()
+		b.Parent = settingsFrame
+
+		corner(b, 10)
+		stroke(b, Library.Theme.Border, 1)
+		surfaceGradient(b)
+		innerBevel(b)
+
+		local ico = drawIcon(b, iconKey, 1)
+		ico.Position = UDim2.new(0, 10, 0.5, -8)
+
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Position = UDim2.new(0, 36, 0, 0)
+		label.Size = UDim2.new(1, -44, 1, 0)
+		label.Text = text
+		label.TextColor3 = Library.Theme.Text
+		label.TextSize = 14
+		label.Font = Enum.Font.Garamond
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Parent = b
+
+		buttonAnimation(b, Library.Theme.Element, Library.Theme.AccentHover)
+		b.MouseButton1Click:Connect(function()
+			buttonClickSound:Play()
+			cb()
+		end)
+		return b
+	end
+
+	sectionLabel("Find group")
+
+	local searchRow = Instance.new("Frame")
+	searchRow.Size = UDim2.new(1, 0, 0, 32)
+	searchRow.BackgroundColor3 = Library.Theme.Element
+	searchRow.BorderSizePixel = 0
+	searchRow.LayoutOrder = nextOrder()
+	searchRow.Parent = settingsFrame
+	corner(searchRow, 10)
+	stroke(searchRow, Library.Theme.Border, 1)
+
+	local searchBox = Instance.new("TextBox")
+	searchBox.Size = UDim2.new(1, -16, 1, 0)
+	searchBox.Position = UDim2.new(0, 8, 0, 0)
+	searchBox.BackgroundTransparency = 1
+	searchBox.Text = ""
+	searchBox.PlaceholderText = "Type to filter"
+	searchBox.PlaceholderColor3 = Library.Theme.SubText
+	searchBox.TextColor3 = Library.Theme.Text
+	searchBox.TextSize = 14
+	searchBox.Font = Enum.Font.Garamond
+	searchBox.TextXAlignment = Enum.TextXAlignment.Left
+	searchBox.ClearTextOnFocus = false
+	searchBox.Parent = searchRow
+
+	searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+		local q = string.lower(searchBox.Text)
+		for _, e in ipairs(groupEntries) do
+			e.Button.Visible = q == "" or string.find(string.lower(e.Title), q, 1, true) ~= nil
+		end
+		refreshBar()
+	end)
+
+	sectionLabel("Appearance")
+
+	local scaleSlider = makeSlider("Size", 0.6, 1.5, 1, function(v)
+		return string.format("%d%%", math.floor(v * 100 + 0.5))
+	end, function(v)
+		TB.Scale = v
+		barScale.Scale = v
+		refreshBar()
+	end)
+
+	makeSlider("Opacity", 0.3, 1, 1, function(v)
+		return string.format("%d%%", math.floor(v * 100 + 0.5))
+	end, function(v)
+		TB.Opacity = v
+		bar.BackgroundTransparency = math.clamp(1 - v, Library.Settings.Transparency, 0.75)
+	end)
+
+	makeSwitch("Show names", false, function(state)
+		TB.Names = state
+		applyMetrics()
+	end)
+
+	makeSwitch("Lock position", false, function(state)
+		TB.Locked = state
+	end)
+
+	sectionLabel("Dock to")
+
+	local dockRow = Instance.new("Frame")
+	dockRow.Size = UDim2.new(1, 0, 0, 38)
+	dockRow.BackgroundTransparency = 1
+	dockRow.LayoutOrder = nextOrder()
+	dockRow.Parent = settingsFrame
+
+	local dockLayout = Instance.new("UIListLayout")
+	dockLayout.FillDirection = Enum.FillDirection.Horizontal
+	dockLayout.Padding = UDim.new(0, 8)
+	dockLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	dockLayout.Parent = dockRow
+
+	for _, d in ipairs({
+		{"Left", "dockLeft", "Left"},
+		{"Top", "dockTop", "Top"},
+		{"Bottom", "dockBottom", "Bottom"},
+		{"Right", "dockRight", "Right"}
+	}) do
+		local b = Instance.new("TextButton")
+		b.Size = UDim2.new(0, 38, 0, 38)
+		b.BackgroundColor3 = Library.Theme.Element
+		b.Text = ""
+		b.AutoButtonColor = false
+		b.BorderSizePixel = 0
+		b.Parent = dockRow
+		corner(b, 10)
+		stroke(b, Library.Theme.Border, 1)
+		surfaceGradient(b)
+		innerBevel(b)
+		drawIcon(b, d[2], 2)
+
+		b.MouseButton1Down:Connect(function()
+			sinkPress(b, true, 0.05)
+		end)
+		b.MouseButton1Up:Connect(function()
+			sinkPress(b, false, 0.1)
+		end)
+		b.MouseButton1Click:Connect(function()
+			buttonClickSound:Play()
+			dockBar(d[1])
+		end)
+		addTooltip(b, d[3])
+	end
+
+	sectionLabel("Windows")
+	actionButton("Arrange windows", "tile", arrangeWindows)
+	actionButton("Close all", "close", function()
+		for _, entry in ipairs(popupEntries) do
+			setOpen(entry, false)
+		end
+	end)
+
+	local settingsEntry = {
+		Title = "Bar settings",
+		TabName = "Bar",
+		Icon = "sliders",
+		Group = settingsFrame,
+		Column = nil,
+		Button = settingsBtn,
+		IdleColor = Library.Theme.GroupBackground,
+		Open = false,
+		Collapsed = false
+	}
+	table.insert(popupEntries, settingsEntry)
+
+	settingsBtn.MouseButton1Click:Connect(function()
+		buttonClickSound:Play()
+		setOpen(settingsEntry, not settingsEntry.Open)
+	end)
+
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed then
+			return
+		end
+		local key = Library.Settings.TopbarKey
+		if TB.Enabled and key and input.KeyCode == key then
+			bar.Visible = not bar.Visible
+		end
+	end)
+
+	function Window:_RegisterGroup(tabName, groupFrame, column, config)
+		groupOrder += 1
+		groupFrame.LayoutOrder = groupOrder
+
+		local title = cleanName(config and config.Name)
+		if title == "" then
+			title = "Group"
+		end
+
+		local entry = {
+			Title = title,
+			TabName = cleanName(tabName),
+			Icon = GROUP_ICONS[string.lower(title)] or "default",
+			Group = groupFrame,
+			Column = column,
+			Open = false,
+			Collapsed = false
+		}
+
+		local item = itemSize()
+
+		local btn = Instance.new("TextButton")
+		btn.Name = title .. "Icon"
+		btn.Size = UDim2.new(0, item.X, 0, item.Y)
+		btn.BackgroundColor3 = Library.Theme.Element
+		btn.Text = ""
+		btn.AutoButtonColor = false
+		btn.BorderSizePixel = 0
+		btn.LayoutOrder = groupOrder
+		btn.Parent = barList
+
+		corner(btn, 12)
+		stroke(btn, Library.Theme.Border, 1)
+		surfaceGradient(btn)
+		innerBevel(btn)
+		drawIcon(btn, entry.Icon)
+
+		local label = Instance.new("TextLabel")
+		label.Name = "Label"
+		label.BackgroundTransparency = 1
+		label.Position = UDim2.new(0, 46, 0, 0)
+		label.Size = UDim2.new(1, -64, 1, 0)
+		label.Text = title
+		label.TextColor3 = Library.Theme.SubText
+		label.TextSize = 15
+		label.Font = Enum.Font.Garamond
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.TextTruncate = Enum.TextTruncate.AtEnd
+		label.Visible = TB.Names
+		label.Parent = btn
+
+		local pip = Instance.new("Frame")
+		pip.Name = "Pip"
+		pip.AnchorPoint = Vector2.new(0.5, 0.5)
+		pip.Position = UDim2.new(1, -8, 0, 8)
+		pip.Size = UDim2.new(0, 6, 0, 6)
+		pip.BackgroundColor3 = Library.Theme.Accent
+		pip.BorderSizePixel = 0
+		pip.Visible = false
+		pip.ZIndex = 3
+		pip.Parent = btn
+		corner(pip, 3)
+
+		entry.Button = btn
+		entry.Label = label
+		entry.Pip = pip
+
+		local holder = btn:FindFirstChild("Icon")
+		if TB.Names then
+			setIconPos(holder, true)
+		end
+
+		btn.MouseEnter:Connect(function()
+			if not entry.Open then
+				Anim(btn, {BackgroundColor3 = Library.Theme.ToggleOff}, 0.1)
+			end
+		end)
+		btn.MouseLeave:Connect(function()
+			sinkPress(btn, false, 0.12)
+			if not entry.Open then
+				Anim(btn, {BackgroundColor3 = Library.Theme.Element}, 0.12)
+			end
+		end)
+		btn.MouseButton1Down:Connect(function()
+			sinkPress(btn, true, 0.05)
+		end)
+		btn.MouseButton1Up:Connect(function()
+			sinkPress(btn, false, 0.12)
+		end)
+		btn.MouseButton1Click:Connect(function()
+			tabChangeSound:Play()
+			setOpen(entry, not entry.Open)
+		end)
+
+		addTooltip(btn, entry.Title .. "  ·  " .. entry.TabName)
+
+		table.insert(popupEntries, entry)
+		table.insert(groupEntries, entry)
+		refreshBar()
+		return entry
+	end
+
+	function Window:OpenGroup(name)
+		for _, entry in ipairs(groupEntries) do
+			if string.lower(entry.Title) == string.lower(cleanName(name)) then
+				setOpen(entry, true)
+			end
+		end
+	end
+
+	function Window:CloseAllGroups()
+		for _, entry in ipairs(popupEntries) do
+			setOpen(entry, false)
+		end
+	end
+
+	function Window:SetTopbarVisible(state)
+		TB.Enabled = state and true or false
+		bar.Visible = TB.Enabled
+
+		if not TB.Enabled then
+			for _, entry in ipairs(popupEntries) do
+				setOpen(entry, false)
+			end
+		end
+	end
+
+	function Window:SetTopbarScale(value)
+		scaleSlider:Set(value)
+	end
+
+	function Window:DockTopbar(side)
+		dockBar(side)
+	end
+
+	applyOrientation()
 
 	function Window:AddTab(name)
 		local tab = {}
@@ -2235,6 +4121,8 @@ button.TextWrapped = true
 				return
 			end
 
+			Window:_RegisterGroup(tab.Name,group,column,config)
+
 			table.insert(tab.Groups,groupObject)
 			table.insert(Window.Groups,groupObject)
 
@@ -3081,6 +4969,21 @@ local Themes67 = Settings:AddGroup({
 	Name = "Themes📚",
 	Info = "Themes📚",
 	Side = "Left"
+})
+
+local TopbarGroup = Settings:AddGroup({
+	Name = "Topbar",
+	Info = "Topbar",
+	Side = "Left"
+})
+
+TopbarGroup:AddToggle({
+	Name = "Topbar",
+	Info = "Show a bar that opens each group as a draggable window",
+	Default = false,
+	Callback = function(value)
+		Window:SetTopbarVisible(value)
+	end
 })
 
 Main67:AddToggle({
@@ -4232,9 +6135,7 @@ local paintEvent = localPlayer.Character:WaitForChild("Paint")
 
 local bricksFolder = workspace:WaitForChild("Bricks")
 
-
 _G.STOP_PAINT = false 
-
 
 task.spawn(function()
     while true do
@@ -4284,9 +6185,7 @@ local paintEvent = localPlayer:WaitForChild("Backpack")
 
 local bricksFolder = workspace:WaitForChild("Bricks")
 
-
 _G.STOP_ANCHOR_PAINT = false 
-
 
 task.spawn(function()
 	while true do
@@ -4810,7 +6709,6 @@ CM67:AddButton({
 		end
 	end
 })
-
 
 BT67:AddToggle({
 	Name = "Delete Bypass",
@@ -5355,8 +7253,6 @@ end
 		end
 	end
 })
-
-
 
 Anti67:AddToggle({
 	Name = "Anti Maptide Nan",
@@ -6710,7 +8606,6 @@ Nostalgia67:AddButton({
 		local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
-
 local function setPlastic(tool)
     if tool and tool:FindFirstChild("Handle") then
         if tool.Handle.Material ~= Enum.Material.Plastic then
@@ -6719,7 +8614,6 @@ local function setPlastic(tool)
     end
 end
 
-
 local function checkTools()
     local character = localPlayer.Character
     if character then
@@ -6727,7 +8621,6 @@ local function checkTools()
         setPlastic(character:FindFirstChild("Delete"))
     end
 end
-
 
 while true do
     checkTools()
@@ -14786,7 +16679,6 @@ pcall(function()
 	})
 end)
 
-
 pcall(function()
 	local Players = game:GetService("Players")
 	local RunService = game:GetService("RunService")
@@ -15084,7 +16976,6 @@ pcall(function()
 		addPiece(tool, handle, "Wedge", Vector3.new(0.14, 0.3, 0.22), CFrame.new(0.58, 0, -1.5) * CFrame.Angles(0, 0, math.rad(90)), Color3.new(1, 1, 1), NEON)
 		addPiece(tool, handle, "Wedge", Vector3.new(0.14, 0.3, 0.22), CFrame.new(-0.58, 0, -1.5) * CFrame.Angles(0, 0, math.rad(-90)), Color3.new(1, 1, 1), NEON)
 	end
-
 
 	designs["RoTool Cframe"] = designs["RoTool"]
 
@@ -18194,7 +20085,6 @@ pcall(function()
 	addToolButton("RoTool", "Rotate ur blocks using this tool and enlighten!", function()
 		return createRoTool()
 	end)
-
 
 	addToolButton("RoTool [Cframe]", "Rotate blocks without bkit or enlighten", function()
 		return createRoToolCframe()
