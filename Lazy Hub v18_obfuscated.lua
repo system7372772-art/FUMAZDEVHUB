@@ -13,6 +13,17 @@ local function safeWait(parent, name, timeout)
     return parent:WaitForChild(name, timeout)
 end
 
+local function safeChain(root, ...)
+    local current = root
+    for _, name in ipairs({...}) do
+        if current == nil then
+            return nil
+        end
+        current = safeWait(current, name, 6)
+    end
+    return current
+end
+
 local ErrorHandler = {
     lastError = nil,
     errorCount = 0
@@ -670,7 +681,16 @@ function Library:CreateWindow(options)
 	gui.Name = options.Name or "Library"
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Parent = game:GetService("CoreGui")
+
+	local placedInCoreGui = pcall(function()
+		gui.Parent = game:GetService("CoreGui")
+	end)
+	if not placedInCoreGui then
+		pcall(function()
+			local lp = game:GetService("Players").LocalPlayer
+			gui.Parent = lp:WaitForChild("PlayerGui", 10)
+		end)
+	end
 
 	Window.Gui = gui
 
@@ -5693,9 +5713,10 @@ Chat67:AddButton({
 local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local channel = TextChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
+local channel = safeChain(TextChatService, "TextChannels", "RBXGeneral")
 
-local Bricks = workspace:WaitForChild("Bricks")
+local Bricks = workspace:WaitForChild("Bricks", 6)
+if not (channel and Bricks) then return end
 local GlitchedBrick = ReplicatedStorage:FindFirstChild("Brick")
 
 local deleteLogs = {}
@@ -6023,8 +6044,10 @@ local playerState = {}
 local function sendChat(message)
 	if _G.gSTOPPROTECT then return end
 	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
-		local textChannel = TextChatService:WaitForChild("TextChannels"):WaitForChild("RBXGeneral")
-		textChannel:SendAsync(message)
+		local textChannel = safeChain(TextChatService, "TextChannels", "RBXGeneral")
+		if textChannel then
+			textChannel:SendAsync(message)
+		end
 	end
 end
 
@@ -6581,15 +6604,17 @@ CM67:AddButton({
 		local torso = character:FindFirstChild("Torso") or character:FindFirstChild("UpperTorso")
 		local backpack = safeWait(player, "Backpack", 15)
 
-		local buildTool = backpack:WaitForChild("Build")
-		local paintTool = backpack:WaitForChild("Paint")
+		local buildTool = backpack:WaitForChild("Build", 6)
+		local paintTool = backpack:WaitForChild("Paint", 6)
+		if not (buildTool and paintTool) then return end
 
 		for i = 1, 10 do
 			local torsoPos = torso.Position
 
 			humanoid:EquipTool(buildTool)
 
-			local buildEvent = buildTool:WaitForChild("Script"):WaitForChild("Event")
+			local buildEvent = safeChain(buildTool, "Script", "Event")
+			if not buildEvent then return end
 			local buildPos = torsoPos + Vector3.new(0, -3, 0)
 
 			local buildArgs = {
@@ -6621,7 +6646,8 @@ CM67:AddButton({
 				humanoid:EquipTool(paintTool)
 				task.wait(0.2)
 
-				local paintEvent = character:WaitForChild("Paint"):WaitForChild("Script"):WaitForChild("Event")
+				local paintEvent = safeChain(character, "Paint", "Script", "Event")
+				if not paintEvent then paintEvent = nil end
 				local paintPos = torso.Position
 
 				local paintArgs = {
@@ -8407,7 +8433,8 @@ local function paint(hitPart, hitPosition, surface)
 	local tool = character:FindFirstChild("Paint")
 	if not tool then return end
 
-	local remote = tool:WaitForChild("Script"):WaitForChild("Event")
+	local remote = safeChain(tool, "Script", "Event")
+	if not remote then return end
 
 	local args = {
 		hitPart,
@@ -9430,7 +9457,7 @@ local localplr = Players.LocalPlayer
 
 _G.StopGriefing = false
 
-local MaxBloquesPorCiclo = 50
+local MaxBloquesPorCiclo = 20
 local on = true
 
 local isog = workspace:FindFirstChild("Cubes")
@@ -9531,13 +9558,16 @@ task.spawn(function()
 						end
 
 						cuenta = cuenta + 1
+						if cuenta % 5 == 0 then
+							task.wait()
+						end
 					end
 				end
 			else
 				task.wait(0.5)
 			end
 		end
-		task.wait()
+		task.wait(0.15)
 	end
 end)
 		else
@@ -9566,7 +9596,7 @@ task.spawn(function()
 			local hrp = character:FindFirstChild("HumanoidRootPart") or character:FindFirstChild("Torso")
 
 			if hrp then
-				for i = 1, 25 do
+				for i = 1, 10 do
 					if _G.StopAuraSpam then
 						break
 					end
@@ -9579,20 +9609,29 @@ task.spawn(function()
 
 					local pos = hrp.Position + Vector3.new(x, 0, z)
 
+					local terrainMesh = safeChain(workspace, "Trrain", "Chunk", "Mesh")
+					if not terrainMesh then
+						continue
+					end
+
 					local args = {
 						vector.create(pos.X, pos.Y, pos.Z),
 						Enum.NormalId.Top,
-						workspace:WaitForChild("Trrain"):WaitForChild("Chunk"):WaitForChild("Mesh"),
+						terrainMesh,
 						Color3.new(1, 1, 1),
 						"Smooth"
 					}
 
 					player.Backpack.Events:FireServer(unpack(args))
+
+					if i % 3 == 0 then
+						task.wait()
+					end
 				end
 			end
 		end
 
-		task.wait(0.05)
+		task.wait(0.1)
 	end
 end)
 		else
@@ -9612,7 +9651,8 @@ AntisOG:AddToggle({
 			local lp = Players.LocalPlayer
 
 			local function removeBlindGUI()
-				local gui = lp:WaitForChild("PlayerGui"):FindFirstChild("BlindGUI")
+				local playerGui = lp:WaitForChild("PlayerGui", 6)
+				local gui = playerGui and playerGui:FindFirstChild("BlindGUI")
 				if gui then
 					gui:Destroy()
 				end
@@ -10444,6 +10484,7 @@ svBox.BorderSizePixel = 0
 svBox.ClipsDescendants = true
 svBox.ZIndex = 201
 svBox.Parent = colorPickerFrame
+svBox:SetAttribute("Skinned", true)
 
 local svCorner = Instance.new("UICorner")
 svCorner.CornerRadius = UDim.new(0,6)
@@ -10455,6 +10496,7 @@ whiteOverlay.BackgroundColor3 = Color3.new(1,1,1)
 whiteOverlay.BorderSizePixel = 0
 whiteOverlay.ZIndex = 201
 whiteOverlay.Parent = svBox
+whiteOverlay:SetAttribute("Skinned", true)
 
 local whiteGradient = Instance.new("UIGradient")
 whiteGradient.Transparency = NumberSequence.new({
@@ -10469,6 +10511,7 @@ blackOverlay.BackgroundColor3 = Color3.new(0,0,0)
 blackOverlay.BorderSizePixel = 0
 blackOverlay.ZIndex = 202
 blackOverlay.Parent = svBox
+blackOverlay:SetAttribute("Skinned", true)
 
 local blackGradient = Instance.new("UIGradient")
 blackGradient.Rotation = 90
@@ -10486,6 +10529,7 @@ svCursor.BackgroundColor3 = Color3.new(1,1,1)
 svCursor.BorderSizePixel = 0
 svCursor.ZIndex = 205
 svCursor.Parent = svBox
+svCursor:SetAttribute("Skinned", true)
 
 local svCursorCorner = Instance.new("UICorner")
 svCursorCorner.CornerRadius = UDim.new(1,0)
@@ -10502,6 +10546,7 @@ hueStrip.Position = UDim2.new(0, 195, 0, 34)
 hueStrip.BorderSizePixel = 0
 hueStrip.ZIndex = 201
 hueStrip.Parent = colorPickerFrame
+hueStrip:SetAttribute("Skinned", true)
 
 local hueCorner = Instance.new("UICorner")
 hueCorner.CornerRadius = UDim.new(0,6)
@@ -10528,6 +10573,7 @@ hueCursor.BackgroundColor3 = Color3.new(1,1,1)
 hueCursor.BorderSizePixel = 0
 hueCursor.ZIndex = 205
 hueCursor.Parent = hueStrip
+hueCursor:SetAttribute("Skinned", true)
 
 local hueCursorStroke = Instance.new("UIStroke")
 hueCursorStroke.Thickness = 2
@@ -10541,6 +10587,7 @@ previewSwatch.BackgroundColor3 = selectedColor
 previewSwatch.BorderSizePixel = 0
 previewSwatch.ZIndex = 201
 previewSwatch.Parent = colorPickerFrame
+previewSwatch:SetAttribute("Skinned", true)
 
 local previewCorner = Instance.new("UICorner")
 previewCorner.CornerRadius = UDim.new(0,6)
@@ -11684,7 +11731,14 @@ local gui = Instance.new("ScreenGui")
 gui:SetAttribute("LegacySkin", true)
 gui.Name = "UnanchorGui"
 gui.ResetOnSpawn = false
-gui.Parent = game:GetService("CoreGui")
+
+if not pcall(function()
+	gui.Parent = game:GetService("CoreGui")
+end) then
+	pcall(function()
+		gui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui", 10)
+	end)
+end
 
 local function playCharAnim(on)
 	local char = player.Character
@@ -11907,7 +11961,13 @@ local function selectKeyframe(part)
 	handles.Style = Enum.HandlesStyle.Movement
 	handles.Color3 = Color3.fromRGB(0,255,0)
 	handles.Adornee = part
-	handles.Parent = game:GetService("CoreGui")
+	if not pcall(function()
+		handles.Parent = game:GetService("CoreGui")
+	end) then
+		pcall(function()
+			handles.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui", 10)
+		end)
+	end
 
 	handles.MouseDrag:Connect(function(face,distance)
 		UIS.ModalEnabled = true
@@ -12760,7 +12820,13 @@ local function ImportBox(brick, color)
     box.Color3 = color
     box.LineThickness = 0.08
     box.SurfaceTransparency = 1
-    box.Parent = game:GetService("CoreGui")
+    if not pcall(function()
+        box.Parent = game:GetService("CoreGui")
+    end) then
+        pcall(function()
+            box.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui", 10)
+        end)
+    end
     return box
 end
 
@@ -13082,8 +13148,12 @@ local function StartCanvas(resume)
 
         task.wait(0.4)
 
-        local event = tool:WaitForChild("Script"):WaitForChild("Event")
-        local bricksFolder = workspace:WaitForChild("Bricks"):WaitForChild(player.Name)
+        local event = safeChain(tool, "Script", "Event")
+        local bricksFolder = safeChain(workspace, "Bricks", player.Name)
+        if not (event and bricksFolder) then
+            _G.CanvaRunning = false
+            return
+        end
 
         local GRID = 1
         local origin = hrp.Position
@@ -15245,8 +15315,10 @@ for i,v in pairs(_AB.materials) do
 	_AB.swappedmaterials[v] = i
 end
 
-if workspace.Bricks and workspace.Bricks:FindFirstChild(LocalPlayer.Name) then
-	_AB.cubechild = workspace.Bricks[LocalPlayer.Name].ChildAdded:Connect(function(child)
+local bricksRoot = workspace:FindFirstChild("Cubes") or workspace:FindFirstChild("Bricks")
+local bricksPlayerFolder = bricksRoot and bricksRoot:FindFirstChild(LocalPlayer.Name)
+if bricksPlayerFolder then
+	_AB.cubechild = bricksPlayerFolder.ChildAdded:Connect(function(child)
 		_AB.childcube = child
 		_AB.historynum = _AB.historynum + 1
 		if _AB.historynum > _AB.historymax then
@@ -15996,7 +16068,10 @@ end
 _AB.setOffset = function()
 	local char = LocalPlayer.Character
 	if char and char:FindFirstChild("HumanoidRootPart") then
-		_AB.offset = _AB.round(workspace.Spawn.Position + char.HumanoidRootPart.Position)
+		local spawnPart = workspace:FindFirstChild("Spawn")
+		if spawnPart then
+			_AB.offset = _AB.round(spawnPart.Position + char.HumanoidRootPart.Position)
+		end
 	end
 end
 
@@ -22272,11 +22347,13 @@ pcall(function()
 		end)
 	end
 
-	watchContainer(CoreGui)
-	local playerGui = lp:FindFirstChildOfClass("PlayerGui")
-	if playerGui then
-		watchContainer(playerGui)
-	end
+	pcall(function()
+		watchContainer(CoreGui)
+		local playerGui = lp:FindFirstChildOfClass("PlayerGui")
+		if playerGui then
+			watchContainer(playerGui)
+		end
+	end)
 
 	Themes67:AddButton({
 		Name = "Medieval[Default]",
@@ -22359,8 +22436,9 @@ local StarterGui=game:GetService("StarterGui")
 
 local player=Players.LocalPlayer
 local char=player.Character or player.CharacterAdded:Wait()
-local humanoid=char:WaitForChild("Humanoid")
-local root=char:WaitForChild("HumanoidRootPart")
+local humanoid=char:WaitForChild("Humanoid", 6)
+local root=char:WaitForChild("HumanoidRootPart", 6)
+if not (humanoid and root) then return end
 
 local function equip(name)
 	local tool=player.Backpack:FindFirstChild(name)
@@ -22403,7 +22481,8 @@ task.wait(1)
 
 equip("Build")
 
-local buildEvent=char:WaitForChild("Build"):WaitForChild("Script"):WaitForChild("Event")
+local buildEvent=safeChain(char, "Build", "Script", "Event")
+if not buildEvent then return end
 local buildPos=root.Position+Vector3.new(0,-3,0)
 
 buildEvent:FireServer(
@@ -22418,7 +22497,7 @@ task.wait(.5)
 local brick
 
 for i=1,50 do
-	local folder=workspace:FindFirstChild("Bricks")
+	local folder=workspace:FindFirstChild("Cubes") or workspace:FindFirstChild("Bricks")
 
 	if folder then
 		local myFolder=folder:FindFirstChild(player.Name)
@@ -22448,7 +22527,8 @@ unequip()
 
 equip("Shape")
 
-local shapeEvent=char:WaitForChild("Shape"):WaitForChild("Script"):WaitForChild("Event")
+local shapeEvent=safeChain(char, "Shape", "Script", "Event")
+if not shapeEvent then return end
 
 local function grow(face)
 	for i=1,8 do
@@ -22476,7 +22556,8 @@ unequip()
 
 equip("Paint")
 
-local paintEvent=char:WaitForChild("Paint"):WaitForChild("Script"):WaitForChild("Event")
+local paintEvent=safeChain(char, "Paint", "Script", "Event")
+if not paintEvent then return end
 local spam=string.rep("🥚",500)
 
 for _,side in ipairs({
@@ -22518,7 +22599,8 @@ unequip()
 
 equip("Build")
 
-local buildLoopEvent=char:WaitForChild("Build"):WaitForChild("Script"):WaitForChild("Event")
+local buildLoopEvent=safeChain(char, "Build", "Script", "Event")
+if not buildLoopEvent then return end
 local start=os.clock()
 
 while os.clock()-start<30 and brick and brick.Parent do
@@ -22578,7 +22660,11 @@ Anti67:AddButton({
 	Name = "Anti Crash Machine Lag",
 	Info = "Removes overlapping bricks to reduce crash machine lag",
 	Callback = function()
-		local folder = workspace:WaitForChild("Bricks")
+		local folder = workspace:FindFirstChild("Cubes") or workspace:WaitForChild("Bricks", 6)
+if not folder then return end
+
+local isOgFolder = folder.Name == "Cubes"
+local pieceName = isOgFolder and "Cube" or "Brick"
 
 local function getOverlap(a, b)
 	local ap, as = a.Position, a.Size
@@ -22593,7 +22679,7 @@ while task.wait(0.5) do
 	local bricks = {}
 
 	for _, v in ipairs(folder:GetDescendants()) do
-		if v:IsA("BasePart") and v.Name == "Brick" and not v.CanCollide then
+		if v:IsA("BasePart") and v.Name == pieceName and not v.CanCollide then
 			table.insert(bricks, v)
 		end
 	end
@@ -22646,7 +22732,7 @@ local gui=Instance.new("ScreenGui")
 
 gui:SetAttribute("LegacySkin", true)
 gui.ResetOnSpawn=false
-gui.Parent=player:WaitForChild("PlayerGui")
+gui.Parent=player:WaitForChild("PlayerGui", 6)
 
 local frame=Instance.new("Frame")
 frame.Size=UDim2.new(0,420,0,220)
@@ -22776,7 +22862,8 @@ local function paint(brick)
 	task.wait(.2)
 
 	local char=player.Character or player.CharacterAdded:Wait()
-	local event=char:WaitForChild("Paint"):WaitForChild("Script"):WaitForChild("Event")
+	local event=safeChain(char, "Paint", "Script", "Event")
+	if not event then return end
 
 	for _,side in ipairs({
 		Enum.NormalId.Top,
@@ -22809,7 +22896,8 @@ local function build(brick)
 	task.wait(.2)
 
 	local char=player.Character or player.CharacterAdded:Wait()
-	local event=char:WaitForChild("Build"):WaitForChild("Script"):WaitForChild("Event")
+	local event=safeChain(char, "Build", "Script", "Event")
+	if not event then return end
 
 	while not _G.Stop and brick and brick.Parent do
 		event:FireServer(
@@ -22883,15 +22971,18 @@ GriefingOG:AddButton({
 G.StopPaintLoopTrrain = false
 
 local player = game:GetService("Players").LocalPlayer
-local backpack = player:WaitForChild("Backpack")
-local events = backpack:WaitForChild("Events")
-local trrain = workspace:WaitForChild("Trrain")
+local backpack = player:WaitForChild("Backpack", 6)
+local events = backpack and backpack:WaitForChild("Events", 6)
+local trrain = workspace:WaitForChild("Trrain", 6)
+if not (events and trrain) then return end
 
 local function getRandomColor()
 	return Color3.new(math.random(), math.random(), math.random())
 end
 
 while not G.StopPaintLoopTrrain do
+	local fired = 0
+
 	for _, chunk in ipairs(trrain:GetChildren()) do
 		if G.StopPaintLoopTrrain then
 			break
@@ -22906,10 +22997,15 @@ while not G.StopPaintLoopTrrain do
 				getRandomColor(),
 				"Smooth"
 			)
+
+			fired = fired + 1
+			if fired % 8 == 0 then
+				task.wait()
+			end
 		end
 	end
 
-	task.wait(0.08)
+	task.wait(0.15)
 end
 	end
 })
@@ -22928,10 +23024,10 @@ GriefingOG:AddButton({
 	Callback = function()
 		local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Events = LocalPlayer.Backpack:WaitForChild("Events")
+local Events = LocalPlayer.Backpack:WaitForChild("Events", 6)
 
 local RADIUS = 25
-local CHECK_INTERVAL = 0.1
+local CHECK_INTERVAL = 0.3
 
 if not G then
     G = {}
@@ -22944,6 +23040,7 @@ end
 
 local function getCubesInArea(centerPos)
     local cubes = {}
+    local root = workspace:FindFirstChild("Cubes") or workspace:FindFirstChild("Bricks") or workspace
 
     local function searchParts(parent)
         for _, child in pairs(parent:GetChildren()) do
@@ -22956,7 +23053,7 @@ local function getCubesInArea(centerPos)
         end
     end
 
-    searchParts(workspace)
+    searchParts(root)
     return cubes
 end
 
@@ -23026,7 +23123,7 @@ gui:SetAttribute("LegacySkin", true)
 gui.Name = "AdvancedPaintGui"
 gui.ResetOnSpawn = false
 gui.Enabled = false
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Parent = player:WaitForChild("PlayerGui", 6)
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 260, 0, 347)
@@ -23101,6 +23198,7 @@ svBox.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
 svBox.BorderSizePixel = 0
 svBox.ClipsDescendants = true
 svBox.Parent = frame
+svBox:SetAttribute("Skinned", true)
 
 local svCorner = Instance.new("UICorner")
 svCorner.CornerRadius = UDim.new(0, 8)
@@ -23117,6 +23215,7 @@ whiteOverlay.Size = UDim2.new(1, 0, 1, 0)
 whiteOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
 whiteOverlay.BorderSizePixel = 0
 whiteOverlay.Parent = svBox
+whiteOverlay:SetAttribute("Skinned", true)
 
 local whiteGradient = Instance.new("UIGradient")
 whiteGradient.Transparency = NumberSequence.new({
@@ -23131,6 +23230,7 @@ blackOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
 blackOverlay.BorderSizePixel = 0
 blackOverlay.ZIndex = 2
 blackOverlay.Parent = svBox
+blackOverlay:SetAttribute("Skinned", true)
 
 local blackGradient = Instance.new("UIGradient")
 blackGradient.Rotation = 90
@@ -23148,6 +23248,7 @@ svCursor.BackgroundColor3 = Color3.new(1, 1, 1)
 svCursor.BorderSizePixel = 0
 svCursor.ZIndex = 5
 svCursor.Parent = svBox
+svCursor:SetAttribute("Skinned", true)
 
 local svCursorCorner = Instance.new("UICorner")
 svCursorCorner.CornerRadius = UDim.new(1, 0)
@@ -23163,6 +23264,7 @@ hueStrip.Size = UDim2.new(0, 20, 0, 150)
 hueStrip.Position = UDim2.new(0, 215, 0, 45)
 hueStrip.BorderSizePixel = 0
 hueStrip.Parent = frame
+hueStrip:SetAttribute("Skinned", true)
 
 local hueCorner = Instance.new("UICorner")
 hueCorner.CornerRadius = UDim.new(0, 8)
@@ -23195,6 +23297,7 @@ hueCursor.BackgroundColor3 = Color3.new(1, 1, 1)
 hueCursor.BorderSizePixel = 0
 hueCursor.ZIndex = 5
 hueCursor.Parent = hueStrip
+hueCursor:SetAttribute("Skinned", true)
 
 local hueCursorStroke = Instance.new("UIStroke")
 hueCursorStroke.Thickness = 2
@@ -23207,6 +23310,7 @@ previewSwatch.Position = UDim2.new(0, 15, 0, 205)
 previewSwatch.BackgroundColor3 = selectedColor
 previewSwatch.BorderSizePixel = 0
 previewSwatch.Parent = frame
+previewSwatch:SetAttribute("Skinned", true)
 
 local previewCorner = Instance.new("UICorner")
 previewCorner.CornerRadius = UDim.new(0, 8)
@@ -23479,11 +23583,11 @@ SkyboxOG:AddButton({
 local TextChatService = game:GetService("TextChatService")
 
 local plr = Players.LocalPlayer
-local backpack = plr:WaitForChild("Backpack")
+local backpack = plr:WaitForChild("Backpack", 6)
 
 local function equipTool(name)
 	local char = plr.Character or plr.CharacterAdded:Wait()
-	local hum = char:WaitForChild("Humanoid")
+	local hum = char:WaitForChild("Humanoid", 6)
 
 	local tool = backpack:FindFirstChild(name) or char:FindFirstChild(name)
 	if tool then
@@ -23519,7 +23623,10 @@ local args = {
 	[1] = Enum.KeyCode.Q
 }
 
-plr.Character:WaitForChild("SwordOfLight").Remote:FireServer(unpack(args))
+local lightSword = plr.Character:WaitForChild("SwordOfLight", 6)
+if lightSword and lightSword:FindFirstChild("Remote") then
+	lightSword.Remote:FireServer(unpack(args))
+end
 	end
 })
 
@@ -23531,11 +23638,11 @@ SkyboxOG:AddButton({
 local TextChatService = game:GetService("TextChatService")
 
 local plr = Players.LocalPlayer
-local backpack = plr:WaitForChild("Backpack")
+local backpack = plr:WaitForChild("Backpack", 6)
 
 local function equipTool(name)
 	local char = plr.Character or plr.CharacterAdded:Wait()
-	local hum = char:WaitForChild("Humanoid")
+	local hum = char:WaitForChild("Humanoid", 6)
 
 	local tool = backpack:FindFirstChild(name) or char:FindFirstChild(name)
 	if tool then
@@ -23570,7 +23677,10 @@ local args = {
 	[1] = Enum.KeyCode.Q
 }
 
-plr.Character:WaitForChild("SwordOfDarkness").Remote:FireServer(unpack(args))
+local darkSword = plr.Character:WaitForChild("SwordOfDarkness", 6)
+if darkSword and darkSword:FindFirstChild("Remote") then
+	darkSword.Remote:FireServer(unpack(args))
+end
 	end
 })
 
@@ -23594,7 +23704,7 @@ ES67:AddButton({
 		local Players = game:GetService("Players")
 
 local player = Players.LocalPlayer
-local backpack = player:WaitForChild("Backpack")
+local backpack = player:WaitForChild("Backpack", 6)
 
 local TOOL_NAMES = {
 	Build = true,
@@ -23632,7 +23742,8 @@ end
 
 task.wait(0.5)
 
-local plataforma = workspace:WaitForChild("ToolPlatform")
+local plataforma = workspace:WaitForChild("ToolPlatform", 6)
+if not plataforma then return end
 
 local GROUP_OFFSETS = {
 	Build = Vector3.new(0, 0, 0),
@@ -23755,11 +23866,13 @@ ES67:AddButton({
 	Callback = function()
 		local player = game:GetService("Players").LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
+local hrp = character:WaitForChild("HumanoidRootPart", 6)
 
-local plataforma = workspace:WaitForChild("ToolPlatform")
+local plataforma = workspace:WaitForChild("ToolPlatform", 6)
 
-hrp.CFrame = plataforma.CFrame + Vector3.new(0, 5, 0)
+if hrp and plataforma then
+	hrp.CFrame = plataforma.CFrame + Vector3.new(0, 5, 0)
+end
 	end
 })
 
