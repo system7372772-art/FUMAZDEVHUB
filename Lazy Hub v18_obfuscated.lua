@@ -12616,6 +12616,30 @@ function CP.save(px, py, obj)
     CP.raw[obj] = true
 end
 
+function CP.gather(folder, root)
+    local list = folder:GetDescendants()
+    local C = _G.AltCoop
+    local names = C and C.extraFolders and C.extraFolders()
+
+    if names and root and folder ~= root then
+        local set = {}
+
+        for _, n in ipairs(names) do
+            set[tostring(n):lower()] = true
+        end
+
+        for _, f in ipairs(root:GetChildren()) do
+            if f ~= folder and set[f.Name:lower()] then
+                for _, d in ipairs(f:GetDescendants()) do
+                    list[#list + 1] = d
+                end
+            end
+        end
+    end
+
+    return list
+end
+
 function CP.rescan()
     if not (CP.center and CP.rotation) then
         return
@@ -12624,6 +12648,10 @@ function CP.rescan()
     local lp = game:GetService("Players").LocalPlayer
     local root = workspace:FindFirstChild("Bricks")
     local folder = CP.folder or (root and root:FindFirstChild(lp.Name))
+
+    if not folder and root and _G.AltCoop and _G.AltCoop.extraFolders and _G.AltCoop.extraFolders() then
+        folder = Instance.new("Folder")
+    end
 
     if not folder then
         PaintStatus:Set("workspace.Bricks." .. lp.Name .. " not found")
@@ -12634,7 +12662,7 @@ function CP.rescan()
     local pts = {}
     local total = 0
 
-    for _, obj in ipairs(folder:GetDescendants()) do
+    for _, obj in ipairs(CP.gather(folder, root)) do
         if obj:IsA("BasePart") then
             total += 1
             local rel = inv * (obj.Position - CP.center)
@@ -13091,7 +13119,7 @@ Canvas:AddButton({
     Callback = ImportConfirm
 })
 
-local function StartCanvas(resume)
+local function StartCanvas(resume, coop)
     if _G.CanvaRunning then
         return
     end
@@ -13122,8 +13150,17 @@ local function StartCanvas(resume)
         WIDTH, HEIGHT = CP.session.W, CP.session.H
     end
 
+    if coop then
+        WIDTH, HEIGHT = coop.W, coop.H
+    end
+
     local useChunks = ChunksToggle:Get() == true
     local useFast = FastToggle:Get() == true
+
+    if coop then
+        useChunks = coop.chunks == true
+        useFast = coop.fast == true
+    end
 
     _G.CanvaRunning = true
 
@@ -13166,6 +13203,13 @@ local function StartCanvas(resume)
 
         if resume then
             center = CP.session.center
+        end
+
+        local RX0, RX1 = 0, WIDTH - 1
+
+        if coop then
+            center = Vector3.new(coop.cx, coop.cy, coop.cz)
+            RX0, RX1 = coop.x0, coop.x1
         end
 
         local placed = {}
@@ -13246,9 +13290,11 @@ local function StartCanvas(resume)
         end
 
         local function getRotation()
-            if rotationAxis == "X" then
+            local axis = coop and coop.axis or rotationAxis
+
+            if axis == "X" then
                 return CFrame.Angles(math.rad(90),0,0)
-            elseif rotationAxis == "Y" then
+            elseif axis == "Y" then
                 return CFrame.Angles(0,math.rad(90),0)
             end
 
@@ -13256,7 +13302,7 @@ local function StartCanvas(resume)
         end
 
         local rotation = getRotation()
-        local mode = buildMode
+        local mode = coop and coop.mode or buildMode
 
         if resume then
             rotation = CP.session.rotation
@@ -13654,13 +13700,13 @@ local function StartCanvas(resume)
             local stops = {}
 
             if useChunks then
-                for _,chunk in ipairs(gridOrder(0,0,WIDTH - 1,HEIGHT - 1,pickChunkSize())) do
+                for _,chunk in ipairs(gridOrder(RX0,0,RX1,HEIGHT - 1,pickChunkSize())) do
                     for _,rect in ipairs(gridOrder(chunk[1],chunk[2],chunk[3],chunk[4],tile)) do
                         stops[#stops + 1] = rect
                     end
                 end
             else
-                stops = gridOrder(0,0,WIDTH - 1,HEIGHT - 1,tile)
+                stops = gridOrder(RX0,0,RX1,HEIGHT - 1,tile)
             end
 
             return stops
@@ -13670,7 +13716,7 @@ local function StartCanvas(resume)
             local missing = 0
 
             for y = 0,HEIGHT - 1 do
-                for x = 0,WIDTH - 1 do
+                for x = RX0,RX1 do
                     if not placed[key(x,y)] then
                         missing += 1
                     end
@@ -13725,7 +13771,7 @@ local function StartCanvas(resume)
         elseif useChunks then
 
             local size = pickChunkSize()
-            local order = gridOrder(0,0,WIDTH - 1,HEIGHT - 1,size)
+            local order = gridOrder(RX0,0,RX1,HEIGHT - 1,size)
 
             for index,chunk in ipairs(order) do
                 if not running() then
@@ -13753,7 +13799,7 @@ local function StartCanvas(resume)
 
                 if direction == 1 then
 
-                    for x = 0,WIDTH - 1 do
+                    for x = RX0,RX1 do
                         if not running() then
                             break
                         end
@@ -13765,7 +13811,7 @@ local function StartCanvas(resume)
 
                 else
 
-                    for x = WIDTH - 1,0,-1 do
+                    for x = RX1,RX0,-1 do
                         if not running() then
                             break
                         end
@@ -13781,7 +13827,7 @@ local function StartCanvas(resume)
 
         else
 
-            for x = 0,WIDTH - 1 do
+            for x = RX0,RX1 do
                 if not running() then
                     break
                 end
@@ -13829,7 +13875,7 @@ local function StartCanvas(resume)
                 local missing = {}
 
                 for y = 0,HEIGHT - 1 do
-                    for x = 0,WIDTH - 1 do
+                    for x = RX0,RX1 do
                         if not placed[key(x,y)] then
                             missing[#missing + 1] = {
                                 x = x,
@@ -13864,6 +13910,67 @@ local function StartCanvas(resume)
 
         stop()
     end)
+end
+
+_G.AltCoop = _G.AltCoop or {}
+
+_G.AltCoop.canvasInfo = function()
+    return {
+        W = math.clamp(math.floor(tonumber(WidthBox:Get()) or 50), 1, 500),
+        H = math.clamp(math.floor(tonumber(HeightBox:Get()) or 50), 1, 500),
+        chunks = ChunksToggle:Get() == true,
+        fast = FastToggle:Get() == true,
+        axis = rotationAxis,
+        mode = buildMode
+    }
+end
+
+_G.AltCoop.canvasStart = function(coop)
+    StartCanvas(false, coop)
+end
+
+_G.AltCoop.canvasStop = function()
+    _G.CanvaRunning = false
+end
+
+_G.AltCoop.extraFolders = function()
+    if _G.AltCoop.useAlts then
+        return _G.AltCoop.altNames
+    end
+end
+
+_G.AltCoop.canvasPrepare = function(coop)
+    local rot
+
+    if coop.axis == "X" then
+        rot = CFrame.Angles(math.rad(90),0,0)
+    elseif coop.axis == "Y" then
+        rot = CFrame.Angles(0,math.rad(90),0)
+    else
+        rot = CFrame.Angles(0,0,math.rad(90))
+    end
+
+    local center = Vector3.new(coop.cx, coop.cy, coop.cz)
+
+    CP.snapshot()
+    CP.index = #CP.list + 1
+    CP.list[CP.index] = {}
+    CP.jsonText = nil
+    CP.bricks = {}
+    CP.raw = {}
+    CP.painted = {}
+    CP.count = 0
+    CP.W, CP.H, CP.axis = coop.W, coop.H, coop.axis
+    CP.folder = nil
+    CP.imported = nil
+    CP.center, CP.rotation = center, rot
+    CP.session = {
+        W = coop.W,
+        H = coop.H,
+        center = center,
+        rotation = rot,
+        mode = coop.mode
+    }
 end
 
 Canvas:AddButton({
@@ -16025,7 +16132,7 @@ _AB.doImport = function()
 	end)
 end
 
-_AB.loadSelected = function()
+_AB.loadSelected = function(sk, sn)
 	if not _AB.selectedBuild or _AB.selectedBuild == "" then return end
 	
 	_AB.stopped = false
@@ -16044,7 +16151,14 @@ _AB.loadSelected = function()
 			bp:FindFirstChild("Build").Parent = char
 		end
 		
-		for i, b in ipairs(data) do
+		local first, last = 1, #data
+		if sn and sn > 1 then
+			first = math.floor((sk - 1) * #data / sn) + 1
+			last = math.floor(sk * #data / sn)
+		end
+		
+		for i = first, last do
+			local b = data[i]
 			if _AB.stopped then break end
 			
 			local posses = (b.p or b.pos)
@@ -16063,6 +16177,38 @@ _AB.loadSelected = function()
 			task.wait(_AB.buildSpeed)
 		end
 	end)
+end
+
+_G.AltCoop = _G.AltCoop or {}
+
+_G.AltCoop.buildInfo = function()
+	return {
+		name = _AB.selectedBuild,
+		ox = _AB.offset.X,
+		oy = _AB.offset.Y,
+		oz = _AB.offset.Z,
+		speed = _AB.buildSpeed,
+		resize = _AB.resizewait,
+		color = _AB.colorbool,
+		tp = _AB.tp
+	}
+end
+
+_G.AltCoop.buildStart = function(a, k, n)
+	if not a.name or a.name == "" then return false end
+	if not isfile("TCOLSaves/" .. a.name .. ".json") then return false end
+	_AB.selectedBuild = a.name
+	_AB.offset = Vector3.new(a.ox or 0, a.oy or 0, a.oz or 0)
+	_AB.buildSpeed = a.speed or _AB.buildSpeed
+	_AB.resizewait = a.resize or _AB.resizewait
+	if a.color ~= nil then _AB.colorbool = a.color end
+	if a.tp ~= nil then _AB.tp = a.tp end
+	_AB.loadSelected(k, n)
+	return true
+end
+
+_G.AltCoop.buildStop = function()
+	_AB.stopped = true
 end
 
 _AB.setOffset = function()
@@ -22418,7 +22564,7 @@ local SkyboxOG = OG:AddGroup({
 	Side = "Right"
 })
 
-do
+pcall(function()
 	local AltGroup = NS:AddGroup({
 		Name = "Alt Manager🤖",
 		Info = "Control your alts (they must accept the request)",
@@ -22497,13 +22643,13 @@ do
 	local trailToken, donateToken = 0, 0
 
 	H.tp = function(a, from)
-		local t = findPlayer(a.target) or Players:FindFirstChild(from)
+		local t = findPlayer(a.target) or findPlayer(from)
 		local r, tr = hrp(), t and hrp(t)
 		if r and tr then r.CFrame = tr.CFrame * CFrame.new(0, 0, -3) end
 	end
 
 	H.bring = function(a, from)
-		local c = Players:FindFirstChild(from)
+		local c = findPlayer(from)
 		local r, tr = hrp(), c and hrp(c)
 		if r and tr then
 			local ang = (tonumber(a.i) or 1) * 1.1
@@ -22517,7 +22663,7 @@ do
 		if not a.on then return end
 		task.spawn(function()
 			while tok == trailToken do
-				local t = Players:FindFirstChild(a.target or "")
+				local t = findPlayer(a.target)
 				local tr, r = t and hrp(t), hrp()
 				local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
 				if tr and r and h then
@@ -22553,9 +22699,31 @@ do
 		end)
 	end
 
+	H.coopcanvas = function(a)
+		local C = _G.AltCoop
+		if C and C.canvasStart then C.canvasStart(a) end
+	end
+
+	H.coopbuild = function(a)
+		local C = _G.AltCoop
+		if not (C and C.buildStart) then return end
+		if not C.buildStart(a, a.k, a.n) then
+			toast("Build file not found: " .. tostring(a.name))
+		end
+	end
+
+	H.coopstop = function()
+		local C = _G.AltCoop
+		if C then
+			pcall(C.canvasStop)
+			pcall(C.buildStop)
+		end
+	end
+
 	H.stop = function()
 		trailToken += 1
 		donateToken += 1
+		H.coopstop()
 	end
 
 	local shown = {}
@@ -22680,6 +22848,7 @@ do
 				local d = api("/poll", me())
 				if d then
 					alts = d.alts or {}
+					_G.AltCoop.altNames = alts
 					if d.request then prompt(d.request.from) end
 					for _, c in ipairs(d.cmds or {}) do
 						local fn = H[c.action]
@@ -22706,6 +22875,10 @@ do
 	end
 
 	local targetAlt, tpTarget, donateAmount = "", "", "40"
+	local coopSelf = true
+	_G.AltCoop = _G.AltCoop or {}
+	_G.AltCoop.useAlts = true
+	_G.AltCoop.altNames = {}
 
 	AltGroup:AddToggle({
 		Name = "Connect (alt or controller)",
@@ -22738,6 +22911,7 @@ do
 			sendAll("stop")
 			api("/unlink", me({other = ""}))
 			alts = {}
+			_G.AltCoop.altNames = alts
 			toast("Links removed")
 		end,
 	})
@@ -22780,11 +22954,121 @@ do
 			end)
 		end,
 	})
+	AltGroup:AddSection("Co-op Mode")
+	AltGroup:AddToggle({
+		Name = "Include me in co-op",
+		Info = "ON: you also build your own part. OFF: only the alts build",
+		Default = true,
+		Callback = function(v) coopSelf = v end,
+	})
+
+	local function participants()
+		local list = {}
+		if coopSelf then list[#list + 1] = "me" end
+		for _, n in ipairs(alts) do list[#list + 1] = n end
+		return list
+	end
+
+	AltGroup:AddToggle({
+		Name = "Use alts' bricks in canvas",
+		Info = "The canvas (paint, text, etc.) also takes the bricks your linked alts placed",
+		Default = true,
+		Callback = function(v)
+			_G.AltCoop.useAlts = v
+			local P = _G.CanvasPaint
+			if P and P.rescan and not P.painting then pcall(P.rescan) end
+		end,
+	})
+
+	AltGroup:AddButton({
+		Name = "Refresh canvas bricks",
+		Info = "Rescans the canvas including your alts' bricks",
+		Callback = function()
+			local P = _G.CanvasPaint
+			if P and P.rescan and not P.painting then pcall(P.rescan) end
+		end,
+	})
+
+	AltGroup:AddButton({
+		Name = "Co-op Canvas",
+		Info = "Splits the canvas into column strips and every account builds one. Set size and options in the Canvas group first",
+		Callback = function()
+			local C = _G.AltCoop
+			local info = C and C.canvasInfo and C.canvasInfo()
+			local r = hrp()
+			local list = participants()
+			if not info or not r then toast("Canvas not ready") return end
+			if #list == 0 then toast("No participants") return end
+			local o = r.Position
+			local cy = o.Y + (info.H - 1) / 2
+			local N = #list
+			if not coopSelf then
+				C.canvasPrepare({W = info.W, H = info.H, axis = info.axis, mode = info.mode, cx = o.X, cy = cy, cz = o.Z})
+			end
+			task.spawn(function()
+				for _ = 1, 45 do
+					task.wait(4)
+					local P = _G.CanvasPaint
+					if P and P.rescan and not P.painting then pcall(P.rescan) end
+				end
+			end)
+			for k, who in ipairs(list) do
+				local x0 = math.floor((k - 1) * info.W / N)
+				local x1 = math.floor(k * info.W / N) - 1
+				if x1 >= x0 then
+					local a = {
+						W = info.W, H = info.H, chunks = info.chunks, fast = info.fast,
+						axis = info.axis, mode = info.mode,
+						cx = o.X, cy = cy, cz = o.Z, x0 = x0, x1 = x1
+					}
+					if who == "me" then
+						C.canvasStart(a)
+					else
+						task.spawn(api, "/cmd", me({to = who, action = "coopcanvas", args = a}))
+					end
+				end
+			end
+		end,
+	})
+
+	AltGroup:AddButton({
+		Name = "Co-op Auto Build",
+		Info = "Splits the selected build between all accounts. Alts need the same save in TCOLSaves (same PC shares it)",
+		Callback = function()
+			local C = _G.AltCoop
+			local info = C and C.buildInfo and C.buildInfo()
+			local list = participants()
+			if not info or not info.name or info.name == "" then toast("Select a build first") return end
+			if #list == 0 then toast("No participants") return end
+			local N = #list
+			for k, who in ipairs(list) do
+				local a = {
+					name = info.name, ox = info.ox, oy = info.oy, oz = info.oz,
+					speed = info.speed, resize = info.resize, color = info.color, tp = info.tp,
+					k = k, n = N
+				}
+				if who == "me" then
+					if not C.buildStart(a, k, N) then toast("Build file not found: " .. info.name) end
+				else
+					task.spawn(api, "/cmd", me({to = who, action = "coopbuild", args = a}))
+				end
+			end
+		end,
+	})
+
+	AltGroup:AddButton({
+		Name = "Stop Co-op",
+		Callback = function()
+			sendAll("coopstop")
+			H.coopstop()
+		end,
+	})
+
 	AltGroup:AddButton({
 		Name = "Stop everything on alts",
 		Callback = function() sendAll("stop") end,
 	})
-end
+end)
 
 
 Main67:AddButton({
