@@ -22418,6 +22418,375 @@ local SkyboxOG = OG:AddGroup({
 	Side = "Right"
 })
 
+do
+	local AltGroup = NS:AddGroup({
+		Name = "Alt Manager🤖",
+		Info = "Control your alts (they must accept the request)",
+		Side = "Right"
+	})
+
+	local HttpService = game:GetService("HttpService")
+	local Players = game:GetService("Players")
+	local TextChatService = game:GetService("TextChatService")
+	local StarterGui = game:GetService("StarterGui")
+	local lp = Players.LocalPlayer
+
+	local DIR = "LegacyAlts"
+	pcall(function() if makefolder and not isfolder(DIR) then makefolder(DIR) end end)
+	local function rd(n) local ok, r = pcall(readfile, DIR .. "/" .. n) return ok and r or nil end
+	local function wr(n, t) pcall(writefile, DIR .. "/" .. n, t) end
+
+	local cfg = {
+		url = "https://altmanager.system-7372772.workers.dev",
+		secret = rd("secret.txt"),
+	}
+
+	local httpReq = (syn and syn.request) or http_request or request
+	local function toast(t)
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {Title = "Alt Manager", Text = tostring(t), Duration = 4})
+		end)
+	end
+
+	local function api(path, body)
+		if not httpReq then return nil, "your executor has no request function" end
+		local ok, res = pcall(httpReq, {
+			Url = cfg.url .. path, Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = HttpService:JSONEncode(body or {}),
+		})
+		if not ok or not res then return nil, "no response" end
+		local data
+		pcall(function() data = HttpService:JSONDecode(res.Body) end)
+		if res.StatusCode >= 400 then return nil, (data and data.error) or tostring(res.StatusCode) end
+		return data
+	end
+	local function me(extra)
+		extra = extra or {}
+		extra.user = lp.Name
+		extra.from = lp.Name
+		extra.secret = cfg.secret
+		return extra
+	end
+
+	local function hrp(plr)
+		local c = (plr or lp).Character
+		return c and c:FindFirstChild("HumanoidRootPart")
+	end
+	local function findPlayer(name)
+		name = tostring(name or ""):lower()
+		if name == "" then return nil end
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p.Name:lower() == name or p.DisplayName:lower() == name then return p end
+		end
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p.Name:lower():sub(1, #name) == name then return p end
+		end
+	end
+	local function findTime()
+		local ls = lp:FindFirstChild("leaderstats")
+		if not ls then return nil end
+		for _, v in ipairs(ls:GetChildren()) do
+			if v.Name:lower() == "time" and (v:IsA("IntValue") or v:IsA("NumberValue")) then
+				return v
+			end
+		end
+	end
+
+	local H = {}
+	local trailToken, donateToken = 0, 0
+
+	H.tp = function(a, from)
+		local t = findPlayer(a.target) or Players:FindFirstChild(from)
+		local r, tr = hrp(), t and hrp(t)
+		if r and tr then r.CFrame = tr.CFrame * CFrame.new(0, 0, -3) end
+	end
+
+	H.bring = function(a, from)
+		local c = Players:FindFirstChild(from)
+		local r, tr = hrp(), c and hrp(c)
+		if r and tr then
+			local ang = (tonumber(a.i) or 1) * 1.1
+			r.CFrame = tr.CFrame * CFrame.new(math.cos(ang) * 5, 0, math.sin(ang) * 5)
+		end
+	end
+
+	H.trail = function(a)
+		trailToken += 1
+		local tok = trailToken
+		if not a.on then return end
+		task.spawn(function()
+			while tok == trailToken do
+				local t = Players:FindFirstChild(a.target or "")
+				local tr, r = t and hrp(t), hrp()
+				local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+				if tr and r and h then
+					local back = tr.CFrame * CFrame.new(0, 0, 3.5)
+					if (r.Position - tr.Position).Magnitude > 70 then
+						r.CFrame = back
+					else
+						h:MoveTo(back.Position)
+					end
+				end
+				task.wait(0.15)
+			end
+		end)
+	end
+
+	H.donate = function(a)
+		donateToken += 1
+		local tok = donateToken
+		if not a.on then return end
+		task.spawn(function()
+			local amount = tonumber(a.amount) or 40
+			while tok == donateToken do
+				local tv = findTime()
+				if tv and tv.Value >= amount then
+					pcall(function()
+						TextChatService.TextChannels.RBXGeneral:SendAsync(";donate " .. tostring(a.player) .. " " .. amount)
+					end)
+					task.wait(3)
+				else
+					task.wait(0.4)
+				end
+			end
+		end)
+	end
+
+	H.stop = function()
+		trailToken += 1
+		donateToken += 1
+	end
+
+	local shown = {}
+	local TweenService = game:GetService("TweenService")
+
+	local function prompt(from)
+		if shown[from] then return end
+		shown[from] = true
+		local T = Library.Theme
+		local S = Library._style
+
+		local gui = Instance.new("ScreenGui")
+		gui.Name = "AltRequest"
+		gui.ResetOnSpawn = false
+		gui.DisplayOrder = 50
+		gui:SetAttribute("LegacySkin", true)
+		gui.Parent = game:GetService("CoreGui")
+
+		local f = Instance.new("Frame")
+		f.AnchorPoint = Vector2.new(0.5, 0)
+		f.Position = UDim2.new(0.5, 0, 0.15, 0)
+		f.Size = UDim2.new(0, 0, 0, 0)
+		f.BackgroundColor3 = T.Background
+		f.BackgroundTransparency = Library.Settings.Transparency
+		f.BorderSizePixel = 0
+		f.ClipsDescendants = true
+		f.Parent = gui
+
+		local fc = Instance.new("UICorner")
+		fc.CornerRadius = UDim.new(0, Library.Settings.CornerRadius)
+		fc.Parent = f
+		S.stroke(f, T.Border, 2)
+		S.surfaceGradient(f)
+
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.new(1, -20, 0, 24)
+		title.Position = UDim2.new(0, 10, 0, 8)
+		title.BackgroundTransparency = 1
+		title.Text = "Alt Manager🤖"
+		title.TextColor3 = T.Text
+		title.Font = Enum.Font.Garamond
+		title.TextSize = 17
+		title.TextXAlignment = Enum.TextXAlignment.Left
+		title.Parent = f
+
+		local msg = Instance.new("TextLabel")
+		msg.Size = UDim2.new(1, -20, 0, 40)
+		msg.Position = UDim2.new(0, 10, 0, 36)
+		msg.BackgroundTransparency = 1
+		msg.TextWrapped = true
+		msg.Text = from .. " wants to control this account. Accept?"
+		msg.TextColor3 = T.SubText
+		msg.Font = Enum.Font.Garamond
+		msg.TextSize = 15
+		msg.TextXAlignment = Enum.TextXAlignment.Left
+		msg.TextYAlignment = Enum.TextYAlignment.Top
+		msg.Parent = f
+
+		local closing = false
+		local function close(acc)
+			if closing then return end
+			closing = true
+			api("/respond", me({from = from, accept = acc}))
+			toast(acc and ("Accepted: " .. from) or ("Declined: " .. from))
+			shown[from] = nil
+			local tw = TweenService:Create(f, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+			tw.Completed:Connect(function() gui:Destroy() end)
+			tw:Play()
+		end
+
+		local function btn(txt, x, color, acc)
+			local b = Instance.new("TextButton")
+			b.Size = UDim2.new(0.5, -15, 0, 34)
+			b.Position = UDim2.new(x, x == 0 and 10 or 5, 1, -44)
+			b.BackgroundColor3 = color
+			b.AutoButtonColor = false
+			b.BorderSizePixel = 0
+			b.Text = txt
+			b.TextColor3 = T.Text
+			b.Font = Enum.Font.Garamond
+			b.TextSize = 16
+			b.Parent = f
+			local bc = Instance.new("UICorner")
+			bc.CornerRadius = UDim.new(0, 10)
+			bc.Parent = b
+			S.stroke(b, T.Border, 1)
+			S.surfaceGradient(b)
+			S.innerBevel(b)
+			b:SetAttribute("SinkDepth", 3)
+			b.MouseButton1Down:Connect(function() S.sinkPress(b, true, 0.05) end)
+			b.MouseButton1Up:Connect(function() S.sinkPress(b, false, 0.14) end)
+			b.MouseLeave:Connect(function() S.sinkPress(b, false, 0.14) end)
+			b.MouseButton1Click:Connect(function() close(acc) end)
+		end
+		btn("Accept", 0, T.Accent, true)
+		btn("Decline", 0.5, T.Element, false)
+
+		TweenService:Create(f, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 300, 0, 130)}):Play()
+
+		task.delay(120, function()
+			if not closing then
+				closing = true
+				shown[from] = nil
+				pcall(function() gui:Destroy() end)
+			end
+		end)
+	end
+
+	local connected = false
+	local alts = {}
+
+	local function connect()
+		if connected then return end
+		if not httpReq then toast("Your executor does not support request") return end
+		local ok, err = api("/register", {user = lp.Name, secret = cfg.secret})
+		if not ok then toast("Error: " .. tostring(err)) return false end
+		if ok.secret then cfg.secret = ok.secret wr("secret.txt", ok.secret) end
+		connected = true
+		toast("Connected as " .. lp.Name)
+		task.spawn(function()
+			while connected do
+				local d = api("/poll", me())
+				if d then
+					alts = d.alts or {}
+					if d.request then prompt(d.request.from) end
+					for _, c in ipairs(d.cmds or {}) do
+						local fn = H[c.action]
+						if fn then pcall(fn, c.args or {}, c.from) end
+					end
+				end
+				task.wait(1.2)
+			end
+		end)
+		return true
+	end
+
+	local function disconnect()
+		connected = false
+		H.stop()
+		toast("Disconnected")
+	end
+
+	local function sendAll(action, argsFn)
+		if #alts == 0 then toast("You have no linked alts") return end
+		for i, name in ipairs(alts) do
+			task.spawn(function() api("/cmd", me({to = name, action = action, args = argsFn and argsFn(i, name) or {}})) end)
+		end
+	end
+
+	local targetAlt, tpTarget, donateAmount = "", "", "40"
+
+	AltGroup:AddToggle({
+		Name = "Connect (alt or controller)",
+		Info = "Turn it on in ALL accounts. Alts will see the accept popup.",
+		Callback = function(v) if v then connect() else disconnect() end end,
+	})
+
+	AltGroup:AddSection("Link")
+	AltGroup:AddTextbox({
+		Placeholder = "Alt username",
+		Callback = function(t) targetAlt = t end,
+	})
+	AltGroup:AddButton({
+		Name = "Send request to alt",
+		Callback = function()
+			if not connected then toast("Connect first") return end
+			local _, err = api("/request", me({to = targetAlt}))
+			toast(err and ("Error: " .. err) or ("Request sent to " .. targetAlt))
+		end,
+	})
+	AltGroup:AddButton({
+		Name = "View linked alts",
+		Callback = function()
+			toast(#alts > 0 and table.concat(alts, ", ") or "None yet")
+		end,
+	})
+	AltGroup:AddButton({
+		Name = "Unlink all",
+		Callback = function()
+			sendAll("stop")
+			api("/unlink", me({other = ""}))
+			alts = {}
+			toast("Links removed")
+		end,
+	})
+
+	AltGroup:AddSection("Controls")
+	AltGroup:AddTextbox({
+		Placeholder = "TP: target player (empty = me)",
+		Callback = function(t) tpTarget = t end,
+	})
+	AltGroup:AddButton({
+		Name = "TP alts",
+		Callback = function() sendAll("tp", function() return {target = tpTarget} end) end,
+	})
+	AltGroup:AddButton({
+		Name = "Bring (bring alts to me)",
+		Callback = function() sendAll("bring", function(i) return {i = i} end) end,
+	})
+	AltGroup:AddToggle({
+		Name = "Trail (alt train)",
+		Info = "Each alt follows the previous one; the first follows you",
+		Callback = function(v)
+			sendAll("trail", function(i)
+				return {on = v, target = i == 1 and lp.Name or alts[i - 1]}
+			end)
+		end,
+	})
+
+	AltGroup:AddSection("Auto Donate")
+	AltGroup:AddTextbox({
+		Placeholder = "Time amount (e.g. 40)",
+		Default = "40",
+		Callback = function(t) donateAmount = t end,
+	})
+	AltGroup:AddToggle({
+		Name = "Auto Donate (;donate to me)",
+		Info = "Each alt donates the amount to you when its leaderboard Time reaches that number",
+		Callback = function(v)
+			sendAll("donate", function()
+				return {on = v, player = lp.Name, amount = tonumber(donateAmount) or 40}
+			end)
+		end,
+	})
+	AltGroup:AddButton({
+		Name = "Stop everything on alts",
+		Callback = function() sendAll("stop") end,
+	})
+end
+
+
 Main67:AddButton({
 	Name = "Spawn a Shadow block Bug Glitch",
 	Info = "Spawns a black shadow block that makes the brightness glitch for players on max graphics",
