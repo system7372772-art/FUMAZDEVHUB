@@ -22760,8 +22760,11 @@ pcall(function()
 	local shown = {}
 	local TweenService = game:GetService("TweenService")
 
-	local function prompt(from)
-		if shown[from] then return end
+	local handled = {}
+
+	local function prompt(from, id)
+		local key = tostring(id or from)
+		if shown[from] or handled[key] then return end
 		shown[from] = true
 		local T = Library.Theme
 		local S = Library._style
@@ -22817,8 +22820,9 @@ pcall(function()
 		local function close(acc)
 			if closing then return end
 			closing = true
-			api("/respond", me({from = from, accept = acc}))
-			toast(acc and ("Accepted: " .. from) or ("Declined: " .. from))
+			handled[key] = true
+			local _, err = api("/respond", me({from = from, accept = acc}))
+			toast(err and ("Error: " .. tostring(err)) or (acc and ("Accepted: " .. from) or ("Declined: " .. from)))
 			shown[from] = nil
 			local tw = TweenService:Create(f, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
 			tw.Completed:Connect(function() gui:Destroy() end)
@@ -22857,6 +22861,7 @@ pcall(function()
 		task.delay(120, function()
 			if not closing then
 				closing = true
+				handled[key] = true
 				shown[from] = nil
 				pcall(function() gui:Destroy() end)
 			end
@@ -22880,7 +22885,7 @@ pcall(function()
 				if d then
 					alts = d.alts or {}
 					_G.AltCoop.altNames = alts
-					if d.request then prompt(d.request.from) end
+					if d.request then prompt(d.request.from, d.request.id) end
 					for _, c in ipairs(d.cmds or {}) do
 						local fn = H[c.action]
 						if fn then pcall(fn, c.args or {}, c.from) end
@@ -22926,8 +22931,14 @@ pcall(function()
 		Name = "Send request to alt",
 		Callback = function()
 			if not connected then toast("Connect first") return end
-			local _, err = api("/request", me({to = targetAlt}))
-			toast(err and ("Error: " .. err) or ("Request sent to " .. targetAlt))
+			local d, err = api("/request", me({to = targetAlt}))
+			if err then
+				toast("Error: " .. tostring(err))
+			elseif d and d.linked then
+				toast("Already linked to " .. targetAlt)
+			else
+				toast("Request sent to " .. targetAlt)
+			end
 		end,
 	})
 	AltGroup:AddButton({
