@@ -22631,7 +22631,7 @@ pcall(function()
 	local function me(extra)
 		extra = extra or {}
 		extra.user = lp.Name
-		extra.from = lp.Name
+		extra.from = extra.from or lp.Name
 		extra.secret = cfg.secret
 		return extra
 	end
