@@ -16132,16 +16132,21 @@ _AB.doImport = function()
 	end)
 end
 
-_AB.loadSelected = function(sk, sn)
-	if not _AB.selectedBuild or _AB.selectedBuild == "" then return end
+_AB.loadSelected = function(sk, sn, direct)
+	if not direct and (not _AB.selectedBuild or _AB.selectedBuild == "") then return end
 	
 	_AB.stopped = false
 	
 	task.spawn(function()
-		local path = "TCOLSaves/" .. _AB.selectedBuild .. ".json"
-		if not isfile(path) then return end
+		local data = direct
 		
-		local data = HttpService:JSONDecode(readfile(path))
+		if not data then
+			local path = "TCOLSaves/" .. _AB.selectedBuild .. ".json"
+			if not isfile(path) then return end
+			
+			data = HttpService:JSONDecode(readfile(path))
+		end
+		
 		if not data then return end
 		
 		local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -16152,7 +16157,7 @@ _AB.loadSelected = function(sk, sn)
 		end
 		
 		local first, last = 1, #data
-		if sn and sn > 1 then
+		if not direct and sn and sn > 1 then
 			first = math.floor((sk - 1) * #data / sn) + 1
 			last = math.floor(sk * #data / sn)
 		end
@@ -16194,17 +16199,33 @@ _G.AltCoop.buildInfo = function()
 	}
 end
 
-_G.AltCoop.buildStart = function(a, k, n)
-	if not a.name or a.name == "" then return false end
-	if not isfile("TCOLSaves/" .. a.name .. ".json") then return false end
-	_AB.selectedBuild = a.name
+_AB.applyCoop = function(a)
 	_AB.offset = Vector3.new(a.ox or 0, a.oy or 0, a.oz or 0)
 	_AB.buildSpeed = a.speed or _AB.buildSpeed
 	_AB.resizewait = a.resize or _AB.resizewait
 	if a.color ~= nil then _AB.colorbool = a.color end
 	if a.tp ~= nil then _AB.tp = a.tp end
-	_AB.loadSelected(k, n)
-	return true
+end
+
+_G.AltCoop.buildSlices = function(name, n)
+	local path = "TCOLSaves/" .. tostring(name) .. ".json"
+	if not isfile(path) then return nil end
+	local ok, data = pcall(function() return HttpService:JSONDecode(readfile(path)) end)
+	if not ok or type(data) ~= "table" then return nil end
+	local slices = {}
+	for k = 1, n do
+		local first = math.floor((k - 1) * #data / n) + 1
+		local last = math.floor(k * #data / n)
+		local out = {}
+		for i = first, last do out[#out + 1] = data[i] end
+		slices[k] = out
+	end
+	return slices
+end
+
+_G.AltCoop.buildData = function(settings, bricks)
+	_AB.applyCoop(settings or {})
+	_AB.loadSelected(1, 1, bricks)
 end
 
 _G.AltCoop.buildStop = function()
@@ -22704,11 +22725,21 @@ pcall(function()
 		if C and C.canvasStart then C.canvasStart(a) end
 	end
 
-	H.coopbuild = function(a)
-		local C = _G.AltCoop
-		if not (C and C.buildStart) then return end
-		if not C.buildStart(a, a.k, a.n) then
-			toast("Build file not found: " .. tostring(a.name))
+	local buildBuf = {}
+
+	H.coopbuilddata = function(a)
+		local buf = buildBuf[a.job]
+		if a.idx == 1 or not buf then
+			buf = {settings = a.settings, bricks = {}}
+			buildBuf[a.job] = buf
+		end
+		for _, b in ipairs(a.bricks or {}) do
+			buf.bricks[#buf.bricks + 1] = b
+		end
+		if a.idx == a.total then
+			buildBuf[a.job] = nil
+			local C = _G.AltCoop
+			if C and C.buildData then C.buildData(buf.settings or {}, buf.bricks) end
 		end
 	end
 
@@ -23033,24 +23064,38 @@ pcall(function()
 
 	AltGroup:AddButton({
 		Name = "Co-op Auto Build",
-		Info = "Splits the selected build between all accounts. Alts need the same save in TCOLSaves (same PC shares it)",
+		Info = "Splits the selected build between all accounts. Alts don't need the file: you send each one its part",
 		Callback = function()
 			local C = _G.AltCoop
 			local info = C and C.buildInfo and C.buildInfo()
 			local list = participants()
 			if not info or not info.name or info.name == "" then toast("Select a build first") return end
 			if #list == 0 then toast("No participants") return end
-			local N = #list
+			local slices = C.buildSlices(info.name, #list)
+			if not slices then toast("Build file not found: " .. info.name) return end
+			local job = lp.Name .. tostring(os.clock())
 			for k, who in ipairs(list) do
-				local a = {
-					name = info.name, ox = info.ox, oy = info.oy, oz = info.oz,
-					speed = info.speed, resize = info.resize, color = info.color, tp = info.tp,
-					k = k, n = N
-				}
+				local slice = slices[k]
 				if who == "me" then
-					if not C.buildStart(a, k, N) then toast("Build file not found: " .. info.name) end
+					C.buildData(info, slice)
 				else
-					task.spawn(api, "/cmd", me({to = who, action = "coopbuild", args = a}))
+					task.spawn(function()
+						local per = 800
+						local total = math.max(1, math.ceil(#slice / per))
+						for idx = 1, total do
+							local part = {}
+							for i = (idx - 1) * per + 1, math.min(idx * per, #slice) do
+								part[#part + 1] = slice[i]
+							end
+							local _, err = api("/cmd", me({
+								to = who,
+								action = "coopbuilddata",
+								args = {job = job, idx = idx, total = total, settings = idx == 1 and info or nil, bricks = part}
+							}))
+							if err then toast("Send failed to " .. who .. ": " .. tostring(err)) return end
+							task.wait(0.2)
+						end
+					end)
 				end
 			end
 		end,
