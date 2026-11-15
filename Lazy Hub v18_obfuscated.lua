@@ -22700,6 +22700,38 @@ pcall(function()
 		end)
 	end
 
+	H.traildance = function(a)
+		trailToken += 1
+		local tok = trailToken
+		if not a.on then
+			local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+			if h then h.Jump = true end
+			return
+		end
+		task.spawn(function()
+			local last = 0
+			while tok == trailToken do
+				local t = findPlayer(a.target)
+				local tr, r = t and hrp(t), hrp()
+				if tr and r then
+					if os.clock() - last > 12 then
+						last = os.clock()
+						pcall(function()
+							TextChatService.TextChannels.RBXGeneral:SendAsync("/e dance2")
+						end)
+					end
+					local goal = tr.CFrame * CFrame.new(0, 0, 3.5)
+					if (r.Position - tr.Position).Magnitude > 70 then
+						r.CFrame = goal
+					else
+						game:GetService("TweenService"):Create(r, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {CFrame = goal}):Play()
+					end
+				end
+				task.wait(0.15)
+			end
+		end)
+	end
+
 	H.donate = function(a)
 		donateToken += 1
 		local tok = donateToken
@@ -22710,7 +22742,7 @@ pcall(function()
 				local tv = findTime()
 				if tv and tv.Value >= amount then
 					pcall(function()
-						TextChatService.TextChannels.RBXGeneral:SendAsync(";donate " .. tostring(a.player) .. " " .. amount)
+						TextChatService.TextChannels.RBXGeneral:SendAsync(";donate " .. (tostring(a.player):gsub("_", ".")) .. " " .. amount)
 					end)
 					task.wait(3)
 				else
@@ -22976,6 +23008,16 @@ pcall(function()
 		Info = "Each alt follows the previous one; the first follows you",
 		Callback = function(v)
 			sendAll("trail", function(i)
+				return {on = v, target = i == 1 and lp.Name or alts[i - 1]}
+			end)
+		end,
+	})
+
+	AltGroup:AddToggle({
+		Name = "Trail Dance (/e dance2)",
+		Info = "Alts follow you with a tween while dancing /e dance2",
+		Callback = function(v)
+			sendAll("traildance", function(i)
 				return {on = v, target = i == 1 and lp.Name or alts[i - 1]}
 			end)
 		end,
