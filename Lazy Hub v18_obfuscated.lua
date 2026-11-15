@@ -22678,6 +22678,16 @@ pcall(function()
 		end
 	end
 
+	local DANCE_R15, DANCE_R6 = "rbxassetid://507776043", "rbxassetid://182436842"
+
+	local function slide(r, goal)
+		if (r.Position - goal.Position).Magnitude > 70 then
+			r.CFrame = goal
+		else
+			game:GetService("TweenService"):Create(r, TweenInfo.new(0.2, Enum.EasingStyle.Linear), {CFrame = goal}):Play()
+		end
+	end
+
 	H.trail = function(a)
 		trailToken += 1
 		local tok = trailToken
@@ -22686,15 +22696,7 @@ pcall(function()
 			while tok == trailToken do
 				local t = findPlayer(a.target)
 				local tr, r = t and hrp(t), hrp()
-				local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
-				if tr and r and h then
-					local back = tr.CFrame * CFrame.new(0, 0, 3.5)
-					if (r.Position - tr.Position).Magnitude > 70 then
-						r.CFrame = back
-					else
-						h:MoveTo(back.Position)
-					end
-				end
+				if tr and r then slide(r, tr.CFrame * CFrame.new(0, 0, 3.5)) end
 				task.wait(0.15)
 			end
 		end)
@@ -22703,32 +22705,36 @@ pcall(function()
 	H.traildance = function(a)
 		trailToken += 1
 		local tok = trailToken
-		if not a.on then
-			local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
-			if h then h.Jump = true end
-			return
-		end
+		if not a.on then return end
 		task.spawn(function()
-			local last = 0
+			local track, char
 			while tok == trailToken do
-				local t = findPlayer(a.target)
-				local tr, r = t and hrp(t), hrp()
-				if tr and r then
-					if os.clock() - last > 12 then
-						last = os.clock()
-						pcall(function()
-							TextChatService.TextChannels.RBXGeneral:SendAsync("/e dance2")
-						end)
-					end
-					local goal = tr.CFrame * CFrame.new(0, 0, 3.5)
-					if (r.Position - tr.Position).Magnitude > 70 then
-						r.CFrame = goal
-					else
-						game:GetService("TweenService"):Create(r, TweenInfo.new(0.15, Enum.EasingStyle.Linear), {CFrame = goal}):Play()
+				local c = lp.Character
+				local h = c and c:FindFirstChildOfClass("Humanoid")
+				if h and c ~= char then
+					char = c
+					if track then pcall(function() track:Stop() end) end
+					track = nil
+					pcall(function()
+						local an = h:FindFirstChildOfClass("Animator") or h:WaitForChild("Animator", 3)
+						local anim = Instance.new("Animation")
+						anim.AnimationId = h.RigType == Enum.HumanoidRigType.R15 and DANCE_R15 or DANCE_R6
+						track = an:LoadAnimation(anim)
+						track.Looped = true
+						track.Priority = Enum.AnimationPriority.Action
+						track:Play()
+					end)
+					if not track then
+						pcall(function() TextChatService.TextChannels.RBXGeneral:SendAsync("/e dance2") end)
 					end
 				end
+				if track and not track.IsPlaying then pcall(function() track:Play() end) end
+				local t = findPlayer(a.target)
+				local tr, r = t and hrp(t), hrp()
+				if tr and r then slide(r, tr.CFrame * CFrame.new(0, 0, 3.5)) end
 				task.wait(0.15)
 			end
+			if track then pcall(function() track:Stop() end) end
 		end)
 	end
 
@@ -22748,6 +22754,136 @@ pcall(function()
 				else
 					task.wait(0.4)
 				end
+			end
+		end)
+	end
+
+	local OPT
+	local OPT_CLASSES = {
+		ParticleEmitter = true, Trail = true, Beam = true, Smoke = true, Fire = true, Sparkles = true,
+		Highlight = true, Decal = true, Texture = true, PointLight = true, SpotLight = true, SurfaceLight = true
+	}
+
+	local function optSkip(d)
+		local bk = workspace:FindFirstChild("Bricks")
+		if bk and d:IsDescendantOf(bk) then return true end
+		return lp.Character and d:IsDescendantOf(lp.Character)
+	end
+
+	local function optimizeOff()
+		local o = OPT
+		if not o then return end
+		OPT = nil
+		if o.conn then o.conn:Disconnect() end
+		pcall(function() game:GetService("RunService"):Set3dRenderingEnabled(true) end)
+		if setfpscap then pcall(setfpscap, o.fps or 60) end
+		pcall(function() settings().Rendering.QualityLevel = o.quality end)
+		pcall(function() game:GetService("Lighting").GlobalShadows = o.shadows end)
+		for e, v in pairs(o.effects) do pcall(function() e.Enabled = v end) end
+		pcall(function()
+			local T = workspace.Terrain
+			T.Decoration, T.WaterWaveSize, T.WaterWaveSpeed = o.terrain[1], o.terrain[2], o.terrain[3]
+		end)
+		pcall(function() UserSettings():GetService("UserGameSettings").MasterVolume = o.vol end)
+		if o.gui then pcall(function() o.gui:Destroy() end) end
+		task.spawn(function()
+			for i = #o.removed, 1, -1 do
+				local r = o.removed[i]
+				pcall(function() r[1].Parent = r[2] end)
+				if i % 300 == 0 then task.wait() end
+			end
+		end)
+	end
+
+	H.optimize = function(a)
+		if not a.on then optimizeOff() return end
+		if OPT then return end
+		local o = {removed = {}, effects = {}, terrain = {true, 0, 0}, shadows = true, vol = 1}
+		OPT = o
+		local Lighting = game:GetService("Lighting")
+		pcall(function() o.quality = settings().Rendering.QualityLevel end)
+		o.fps = (getfpscap and getfpscap()) or 60
+
+		pcall(function()
+			local gui = Instance.new("ScreenGui")
+			gui.Name = "AltOptimize"
+			gui.IgnoreGuiInset = true
+			gui.ResetOnSpawn = false
+			gui.DisplayOrder = 1000000
+			gui.Parent = game:GetService("CoreGui")
+			local f = Instance.new("Frame")
+			f.Size = UDim2.new(1, 0, 1, 0)
+			f.BackgroundColor3 = Color3.new(0, 0, 0)
+			f.BorderSizePixel = 0
+			f.Parent = gui
+			local l = Instance.new("TextLabel")
+			l.Size = UDim2.new(1, 0, 0, 40)
+			l.Position = UDim2.new(0, 0, 0.5, -20)
+			l.BackgroundTransparency = 1
+			l.Text = "Alt optimized 💤"
+			l.TextColor3 = Color3.fromRGB(110, 110, 110)
+			l.Font = Enum.Font.Garamond
+			l.TextSize = 22
+			l.Parent = f
+			local b = Instance.new("TextButton")
+			b.Size = UDim2.new(0, 70, 0, 26)
+			b.Position = UDim2.new(0, 8, 1, -34)
+			b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+			b.TextColor3 = Color3.fromRGB(150, 150, 150)
+			b.Font = Enum.Font.Garamond
+			b.TextSize = 15
+			b.Text = "Restore"
+			b.BorderSizePixel = 0
+			b.Parent = f
+			b.MouseButton1Click:Connect(optimizeOff)
+			o.gui = gui
+		end)
+
+		pcall(function() game:GetService("RunService"):Set3dRenderingEnabled(false) end)
+		if setfpscap then pcall(setfpscap, 15) end
+		pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+		pcall(function()
+			o.shadows = Lighting.GlobalShadows
+			Lighting.GlobalShadows = false
+			for _, e in ipairs(Lighting:GetChildren()) do
+				if e:IsA("PostEffect") then
+					o.effects[e] = e.Enabled
+					e.Enabled = false
+				end
+			end
+		end)
+		pcall(function()
+			local T = workspace.Terrain
+			o.terrain = {T.Decoration, T.WaterWaveSize, T.WaterWaveSpeed}
+			T.Decoration, T.WaterWaveSize, T.WaterWaveSpeed = false, 0, 0
+		end)
+		pcall(function()
+			local g = UserSettings():GetService("UserGameSettings")
+			o.vol = g.MasterVolume
+			g.MasterVolume = 0
+		end)
+
+		o.conn = workspace.DescendantAdded:Connect(function(d)
+			if OPT_CLASSES[d.ClassName] then
+				task.defer(function()
+					if OPT == o and not optSkip(d) then
+						o.removed[#o.removed + 1] = {d, d.Parent}
+						pcall(function() d.Parent = nil end)
+					end
+				end)
+			end
+		end)
+
+		task.spawn(function()
+			local n = 0
+			for _, d in ipairs(workspace:GetDescendants()) do
+				if OPT ~= o then return end
+				if OPT_CLASSES[d.ClassName] and not optSkip(d) then
+					o.removed[#o.removed + 1] = {d, d.Parent}
+					pcall(function() d.Parent = nil end)
+				end
+				n += 1
+				if n % 400 == 0 then task.wait() end
 			end
 		end)
 	end
@@ -22932,6 +23068,7 @@ pcall(function()
 	local function disconnect()
 		connected = false
 		H.stop()
+		H.optimize({on = false})
 		toast("Disconnected")
 	end
 
@@ -23015,7 +23152,7 @@ pcall(function()
 
 	AltGroup:AddToggle({
 		Name = "Trail Dance (/e dance2)",
-		Info = "Alts follow you with a tween while dancing /e dance2",
+		Info = "Alts slide to you with a tween while playing the dance2 emote",
 		Callback = function(v)
 			sendAll("traildance", function(i)
 				return {on = v, target = i == 1 and lp.Name or alts[i - 1]}
@@ -23038,6 +23175,15 @@ pcall(function()
 			end)
 		end,
 	})
+	AltGroup:AddSection("Performance")
+	AltGroup:AddToggle({
+		Name = "Optimize alts",
+		Info = "Alts only: black screen, 3D rendering off, low FPS cap, decorations removed from workspace. Turn off to restore everything",
+		Callback = function(v)
+			sendAll("optimize", function() return {on = v} end)
+		end,
+	})
+
 	AltGroup:AddSection("Co-op Mode")
 	AltGroup:AddToggle({
 		Name = "Include me in co-op",
