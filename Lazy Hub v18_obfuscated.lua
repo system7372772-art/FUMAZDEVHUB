@@ -4961,6 +4961,1566 @@ local Utils67 = NS:AddGroup({
 	Side = "Right"
 })
 
+pcall(function()
+	local Theme = Library.Theme
+	local Style = Library._style
+	local TweenSvc = game:GetService("TweenService")
+
+	local WHITE = Color3.new(1, 1, 1)
+	local BLACK = Color3.new(0, 0, 0)
+	local AXY = Enum.AutomaticSize.XY
+	local AX = Enum.AutomaticSize.X
+	local AY = Enum.AutomaticSize.Y
+	local FONT = Enum.Font.Garamond
+
+	local function mk(class, props, parent)
+		local o = Instance.new(class)
+		for k, v in pairs(props) do
+			o[k] = v
+		end
+		o.Parent = parent
+		return o
+	end
+
+	local function corner(p, r)
+		mk("UICorner", { CornerRadius = UDim.new(0, r or 8) }, p)
+	end
+
+	local function pad(p, n)
+		mk("UIPadding", {
+			PaddingTop = UDim.new(0, n),
+			PaddingBottom = UDim.new(0, n),
+			PaddingLeft = UDim.new(0, n),
+			PaddingRight = UDim.new(0, n),
+		}, p)
+	end
+
+	local function vlist(p, gap)
+		return mk("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, gap),
+		}, p)
+	end
+
+	local function pixels(parent, rows, color, px, pos)
+		local f = mk("Frame", {
+			Size = UDim2.fromOffset(#rows[1] * px, #rows * px),
+			Position = pos or UDim2.new(),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+		}, parent)
+		for y, row in ipairs(rows) do
+			local x = 1
+			while x <= #row do
+				if row:sub(x, x) == "#" then
+					local x2 = x
+					while x2 < #row and row:sub(x2 + 1, x2 + 1) == "#" do
+						x2 += 1
+					end
+					mk("Frame", {
+						Size = UDim2.fromOffset((x2 - x + 1) * px, px),
+						Position = UDim2.fromOffset((x - 1) * px, (y - 1) * px),
+						BackgroundColor3 = color,
+						BorderSizePixel = 0,
+					}, f)
+					x = x2 + 1
+				else
+					x += 1
+				end
+			end
+		end
+		return f
+	end
+
+	local ICONS = {
+		logo = { "####....", "#..#....", "####....", "..######", "..#....#", "..#....#", "..######", "........" },
+		close = { "#...#", ".#.#.", "..#..", ".#.#.", "#...#" },
+		up = { "..#..", ".###.", "#####" },
+		down = { "#####", ".###.", "..#.." },
+		grip = { "#####", ".....", "#####", ".....", "#####" },
+		resize = { ".....#", "....##", "...###", "..####", ".#####", "######" },
+		Variables = { "########", "#......#", "#.#..#.#", "#..##..#", "#..##..#", "#.#..#.#", "#......#", "########" },
+		Values = { "...##...", "..####..", ".######.", "########", "########", ".######.", "..####..", "...##..." },
+		Strings = { ".##..##.", ".##..##.", ".#...#..", "#...#...", "........", "........", "........", "........" },
+		Operators = { "...##...", "...##...", "...##...", "########", "########", "...##...", "...##...", "...##..." },
+		Control = { "##....##", ".##..##.", "..####..", "...##...", "...##...", "...##...", "...##...", "...##..." },
+		Loops = { "..####..", ".#....#.", "#......#", "#....###", "#.....#.", "#......#", ".#....#.", "..####.." },
+		Functions = { "...####.", "..##..##", "..##....", ".#####..", "..##....", "..##....", "..##....", ".###...." },
+		Events = { "....###.", "...###..", "..###...", ".######.", "...###..", "..##....", ".##.....", "##......" },
+		Objects = { "########", "#......#", "#.####.#", "#.#..#.#", "#.#..#.#", "#.####.#", "#......#", "########" },
+		Collections = { "##.#####", "........", "##.#####", "........", "##.#####", "........", "##.#####", "........" },
+		Output = { "########", "#......#", "#.#....#", "#..#...#", "#.#.##.#", "#......#", "########", "........" },
+		Comments = { "..#..#..", "..#..#..", "########", "..#..#..", "..#..#..", "########", "..#..#..", "..#..#.." },
+		Player = { "..####..", "..####..", "..####..", "...##...", ".######.", "########", "#.####.#", "..#..#.." },
+		World = { "..####..", ".#.##.#.", "#..##..#", "########", "#..##..#", "#..##..#", ".#.##.#.", "..####.." },
+		Parts = { "########", "#..#...#", "#..#...#", "########", "#...#..#", "#...#..#", "########", "........" },
+		Sound = { "....#...", "...##.#.", "####..#.", "####.#.#", "####.#.#", "...##.#.", "....#...", "........" },
+		Messages = { "########", "#......#", "#.#.#..#", "#......#", "########", "..##....", ".#......", "#......." },
+	}
+
+	local cats = {
+		{ "Player", Color3.fromRGB(90, 170, 220) },
+		{ "World", Color3.fromRGB(100, 150, 60) },
+		{ "Parts", Color3.fromRGB(170, 120, 70) },
+		{ "Sound", Color3.fromRGB(200, 110, 170) },
+		{ "Messages", Color3.fromRGB(60, 170, 190) },
+		{ "Variables", Color3.fromRGB(204, 112, 20) },
+		{ "Values", Color3.fromRGB(66, 110, 200) },
+		{ "Strings", Color3.fromRGB(210, 100, 120) },
+		{ "Operators", Color3.fromRGB(40, 150, 90) },
+		{ "Control", Color3.fromRGB(196, 130, 16) },
+		{ "Loops", Color3.fromRGB(240, 120, 60) },
+		{ "Functions", Color3.fromRGB(124, 70, 200) },
+		{ "Events", Color3.fromRGB(180, 50, 70) },
+		{ "Objects", Color3.fromRGB(30, 130, 170) },
+		{ "Collections", Color3.fromRGB(20, 140, 130) },
+		{ "Output", Color3.fromRGB(150, 80, 160) },
+		{ "Comments", Color3.fromRGB(110, 115, 125) },
+	}
+
+	local catColor = {}
+	for _, c in ipairs(cats) do
+		catColor[c[1]] = c[2]
+	end
+
+	local defs = {}
+
+	local function I(k, d, o)
+		return { k = k, d = d, o = o }
+	end
+
+	local function B(cat, parts, head, opt)
+		opt = opt or {}
+		defs[#defs + 1] = {
+			cat = cat,
+			parts = parts,
+			head = head,
+			slots = opt.slots or 0,
+			mid = opt.mid,
+			close = opt.close,
+			q = opt.q,
+			mode = opt.mode or "luau",
+			indent = opt.indent,
+		}
+	end
+
+	local function S(cat, parts, gen)
+		defs[#defs + 1] = {
+			cat = cat,
+			parts = parts,
+			gen = gen,
+			slots = 0,
+			mode = "simple",
+		}
+	end
+
+	local function qs(s)
+		return '"' .. (s:gsub("\\", "\\\\"):gsub('"', '\\"')) .. '"'
+	end
+
+	local WHO = { "me", "everyone", "others", "random" }
+
+	local function W()
+		return I("w", "me", WHO)
+	end
+
+	local function tabbed(x, t)
+		t = t or "\t"
+		if type(x) == "string" then
+			x = { x }
+		end
+		local r = {}
+		for _, l in ipairs(x) do
+			r[#r + 1] = t .. l
+		end
+		return r
+	end
+
+	local function append(out, ls)
+		for _, l in ipairs(ls) do
+			out[#out + 1] = l
+		end
+	end
+
+	local function forWho(w, body)
+		local out = {}
+		if w == "me" then
+			append(out, body("game.Players.LocalPlayer"))
+		elseif w == "everyone" then
+			out[#out + 1] = "for _, plr in ipairs(game.Players:GetPlayers()) do"
+			append(out, tabbed(body("plr")))
+			out[#out + 1] = "end"
+		elseif w == "others" then
+			out[#out + 1] = "for _, plr in ipairs(game.Players:GetPlayers()) do"
+			out[#out + 1] = "\tif plr ~= game.Players.LocalPlayer then"
+			append(out, tabbed(body("plr"), "\t\t"))
+			out[#out + 1] = "\tend"
+			out[#out + 1] = "end"
+		else
+			out[#out + 1] = "do"
+			out[#out + 1] = "\tlocal list = game.Players:GetPlayers()"
+			out[#out + 1] = "\tlocal plr = list[math.random(#list)]"
+			append(out, tabbed(body("plr")))
+			out[#out + 1] = "end"
+		end
+		return out
+	end
+
+	local function charBody(action)
+		return function(P)
+			local out = { "local char = " .. P .. ".Character", "if char then" }
+			append(out, tabbed(action))
+			out[#out + 1] = "end"
+			return out
+		end
+	end
+
+	local function humBody(action)
+		return function(P)
+			local out = {
+				"local char = " .. P .. ".Character",
+				'local hum = char and char:FindFirstChildOfClass("Humanoid")',
+				"if hum then",
+			}
+			append(out, tabbed(action))
+			out[#out + 1] = "end"
+			return out
+		end
+	end
+
+	local function rootBody(action)
+		return function(P)
+			local out = {
+				"local char = " .. P .. ".Character",
+				'local root = char and char:FindFirstChild("HumanoidRootPart")',
+				"if root then",
+			}
+			append(out, tabbed(action))
+			out[#out + 1] = "end"
+			return out
+		end
+	end
+
+	local function P(parts, fn)
+		S("Player", parts, function(v)
+			return forWho(v.w, fn(v))
+		end)
+	end
+
+	local function withPart(name, action)
+		local out = { "local part = workspace:FindFirstChild(" .. qs(name) .. ")", "if part then" }
+		append(out, tabbed(action))
+		out[#out + 1] = "end"
+		return out
+	end
+
+	local KEYS = { "E", "F", "G", "Q", "R", "X", "Z", "C", "V", "B", "T", "Y", "H", "J", "K", "L", "One", "Two", "Three", "Space", "LeftShift", "LeftControl", "Return" }
+	local MATS = { "Plastic", "Neon", "Wood", "Metal", "Glass", "Brick", "Grass", "Ice", "Concrete", "Sand" }
+
+	P({ "kill", W() }, function()
+		return humBody("hum.Health = 0")
+	end)
+	P({ "heal", W() }, function()
+		return humBody("hum.Health = hum.MaxHealth")
+	end)
+	P({ "set", W(), "health to", I("n", "100") }, function(v)
+		return humBody("hum.Health = " .. v.n)
+	end)
+	P({ "set", W(), "walk speed to", I("n", "32") }, function(v)
+		return humBody("hum.WalkSpeed = " .. v.n)
+	end)
+	P({ "set", W(), "jump power to", I("n", "100") }, function(v)
+		return humBody({ "hum.UseJumpPower = true", "hum.JumpPower = " .. v.n })
+	end)
+	P({ "make", W(), "jump" }, function()
+		return humBody("hum:ChangeState(Enum.HumanoidStateType.Jumping)")
+	end)
+	P({ "make", W(), "sit" }, function()
+		return humBody("hum.Sit = true")
+	end)
+	P({ "teleport", W(), "to x", I("x", "0"), "y", I("y", "50"), "z", I("z", "0") }, function(v)
+		return rootBody("root.CFrame = CFrame.new(" .. v.x .. ", " .. v.y .. ", " .. v.z .. ")")
+	end)
+	P({ "teleport", W(), "to player", I("t", "Name") }, function(v)
+		return rootBody({
+			"local target = game.Players:FindFirstChild(" .. qs(v.t) .. ")",
+			'local tRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")',
+			"if tRoot then",
+			"\troot.CFrame = tRoot.CFrame",
+			"end",
+		})
+	end)
+	P({ "freeze", W() }, function()
+		return rootBody("root.Anchored = true")
+	end)
+	P({ "unfreeze", W() }, function()
+		return rootBody("root.Anchored = false")
+	end)
+	P({ "make", W(), I("s", "invisible", { "invisible", "visible" }) }, function(v)
+		return charBody({
+			"for _, d in ipairs(char:GetDescendants()) do",
+			'\tif (d:IsA("BasePart") or d:IsA("Decal")) and d.Name ~= "HumanoidRootPart" then',
+			"\t\td.Transparency = " .. (v.s == "invisible" and "1" or "0"),
+			"\tend",
+			"end",
+		})
+	end)
+	P({ "give", W(), "a forcefield" }, function()
+		return charBody({ 'local ff = Instance.new("ForceField")', "ff.Parent = char" })
+	end)
+	P({ "remove forcefield from", W() }, function()
+		return charBody({
+			"for _, c in ipairs(char:GetChildren()) do",
+			'\tif c:IsA("ForceField") then',
+			"\t\tc:Destroy()",
+			"\tend",
+			"end",
+		})
+	end)
+
+	S("World", { "set gravity to", I("n", "196.2") }, function(v)
+		return { "workspace.Gravity = " .. v.n }
+	end)
+	S("World", { "set time of day to", I("n", "14"), "o'clock" }, function(v)
+		return { 'game:GetService("Lighting").ClockTime = ' .. v.n }
+	end)
+	S("World", { "set brightness to", I("n", "2") }, function(v)
+		return { 'game:GetService("Lighting").Brightness = ' .. v.n }
+	end)
+	S("World", { "set fog distance to", I("n", "500") }, function(v)
+		return { 'game:GetService("Lighting").FogEnd = ' .. v.n }
+	end)
+	S("World", { "set ambient color to", I("r", "255"), I("g", "255"), I("b", "255") }, function(v)
+		return { 'game:GetService("Lighting").Ambient = Color3.fromRGB(' .. v.r .. ", " .. v.g .. ", " .. v.b .. ")" }
+	end)
+	S("World", { "set field of view to", I("n", "90") }, function(v)
+		return { "workspace.CurrentCamera.FieldOfView = " .. v.n }
+	end)
+	S("World", { "set my max zoom to", I("n", "500") }, function(v)
+		return { "game.Players.LocalPlayer.CameraMaxZoomDistance = " .. v.n }
+	end)
+	S("World", { "remove", I("n", "Name"), "from workspace" }, function(v)
+		return withPart(v.n, "part:Destroy()")
+	end)
+
+	S("Parts", { "create part", I("n", "MyPart"), "at x", I("x", "0"), "y", I("y", "10"), "z", I("z", "0") }, function(v)
+		return {
+			'local part = Instance.new("Part")',
+			"part.Name = " .. qs(v.n),
+			"part.Anchored = true",
+			"part.Position = Vector3.new(" .. v.x .. ", " .. v.y .. ", " .. v.z .. ")",
+			"part.Parent = workspace",
+		}
+	end)
+	S("Parts", { "move", I("n", "MyPart"), "to x", I("x", "0"), "y", I("y", "10"), "z", I("z", "0") }, function(v)
+		return withPart(v.n, "part.Position = Vector3.new(" .. v.x .. ", " .. v.y .. ", " .. v.z .. ")")
+	end)
+	S("Parts", { "set size of", I("n", "MyPart"), "to", I("x", "4"), I("y", "1"), I("z", "4") }, function(v)
+		return withPart(v.n, "part.Size = Vector3.new(" .. v.x .. ", " .. v.y .. ", " .. v.z .. ")")
+	end)
+	S("Parts", { "set color of", I("n", "MyPart"), "to", I("r", "255"), I("g", "0"), I("b", "0") }, function(v)
+		return withPart(v.n, "part.Color = Color3.fromRGB(" .. v.r .. ", " .. v.g .. ", " .. v.b .. ")")
+	end)
+	S("Parts", { "set material of", I("n", "MyPart"), "to", I("m", "Neon", MATS) }, function(v)
+		return withPart(v.n, "part.Material = Enum.Material." .. v.m)
+	end)
+	S("Parts", { "set transparency of", I("n", "MyPart"), "to", I("t", "0.5") }, function(v)
+		return withPart(v.n, "part.Transparency = " .. v.t)
+	end)
+	S("Parts", { "set", I("n", "MyPart"), "anchored to", I("a", "true", { "true", "false" }) }, function(v)
+		return withPart(v.n, "part.Anchored = " .. v.a)
+	end)
+	S("Parts", { "set", I("n", "MyPart"), "collide to", I("a", "false", { "true", "false" }) }, function(v)
+		return withPart(v.n, "part.CanCollide = " .. v.a)
+	end)
+	S("Parts", { "destroy", I("n", "MyPart") }, function(v)
+		return withPart(v.n, "part:Destroy()")
+	end)
+	S("Parts", { "spawn", I("n", "10"), "random parts above the map" }, function(v)
+		return {
+			"for _ = 1, " .. v.n .. " do",
+			'\tlocal part = Instance.new("Part")',
+			"\tpart.Position = Vector3.new(math.random(-50, 50), 40, math.random(-50, 50))",
+			"\tpart.Parent = workspace",
+			"end",
+		}
+	end)
+
+	S("Sound", { "play sound id", I("i", "0"), "volume", I("n", "1") }, function(v)
+		return {
+			'local sound = Instance.new("Sound")',
+			"sound.SoundId = " .. qs("rbxassetid://" .. v.i),
+			"sound.Volume = " .. v.n,
+			"sound.Parent = workspace",
+			"sound:Play()",
+			"sound.Ended:Connect(function()",
+			"\tsound:Destroy()",
+			"end)",
+		}
+	end)
+	S("Sound", { "stop all sounds" }, function()
+		return {
+			"for _, obj in ipairs(workspace:GetDescendants()) do",
+			'\tif obj:IsA("Sound") then',
+			"\t\tobj:Stop()",
+			"\tend",
+			"end",
+		}
+	end)
+
+	S("Messages", { "say", I("t", "Hello"), "in chat" }, function(v)
+		return { 'game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(' .. qs(v.t) .. ")" }
+	end)
+	S("Messages", { "show notification", I("t", "Title"), I("m", "Message") }, function(v)
+		return {
+			'game:GetService("StarterGui"):SetCore("SendNotification", {',
+			"\tTitle = " .. qs(v.t) .. ",",
+			"\tText = " .. qs(v.m) .. ",",
+			"\tDuration = 5,",
+			"})",
+		}
+	end)
+
+	B("Events", { "when key", I("k", "E", KEYS), "is pressed" }, 'game:GetService("UserInputService").InputBegan:Connect(function(input, processed)\n\tif processed or input.KeyCode ~= Enum.KeyCode.{k} then return end', { slots = 1, close = "end)", mode = "simple" })
+	B("Events", { "every", I("n", "1"), "seconds" }, "task.spawn(function()\n\twhile true do\n\t\ttask.wait({n})", { slots = 1, indent = 2, close = "\tend\nend)", mode = "simple" })
+	B("Events", { "when my character spawns" }, "game.Players.LocalPlayer.CharacterAdded:Connect(function(char)", { slots = 1, close = "end)", mode = "simple" })
+	B("Events", { "when I die" }, 'local diedChar = game.Players.LocalPlayer.Character or game.Players.LocalPlayer.CharacterAdded:Wait()\ndiedChar:WaitForChild("Humanoid").Died:Connect(function()', { slots = 1, close = "end)", mode = "simple" })
+	B("Events", { "when part", I("n", "MyPart"), "is touched" }, 'local touchPart = workspace:FindFirstChild({n})\nif touchPart then\n\ttouchPart.Touched:Connect(function(hit)', { slots = 1, indent = 2, close = "\tend)\nend", mode = "simple", q = { n = true } })
+
+	B("Variables", { "remember", I("n", "score"), "as", I("v", "0") }, "local {n} = {v}", { mode = "simple" })
+	B("Variables", { "local", I("n", "variable"), "=", I("v", "0") }, "local {n} = {v}")
+	B("Variables", { "set", I("n", "variable"), "=", I("v", "0") }, "{n} = {v}", { mode = "both" })
+	B("Variables", { "change", I("n", "variable"), "by", I("v", "1") }, "{n} += {v}", { mode = "both" })
+	B("Variables", { "local", I("a", "a"), ",", I("b", "b"), "=", I("x", "1"), ",", I("y", "2") }, "local {a}, {b} = {x}, {y}")
+	B("Variables", { "global", I("n", "variable"), "=", I("v", "0") }, 'getgenv()["{n}"] = {v}')
+	B("Variables", { "multiply", I("n", "variable"), "by", I("v", "2") }, "{n} *= {v}")
+	B("Variables", { "append", I("v", "text"), "to", I("n", "variable") }, "{n} ..= {v}")
+
+	B("Values", { "number", I("n", "number"), "=", I("v", "10") }, "local {n} = {v}")
+	B("Values", { "text", I("n", "text"), "=", I("v", "Hello") }, "local {n} = {v}", { q = { v = true } })
+	B("Values", { "boolean", I("n", "enabled"), "=", I("v", "true", { "true", "false" }) }, "local {n} = {v}")
+	B("Values", { "nil", I("n", "empty") }, "local {n} = nil")
+	B("Values", { "Vector3", I("n", "pos"), I("x", "0"), I("y", "0"), I("z", "0") }, "local {n} = Vector3.new({x}, {y}, {z})")
+	B("Values", { "Vector2", I("n", "vec"), I("x", "0"), I("y", "0") }, "local {n} = Vector2.new({x}, {y})")
+	B("Values", { "Color3", I("n", "color"), I("r", "255"), I("g", "255"), I("b", "255") }, "local {n} = Color3.fromRGB({r}, {g}, {b})")
+	B("Values", { "CFrame", I("n", "cf"), I("x", "0"), I("y", "0"), I("z", "0") }, "local {n} = CFrame.new({x}, {y}, {z})")
+	B("Values", { "UDim2", I("n", "size"), I("a", "0"), I("b", "100"), I("c", "0"), I("d", "100") }, "local {n} = UDim2.new({a}, {b}, {c}, {d})")
+	B("Values", { "Enum", I("n", "value"), "=", I("e", "Material.Neon") }, "local {n} = Enum.{e}")
+	B("Values", { "TweenInfo", I("n", "info"), "time", I("t", "1") }, "local {n} = TweenInfo.new({t})")
+	B("Values", { "random generator", I("n", "rng") }, "local {n} = Random.new()")
+	B("Values", { "now", I("n", "start"), "= os.clock()" }, "local {n} = os.clock()")
+
+	B("Strings", { "join", I("n", "text"), "=", I("a", '"Hello"'), "..", I("b", '"World"') }, "local {n} = {a} .. {b}")
+	B("Strings", { I("n", "text"), "= upper", I("a", '"abc"') }, "local {n} = string.upper({a})")
+	B("Strings", { I("n", "text"), "= lower", I("a", '"ABC"') }, "local {n} = string.lower({a})")
+	B("Strings", { I("n", "len"), "= length of", I("a", '"abc"') }, "local {n} = #{a}")
+	B("Strings", { I("n", "part"), "= sub", I("a", '"abcdef"'), I("i", "1"), "to", I("j", "3") }, "local {n} = string.sub({a}, {i}, {j})")
+	B("Strings", { I("n", "pos"), "= find", I("p", '"b"'), "in", I("a", '"abc"') }, "local {n} = string.find({a}, {p})")
+	B("Strings", { I("n", "text"), "= replace", I("p", '"a"'), "with", I("r", '"b"'), "in", I("a", '"abc"') }, "local {n} = string.gsub({a}, {p}, {r})")
+	B("Strings", { I("n", "words"), "= split", I("a", '"a b c"'), "by", I("s", '" "') }, "local {n} = string.split({a}, {s})")
+	B("Strings", { I("n", "text"), "= format", I("f", '"%d items"'), I("a", "5") }, "local {n} = string.format({f}, {a})")
+	B("Strings", { I("n", "text"), "= tostring", I("a", "5") }, "local {n} = tostring({a})")
+	B("Strings", { I("n", "num"), "= tonumber", I("a", '"5"') }, "local {n} = tonumber({a})")
+	B("Strings", { I("n", "text"), "= repeat", I("a", '"ab"'), I("c", "3"), "times" }, "local {n} = string.rep({a}, {c})")
+
+	B("Operators", { I("n", "result"), "=", I("a", "1"), I("o", "+", { "+", "-", "*", "/", "//", "%", "^", ".." }), I("b", "1") }, "{n} = {a} {o} {b}")
+	B("Operators", { I("n", "result"), "=", I("a", "1"), I("o", "==", { "==", "~=", "<", ">", "<=", ">=", "and", "or" }), I("b", "1") }, "{n} = {a} {o} {b}")
+	B("Operators", { I("n", "result"), "= not", I("a", "true") }, "{n} = not {a}")
+	B("Operators", { I("n", "result"), "= math.", I("f", "floor", { "floor", "ceil", "round", "abs", "sqrt", "sin", "cos", "tan", "sign", "log", "exp", "rad", "deg" }), I("a", "1") }, "{n} = math.{f}({a})")
+	B("Operators", { I("n", "result"), "= random", I("a", "1"), "to", I("b", "10") }, "{n} = math.random({a}, {b})")
+	B("Operators", { I("n", "result"), "= clamp", I("a", "5"), "between", I("b", "0"), "and", I("c", "10") }, "{n} = math.clamp({a}, {b}, {c})")
+	B("Operators", { I("n", "result"), "=", I("f", "max", { "max", "min" }), "of", I("a", "1"), "and", I("b", "2") }, "{n} = math.{f}({a}, {b})")
+	B("Operators", { I("n", "result"), "= lerp", I("a", "0"), "to", I("b", "10"), "by", I("t", "0.5") }, "{n} = {a} + ({b} - {a}) * {t}")
+	B("Operators", { I("n", "dist"), "= distance", I("a", "posA"), "to", I("b", "posB") }, "local {n} = ({a} - {b}).Magnitude")
+	B("Operators", { I("n", "result"), "= bit", I("f", "band", { "band", "bor", "bxor", "lshift", "rshift" }), I("a", "1"), I("b", "2") }, "{n} = bit32.{f}({a}, {b})")
+
+	B("Control", { "if", I("c", "true"), "then" }, "if {c} then", { slots = 1, mode = "both" })
+	B("Control", { "if", I("c", "true"), "then / else" }, "if {c} then", { slots = 2, mid = "else", mode = "both" })
+	B("Control", { "wait", I("n", "1"), "seconds" }, "task.wait({n})", { mode = "both" })
+	B("Control", { "return", I("v", "") }, "return {v}")
+	B("Control", { "break" }, "break")
+	B("Control", { "continue" }, "continue")
+	B("Control", { "run in parallel" }, "task.spawn(function()", { slots = 1, close = "end)", mode = "both" })
+	B("Control", { "try (pcall)" }, "pcall(function()", { slots = 1, close = "end)" })
+	B("Control", { "try", I("o", "ok"), ",", I("e", "err"), "= pcall" }, "local {o}, {e} = pcall(function()", { slots = 1, close = "end)" })
+	B("Control", { "after", I("n", "1"), "seconds" }, "task.delay({n}, function()", { slots = 1, close = "end)", mode = "both" })
+	B("Control", { "run next frame" }, "task.defer(function()", { slots = 1, close = "end)" })
+	B("Control", { "error", I("m", "message") }, "error({m})", { q = { m = true } })
+	B("Control", { "assert", I("c", "true"), I("m", "message") }, "assert({c}, {m})", { q = { m = true } })
+	B("Control", { "raw code", I("c", "") }, "{c}")
+	B("Control", { "raw block", I("c", "do") }, "{c}", { slots = 1 })
+
+	B("Loops", { "repeat", I("n", "10"), "times" }, "for _ = 1, {n} do", { slots = 1, mode = "both" })
+	B("Loops", { "while", I("c", "true") }, "while {c} do", { slots = 1, mode = "both" })
+	B("Loops", { "forever" }, "while true do", { slots = 1, mode = "both" })
+	B("Loops", { "while waiting", I("n", "1"), "seconds" }, "while task.wait({n}) do", { slots = 1 })
+	B("Loops", { "for", I("i", "i"), "from", I("a", "1"), "to", I("b", "10"), "step", I("s", "1") }, "for {i} = {a}, {b}, {s} do", { slots = 1 })
+	B("Loops", { "repeat until", I("c", "true") }, "repeat", { slots = 1, close = "until {c}" })
+	B("Loops", { "for each child of", I("o", "workspace"), "as", I("v", "child") }, "for _, {v} in ipairs({o}:GetChildren()) do", { slots = 1 })
+	B("Loops", { "for each descendant of", I("o", "workspace"), "as", I("v", "item") }, "for _, {v} in ipairs({o}:GetDescendants()) do", { slots = 1 })
+	B("Loops", { "for each player as", I("v", "plr") }, "for _, {v} in ipairs(game.Players:GetPlayers()) do", { slots = 1 })
+
+	B("Functions", { "function", I("n", "myFunction"), "(", I("p", ""), ")" }, "local function {n}({p})", { slots = 1 })
+	B("Functions", { "call", I("n", "myFunction"), "(", I("a", ""), ")" }, "{n}({a})")
+	B("Functions", { "local", I("n", "result"), "= call", I("f", "myFunction"), "(", I("a", ""), ")" }, "local {n} = {f}({a})")
+	B("Functions", { "return", I("v", "") }, "return {v}")
+	B("Functions", { "call in parallel", I("n", "myFunction"), "(", I("a", ""), ")" }, "task.spawn({n}, {a})")
+	B("Functions", { "require", I("n", "module"), "=", I("m", "script.Parent.Module") }, "local {n} = require({m})")
+	B("Functions", { "type of", I("n", "kind"), "=", I("a", "value") }, "local {n} = typeof({a})")
+	B("Functions", { "wrap in coroutine", I("n", "co"), "(", I("f", "myFunction"), ")" }, "local {n} = coroutine.wrap({f})")
+
+	B("Events", { "on event", I("o", "workspace.ChildAdded"), "(", I("a", "child"), ")" }, "{o}:Connect(function({a})", { slots = 1, close = "end)" })
+	B("Events", { "when player joins" }, 'game:GetService("Players").PlayerAdded:Connect(function(player)', { slots = 1, close = "end)" })
+	B("Events", { "when player leaves" }, 'game:GetService("Players").PlayerRemoving:Connect(function(player)', { slots = 1, close = "end)" })
+	B("Events", { "every frame" }, 'game:GetService("RunService").Heartbeat:Connect(function(dt)', { slots = 1, close = "end)" })
+	B("Events", { "every render frame" }, 'game:GetService("RunService").RenderStepped:Connect(function(dt)', { slots = 1, close = "end)" })
+	B("Events", { "when touched", I("o", "script.Parent") }, "{o}.Touched:Connect(function(hit)", { slots = 1, close = "end)" })
+	B("Events", { "when clicked", I("o", "script.Parent") }, "{o}.MouseButton1Click:Connect(function()", { slots = 1, close = "end)" })
+	B("Events", { "when activated", I("o", "script.Parent") }, "{o}.Activated:Connect(function()", { slots = 1, close = "end)" })
+	B("Events", { "when key pressed" }, 'game:GetService("UserInputService").InputBegan:Connect(function(input, processed)', { slots = 1, close = "end)" })
+	B("Events", { "when key released" }, 'game:GetService("UserInputService").InputEnded:Connect(function(input, processed)', { slots = 1, close = "end)" })
+	B("Events", { "when", I("o", "humanoid"), "dies" }, "{o}.Died:Connect(function()", { slots = 1, close = "end)" })
+	B("Events", { "when", I("o", "object"), "changes", I("p", "Name") }, '{o}:GetPropertyChangedSignal("{p}"):Connect(function()', { slots = 1, close = "end)" })
+	B("Events", { "when", I("o", "player"), "character spawns" }, "{o}.CharacterAdded:Connect(function(char)", { slots = 1, close = "end)" })
+	B("Events", { "when prompt triggered", I("o", "prompt") }, "{o}.Triggered:Connect(function(plr)", { slots = 1, close = "end)" })
+	B("Events", { "when detector clicked", I("o", "detector") }, "{o}.MouseClick:Connect(function(plr)", { slots = 1, close = "end)" })
+	B("Events", { "fire server", I("o", "remote"), "(", I("a", ""), ")" }, "{o}:FireServer({a})")
+	B("Events", { "on client event", I("o", "remote") }, "{o}.OnClientEvent:Connect(function(...)", { slots = 1, close = "end)" })
+	B("Events", { "disconnect", I("o", "connection") }, "{o}:Disconnect()")
+	B("Events", { "save connection", I("n", "conn"), "= event", I("o", "workspace.ChildAdded") }, "local {n} = {o}:Connect(function(...)", { slots = 1, close = "end)" })
+
+	B("Objects", { "create", I("n", "part"), "=", I("c", "Part") }, 'local {n} = Instance.new("{c}")')
+	B("Objects", { "property", I("o", "part"), ".", I("p", "Name"), "=", I("v", "1") }, "{o}.{p} = {v}")
+	B("Objects", { "parent of", I("o", "part"), "=", I("p", "workspace") }, "{o}.Parent = {p}")
+	B("Objects", { "service", I("n", "service"), "=", I("s", "Players") }, 'local {n} = game:GetService("{s}")')
+	B("Objects", { "find", I("n", "child"), "in", I("o", "workspace"), I("c", "Name") }, 'local {n} = {o}:FindFirstChild("{c}")')
+	B("Objects", { "find descendant", I("n", "item"), "in", I("o", "workspace"), I("c", "Name") }, 'local {n} = {o}:FindFirstChild("{c}", true)')
+	B("Objects", { "wait for child", I("n", "child"), "in", I("o", "workspace"), I("c", "Name") }, 'local {n} = {o}:WaitForChild("{c}")')
+	B("Objects", { "clone", I("n", "copy"), "of", I("o", "part") }, "local {n} = {o}:Clone()")
+	B("Objects", { "method", I("o", "part"), ":", I("m", "Destroy"), "(", I("a", ""), ")" }, "{o}:{m}({a})")
+	B("Objects", { "destroy", I("o", "part") }, "{o}:Destroy()")
+	B("Objects", { "destroy", I("o", "part"), "after", I("t", "5"), "seconds" }, 'game:GetService("Debris"):AddItem({o}, {t})')
+	B("Objects", { "set attribute", I("o", "part"), I("k", "Key"), "=", I("v", "1") }, '{o}:SetAttribute("{k}", {v})')
+	B("Objects", { "get attribute", I("n", "value"), "=", I("o", "part"), I("k", "Key") }, 'local {n} = {o}:GetAttribute("{k}")')
+	B("Objects", { "is", I("n", "result"), "=", I("o", "part"), "a", I("c", "BasePart") }, 'local {n} = {o}:IsA("{c}")')
+	B("Objects", { "local player", I("n", "lp") }, "local {n} = game.Players.LocalPlayer")
+	B("Objects", { "character of", I("p", "lp"), "as", I("n", "char") }, "local {n} = {p}.Character or {p}.CharacterAdded:Wait()")
+	B("Objects", { "humanoid of", I("c", "char"), "as", I("n", "hum") }, 'local {n} = {c}:WaitForChild("Humanoid")')
+	B("Objects", { "root part of", I("c", "char"), "as", I("n", "root") }, 'local {n} = {c}:WaitForChild("HumanoidRootPart")')
+	B("Objects", { "player named", I("n", "plr"), "=", I("s", "Name") }, 'local {n} = game.Players:FindFirstChild("{s}")')
+	B("Objects", { "tween", I("o", "part"), "in", I("t", "1"), "seconds to", I("p", "Position"), "=", I("v", "Vector3.new(0, 10, 0)") }, 'game:GetService("TweenService"):Create({o}, TweenInfo.new({t}), { {p} = {v} }):Play()')
+	B("Objects", { "raycast", I("n", "hit"), "from", I("a", "origin"), "direction", I("d", "direction") }, "local {n} = workspace:Raycast({a}, {d})")
+	B("Objects", { "mouse", I("n", "mouse"), "= local player mouse" }, "local {n} = game.Players.LocalPlayer:GetMouse()")
+
+	B("Collections", { "table", I("n", "list") }, "local {n} = {}")
+	B("Collections", { "table with", I("n", "list"), "=", I("v", "1, 2, 3") }, "local {n} = { {v} }")
+	B("Collections", { "insert", I("v", "1"), "into", I("t", "list") }, "table.insert({t}, {v})")
+	B("Collections", { "remove index", I("i", "1"), "from", I("t", "list") }, "table.remove({t}, {i})")
+	B("Collections", { "set", I("t", "list"), "[", I("k", "1"), "] =", I("v", "0") }, "{t}[{k}] = {v}")
+	B("Collections", { "get", I("n", "item"), "=", I("t", "list"), "[", I("k", "1"), "]" }, "local {n} = {t}[{k}]")
+	B("Collections", { "size", I("n", "total"), "= #", I("t", "list") }, "local {n} = #{t}")
+	B("Collections", { "find", I("v", "1"), "in", I("t", "list"), "as", I("n", "index") }, "local {n} = table.find({t}, {v})")
+	B("Collections", { "sort", I("t", "list") }, "table.sort({t})")
+	B("Collections", { "sort", I("t", "list"), "with", I("f", "function(a, b) return a < b end") }, "table.sort({t}, {f})")
+	B("Collections", { "join", I("t", "list"), "with", I("s", '", "'), "as", I("n", "text") }, "local {n} = table.concat({t}, {s})")
+	B("Collections", { "clear", I("t", "list") }, "table.clear({t})")
+	B("Collections", { "copy", I("t", "list"), "as", I("n", "copy") }, "local {n} = table.clone({t})")
+	B("Collections", { "random item of", I("t", "list"), "as", I("n", "item") }, "local {n} = {t}[math.random(#{t})]")
+	B("Collections", { "for each", I("i", "i"), ",", I("v", "v"), "in list", I("t", "list") }, "for {i}, {v} in ipairs({t}) do", { slots = 1 })
+	B("Collections", { "for each", I("i", "k"), ",", I("v", "v"), "in dictionary", I("t", "table") }, "for {i}, {v} in pairs({t}) do", { slots = 1 })
+
+	B("Output", { "print text", I("v", "Hello") }, "print({v})", { q = { v = true }, mode = "both" })
+	B("Output", { "print value", I("v", "variable") }, "print({v})", { mode = "both" })
+	B("Output", { "warn text", I("v", "Warning") }, "warn({v})", { q = { v = true }, mode = "both" })
+	B("Output", { "warn value", I("v", "variable") }, "warn({v})", { mode = "both" })
+
+	B("Comments", { "comment", I("t", "note") }, "-- {t}", { mode = "both" })
+	B("Comments", { "block comment", I("t", "note") }, "--[[ {t} ]]", { mode = "both" })
+	B("Comments", { "section", I("t", "SECTION") }, "-- ========== {t} ==========", { mode = "both" })
+
+	local UIS = game:GetService("UserInputService")
+
+	local drag
+	local built = false
+	local opened = false
+	local win
+	local toggleObj
+	local dropLine
+
+	local function v2(p)
+		return Vector2.new(p.X, p.Y)
+	end
+
+	local function isPress(input)
+		return input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+	end
+
+	UIS.InputChanged:Connect(function(input)
+		if drag and (input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch) then
+			drag.move(v2(input.Position))
+		end
+	end)
+
+	UIS.InputEnded:Connect(function(input)
+		if drag and isPress(input) then
+			local d = drag
+			drag = nil
+			d.finish(v2(input.Position))
+		end
+	end)
+
+	local function buildWindow()
+		local Players = game:GetService("Players")
+		local mode = "simple"
+		local refreshCats
+		local curCat
+
+		for _, parent in ipairs({ game:GetService("CoreGui"), Players.LocalPlayer:FindFirstChild("PlayerGui") }) do
+			pcall(function()
+				local old = parent:FindFirstChild("ScriptBlockEditorGui")
+				if old then
+					old:Destroy()
+				end
+			end)
+		end
+
+		local gui = mk("ScreenGui", {
+			Name = "ScriptBlockEditorGui",
+			ResetOnSpawn = false,
+			IgnoreGuiInset = true,
+			DisplayOrder = 50,
+			ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+		}, nil)
+
+		local placed = pcall(function()
+			gui.Parent = game:GetService("CoreGui")
+		end)
+		if not placed or not gui.Parent then
+			gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+		end
+
+		local cam = workspace.CurrentCamera
+		local vp = cam and cam.ViewportSize or Vector2.new(800, 500)
+		local W = math.clamp(vp.X - 24, 300, 620)
+		local H = math.clamp(vp.Y - 24, 260, 400)
+
+		local main = mk("Frame", {
+			Name = "Main",
+			Size = UDim2.fromOffset(W, H),
+			Position = UDim2.new(0.5, -W / 2, 0.5, -H / 2),
+			BackgroundColor3 = Theme.Background,
+			BackgroundTransparency = Library.Settings.Transparency,
+			BorderSizePixel = 0,
+			Visible = false,
+		}, gui)
+		corner(main, 14)
+		Style.stroke(main, Theme.Border, 2)
+
+		local top = mk("Frame", {
+			Size = UDim2.new(1, 0, 0, 38),
+			BackgroundColor3 = Theme.Secondary,
+			BorderSizePixel = 0,
+		}, main)
+		corner(top, 14)
+		mk("Frame", {
+			Size = UDim2.new(1, 0, 0, 12),
+			Position = UDim2.new(0, 0, 1, -12),
+			BackgroundColor3 = Theme.Secondary,
+			BorderSizePixel = 0,
+		}, top)
+
+		pixels(top, ICONS.logo, Theme.Accent, 2, UDim2.fromOffset(12, 11))
+
+		mk("TextLabel", {
+			Size = UDim2.new(1, -190, 1, 0),
+			Position = UDim2.fromOffset(36, 0),
+			BackgroundTransparency = 1,
+			Text = "Script Block Editor",
+			TextColor3 = Theme.Text,
+			TextSize = 18,
+			Font = FONT,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+		}, top)
+
+		local closeBtn = mk("TextButton", {
+			Size = UDim2.fromOffset(28, 28),
+			Position = UDim2.new(1, -34, 0, 5),
+			BackgroundColor3 = Theme.Element,
+			Text = "",
+			TextColor3 = Theme.Text,
+			TextSize = 15,
+			Font = FONT,
+			AutoButtonColor = false,
+			BorderSizePixel = 0,
+		}, top)
+		corner(closeBtn, 8)
+		pixels(closeBtn, ICONS.close, Theme.Text, 2, UDim2.new(0.5, -5, 0.5, -5))
+		Style.stroke(closeBtn, Theme.Border, 1)
+		Style.surfaceGradient(closeBtn)
+		closeBtn.MouseEnter:Connect(function()
+			TweenSvc:Create(closeBtn, TweenInfo.new(0.12), { BackgroundColor3 = Color3.fromRGB(170, 60, 60) }):Play()
+		end)
+		closeBtn.MouseLeave:Connect(function()
+			TweenSvc:Create(closeBtn, TweenInfo.new(0.14), { BackgroundColor3 = Theme.Element }):Play()
+		end)
+
+		local modeBtn = mk("TextButton", {
+			Size = UDim2.fromOffset(108, 28),
+			Position = UDim2.new(1, -150, 0, 5),
+			BackgroundColor3 = Theme.Element,
+			Text = "Mode: Simple",
+			TextColor3 = Theme.Text,
+			TextSize = 15,
+			Font = FONT,
+			AutoButtonColor = false,
+			BorderSizePixel = 0,
+		}, top)
+		corner(modeBtn, 8)
+		Style.stroke(modeBtn, Theme.Border, 1)
+		Style.surfaceGradient(modeBtn)
+		modeBtn.MouseEnter:Connect(function()
+			TweenSvc:Create(modeBtn, TweenInfo.new(0.12), { BackgroundColor3 = Theme.AccentHover }):Play()
+		end)
+		modeBtn.MouseLeave:Connect(function()
+			TweenSvc:Create(modeBtn, TweenInfo.new(0.14), { BackgroundColor3 = Theme.Element }):Play()
+		end)
+		modeBtn.MouseButton1Click:Connect(function()
+			mode = mode == "simple" and "luau" or "simple"
+			modeBtn.Text = mode == "simple" and "Mode: Simple" or "Mode: Luau"
+			refreshCats()
+		end)
+
+		top.InputBegan:Connect(function(input)
+			if drag or not isPress(input) then
+				return
+			end
+			local sp = v2(input.Position)
+			local sPos = main.Position
+			drag = {
+				move = function(p)
+					local d = p - sp
+					main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + d.X, sPos.Y.Scale, sPos.Y.Offset + d.Y)
+				end,
+				finish = function() end,
+			}
+		end)
+
+		local body = mk("Frame", {
+			Size = UDim2.new(1, -16, 1, -54),
+			Position = UDim2.fromOffset(8, 46),
+			BackgroundTransparency = 1,
+		}, main)
+
+		local area = mk("Frame", {
+			Size = UDim2.new(1, 0, 1, -40),
+			BackgroundTransparency = 1,
+		}, body)
+
+		local catFrame = mk("ScrollingFrame", {
+			Size = UDim2.new(0, 108, 1, 0),
+			BackgroundColor3 = Theme.GroupBackground,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 3,
+			ScrollBarImageColor3 = Theme.Border,
+			AutomaticCanvasSize = AY,
+			CanvasSize = UDim2.new(),
+		}, area)
+		corner(catFrame, 10)
+		Style.stroke(catFrame, Theme.Border, 1)
+		pad(catFrame, 4)
+		vlist(catFrame, 4)
+
+		local palette = mk("ScrollingFrame", {
+			Size = UDim2.new(0, 124, 1, 0),
+			Position = UDim2.fromOffset(114, 0),
+			BackgroundColor3 = Theme.Secondary,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 3,
+			ScrollBarImageColor3 = Theme.Border,
+			AutomaticCanvasSize = AY,
+			CanvasSize = UDim2.new(),
+		}, area)
+		corner(palette, 10)
+		Style.stroke(palette, Theme.Border, 1)
+		pad(palette, 5)
+		vlist(palette, 5)
+
+		local ws = mk("ScrollingFrame", {
+			Size = UDim2.new(1, -244, 1, 0),
+			Position = UDim2.fromOffset(244, 0),
+			BackgroundColor3 = Theme.GroupBackground,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 4,
+			ScrollBarImageColor3 = Theme.Border,
+			AutomaticCanvasSize = AXY,
+			CanvasSize = UDim2.new(),
+			ScrollingDirection = Enum.ScrollingDirection.XY,
+		}, area)
+		corner(ws, 10)
+		Style.stroke(ws, Theme.Border, 1)
+
+		local rootList = {}
+		local target = rootList
+		local slotsReg = {}
+		local blocksReg = {}
+
+		local rootBtn = mk("TextButton", {
+			Size = UDim2.fromOffset(200, 220),
+			AutomaticSize = AXY,
+			BackgroundTransparency = 1,
+			Text = "",
+			AutoButtonColor = false,
+		}, ws)
+		pad(rootBtn, 8)
+		vlist(rootBtn, 6)
+		local rootStroke = mk("UIStroke", {
+			Color = Theme.Accent,
+			Thickness = 2,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		}, rootBtn)
+		corner(rootBtn, 10)
+
+		dropLine = mk("Frame", {
+			Size = UDim2.fromOffset(60, 3),
+			BackgroundColor3 = Theme.Accent,
+			BorderSizePixel = 0,
+			Visible = false,
+			ZIndex = 150,
+		}, gui)
+		corner(dropLine, 2)
+
+		local build
+
+		local function contains(list, t)
+			if list == t then
+				return true
+			end
+			for _, b in ipairs(list) do
+				for _, k in ipairs(b.kids) do
+					if contains(k, t) then
+						return true
+					end
+				end
+			end
+			return false
+		end
+
+		local function render()
+			for _, c in ipairs(rootBtn:GetChildren()) do
+				if c:IsA("GuiObject") then
+					c:Destroy()
+				end
+			end
+			slotsReg = { { frame = rootBtn, list = rootList } }
+			blocksReg = {}
+			rootStroke.Enabled = target == rootList
+			build(rootList, rootBtn)
+		end
+
+		local function label(text, parent, order)
+			return mk("TextLabel", {
+				BackgroundTransparency = 1,
+				AutomaticSize = AXY,
+				Size = UDim2.fromOffset(0, 24),
+				Text = text,
+				TextColor3 = WHITE,
+				TextSize = 17,
+				Font = FONT,
+				LayoutOrder = order,
+			}, parent)
+		end
+
+		local function ctl(icon, parent, order, fn)
+			local b = mk("TextButton", {
+				Size = UDim2.fromOffset(22, 22),
+				BackgroundColor3 = BLACK,
+				BackgroundTransparency = 0.55,
+				Text = "",
+				AutoButtonColor = false,
+				LayoutOrder = order,
+			}, parent)
+			corner(b, 6)
+			pixels(b, icon, WHITE, 2, UDim2.new(0.5, -#icon[1], 0.5, -#icon))
+			b.MouseButton1Click:Connect(fn)
+		end
+
+		local function paletteLabel(def)
+			local t = {}
+			for _, part in ipairs(def.parts) do
+				if type(part) == "string" then
+					t[#t + 1] = part
+				elseif part.d == "" then
+					t[#t + 1] = "[ ]"
+				elseif #part.d <= 9 then
+					t[#t + 1] = "[" .. part.d .. "]"
+				else
+					t[#t + 1] = "[...]"
+				end
+			end
+			return table.concat(t, " ")
+		end
+
+		local function makeGhost(text, col)
+			local g = mk("TextLabel", {
+				Size = UDim2.fromOffset(150, 0),
+				AutomaticSize = AY,
+				BackgroundColor3 = col,
+				BackgroundTransparency = 0.15,
+				BorderSizePixel = 0,
+				Text = text,
+				TextColor3 = WHITE,
+				TextSize = 16,
+				Font = FONT,
+				TextWrapped = true,
+				ZIndex = 200,
+			}, gui)
+			corner(g, 9)
+			pad(g, 6)
+			return g
+		end
+
+		local function moveGhost(g, p)
+			g.Position = UDim2.fromOffset(p.X + 10, p.Y + 10)
+		end
+
+		local function calcDrop(p, dragBlock)
+			local wp, wsz = ws.AbsolutePosition, ws.AbsoluteSize
+			if p.X < wp.X or p.X > wp.X + wsz.X or p.Y < wp.Y or p.Y > wp.Y + wsz.Y then
+				return nil
+			end
+			local best, bestArea
+			for _, e in ipairs(slotsReg) do
+				local ap, asz = e.frame.AbsolutePosition, e.frame.AbsoluteSize
+				if p.X >= ap.X and p.X <= ap.X + asz.X and p.Y >= ap.Y and p.Y <= ap.Y + asz.Y then
+					local blocked = false
+					if dragBlock then
+						for _, k in ipairs(dragBlock.kids) do
+							if contains(k, e.list) then
+								blocked = true
+								break
+							end
+						end
+					end
+					if not blocked then
+						local a = asz.X * asz.Y
+						if not bestArea or a < bestArea then
+							best, bestArea = e, a
+						end
+					end
+				end
+			end
+			best = best or slotsReg[1]
+			local frames = blocksReg[best.list] or {}
+			local n, lineY, last = 0, nil, nil
+			for i, b in ipairs(best.list) do
+				local f = frames[i]
+				if b ~= dragBlock and f then
+					local top0 = f.AbsolutePosition.Y
+					local h = f.AbsoluteSize.Y
+					if p.Y > top0 + h / 2 then
+						n += 1
+						last = top0 + h + 1
+					elseif not lineY then
+						lineY = top0 - 4
+					end
+				end
+			end
+			lineY = lineY or last or (best.frame.AbsolutePosition.Y + 6)
+			return best, n + 1, lineY, best.frame.AbsolutePosition.X + 6, math.max(30, best.frame.AbsoluteSize.X - 12)
+		end
+
+		local function showLine(p, dragBlock)
+			local e, _, y, x, w = calcDrop(p, dragBlock)
+			if e then
+				dropLine.Position = UDim2.fromOffset(x, y)
+				dropLine.Size = UDim2.fromOffset(w, 3)
+				dropLine.Visible = true
+			else
+				dropLine.Visible = false
+			end
+		end
+
+		local function makeBlock(list, i, b, parent)
+			local def = b.def
+			local col = catColor[def.cat]
+			local blk = mk("Frame", {
+				AutomaticSize = AXY,
+				Size = UDim2.fromOffset(0, 0),
+				BackgroundColor3 = col,
+				BorderSizePixel = 0,
+				LayoutOrder = i,
+			}, parent)
+			corner(blk, 9)
+			pad(blk, 6)
+			vlist(blk, 4)
+
+			blocksReg[list] = blocksReg[list] or {}
+			blocksReg[list][i] = blk
+
+			local row = mk("Frame", {
+				BackgroundTransparency = 1,
+				AutomaticSize = AXY,
+				Size = UDim2.fromOffset(0, 26),
+				LayoutOrder = 1,
+			}, blk)
+			mk("UIListLayout", {
+				FillDirection = Enum.FillDirection.Horizontal,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+				Padding = UDim.new(0, 5),
+			}, row)
+
+			local grip = mk("TextButton", {
+				Size = UDim2.fromOffset(20, 24),
+				BackgroundColor3 = BLACK,
+				BackgroundTransparency = 0.6,
+				Text = "",
+				TextColor3 = WHITE,
+				TextSize = 18,
+				Font = FONT,
+				AutoButtonColor = false,
+				LayoutOrder = 0,
+			}, row)
+			corner(grip, 6)
+			pixels(grip, ICONS.grip, WHITE, 2, UDim2.new(0.5, -5, 0.5, -5))
+
+			grip.InputBegan:Connect(function(input)
+				if drag or not isPress(input) then
+					return
+				end
+				local sp = v2(input.Position)
+				local ghost
+				drag = {
+					move = function(p)
+						if not ghost and (p - sp).Magnitude > 6 then
+							ghost = makeGhost(paletteLabel(def), col)
+							ws.ScrollingEnabled = false
+							blk.BackgroundTransparency = 0.6
+						end
+						if ghost then
+							moveGhost(ghost, p)
+							showLine(p, b)
+						end
+					end,
+					finish = function(p)
+						ws.ScrollingEnabled = true
+						dropLine.Visible = false
+						blk.BackgroundTransparency = 0
+						if not ghost then
+							return
+						end
+						ghost:Destroy()
+						local e, idx = calcDrop(p, b)
+						if e then
+							local old = table.find(list, b)
+							if old then
+								table.remove(list, old)
+							end
+							table.insert(e.list, math.clamp(idx, 1, #e.list + 1), b)
+							if not contains(rootList, target) then
+								target = rootList
+							end
+							render()
+						end
+					end,
+				}
+			end)
+
+			local o = 0
+			for _, part in ipairs(def.parts) do
+				o += 1
+				if type(part) == "string" then
+					label(part, row, o)
+				elseif part.o then
+					local cb = mk("TextButton", {
+						AutomaticSize = AX,
+						Size = UDim2.fromOffset(30, 24),
+						BackgroundColor3 = Theme.Element,
+						Text = b.v[part.k],
+						TextColor3 = Theme.Text,
+						TextSize = 16,
+						Font = FONT,
+						AutoButtonColor = false,
+						LayoutOrder = o,
+					}, row)
+					corner(cb, 12)
+					mk("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 9) }, cb)
+					cb.MouseButton1Click:Connect(function()
+						local idx = table.find(part.o, b.v[part.k]) or 0
+						idx = idx % #part.o + 1
+						b.v[part.k] = part.o[idx]
+						cb.Text = b.v[part.k]
+					end)
+				else
+					local tb = mk("TextBox", {
+						AutomaticSize = AX,
+						Size = UDim2.fromOffset(34, 24),
+						BackgroundColor3 = Theme.GroupBackground,
+						Text = b.v[part.k],
+						PlaceholderText = "...",
+						PlaceholderColor3 = Theme.SubText,
+						TextColor3 = Theme.Text,
+						TextSize = 16,
+						Font = FONT,
+						ClearTextOnFocus = false,
+						LayoutOrder = o,
+					}, row)
+					corner(tb, 12)
+					mk("UIStroke", { Color = Theme.Border, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, tb)
+					mk("UIPadding", { PaddingLeft = UDim.new(0, 7), PaddingRight = UDim.new(0, 7) }, tb)
+					tb:GetPropertyChangedSignal("Text"):Connect(function()
+						b.v[part.k] = tb.Text
+					end)
+				end
+			end
+
+			ctl(ICONS.up, row, 100, function()
+				if i > 1 then
+					list[i], list[i - 1] = list[i - 1], list[i]
+					render()
+				end
+			end)
+			ctl(ICONS.down, row, 101, function()
+				if i < #list then
+					list[i], list[i + 1] = list[i + 1], list[i]
+					render()
+				end
+			end)
+			ctl(ICONS.close, row, 102, function()
+				table.remove(list, i)
+				if not contains(rootList, target) then
+					target = rootList
+				end
+				render()
+			end)
+
+			for s = 1, def.slots do
+				if s > 1 then
+					label(def.mid, blk, 2 * s - 1)
+				end
+				local slot = mk("TextButton", {
+					AutomaticSize = AXY,
+					Size = UDim2.fromOffset(150, 32),
+					BackgroundColor3 = col:Lerp(BLACK, 0.4),
+					BorderSizePixel = 0,
+					Text = "",
+					AutoButtonColor = false,
+					LayoutOrder = 2 * s,
+				}, blk)
+				corner(slot, 7)
+				pad(slot, 5)
+				vlist(slot, 5)
+				local st = mk("UIStroke", {
+					Color = Theme.Accent,
+					Thickness = 2,
+					ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+				}, slot)
+				st.Enabled = b.kids[s] == target
+				slotsReg[#slotsReg + 1] = { frame = slot, list = b.kids[s] }
+				slot.MouseButton1Click:Connect(function()
+					target = b.kids[s]
+					render()
+				end)
+				build(b.kids[s], slot)
+			end
+		end
+
+		build = function(list, parent)
+			for i, b in ipairs(list) do
+				makeBlock(list, i, b, parent)
+			end
+		end
+
+		rootBtn.MouseButton1Click:Connect(function()
+			target = rootList
+			render()
+		end)
+
+		local function newBlock(def)
+			local b = { def = def, v = {}, kids = {} }
+			for _, part in ipairs(def.parts) do
+				if type(part) == "table" then
+					b.v[part.k] = part.d
+				end
+			end
+			for s = 1, def.slots do
+				b.kids[s] = {}
+			end
+			return b
+		end
+
+		local function visible(def)
+			return def.mode == mode or def.mode == "both"
+		end
+
+		local catButtons = {}
+
+		local function showCat(name)
+			curCat = name
+			for _, c in ipairs(palette:GetChildren()) do
+				if c:IsA("GuiObject") then
+					c:Destroy()
+				end
+			end
+			for n, btn in pairs(catButtons) do
+				btn.BackgroundTransparency = n == name and 0 or 0.5
+			end
+			local k = 0
+			for _, def in ipairs(defs) do
+				if def.cat == name and visible(def) then
+					k += 1
+					local pb = mk("TextButton", {
+						Size = UDim2.new(1, 0, 0, 0),
+						AutomaticSize = AY,
+						BackgroundColor3 = catColor[name],
+						BorderSizePixel = 0,
+						Text = paletteLabel(def),
+						TextColor3 = WHITE,
+						TextSize = 16,
+						Font = FONT,
+						TextWrapped = true,
+						AutoButtonColor = false,
+						LayoutOrder = k,
+					}, palette)
+					corner(pb, 9)
+					pad(pb, 6)
+					pb.InputBegan:Connect(function(input)
+						if drag or not isPress(input) then
+							return
+						end
+						local sp = v2(input.Position)
+						local moved = false
+						local ghost
+						drag = {
+							move = function(p)
+								local d = p - sp
+								if d.Magnitude > 8 then
+									moved = true
+								end
+								if not ghost and math.abs(d.X) > 10 and math.abs(d.X) >= math.abs(d.Y) then
+									ghost = makeGhost(paletteLabel(def), catColor[name])
+									palette.ScrollingEnabled = false
+								end
+								if ghost then
+									moveGhost(ghost, p)
+									showLine(p, nil)
+								end
+							end,
+							finish = function(p)
+								palette.ScrollingEnabled = true
+								dropLine.Visible = false
+								if ghost then
+									ghost:Destroy()
+									local e, idx = calcDrop(p, nil)
+									if e then
+										local nb = newBlock(def)
+										table.insert(e.list, math.clamp(idx, 1, #e.list + 1), nb)
+										target = def.slots > 0 and nb.kids[1] or e.list
+										render()
+									end
+								elseif not moved then
+									local nb = newBlock(def)
+									table.insert(target, nb)
+									if def.slots > 0 then
+										target = nb.kids[1]
+									end
+									render()
+								end
+							end,
+						}
+					end)
+				end
+			end
+		end
+
+		for i, c in ipairs(cats) do
+			local btn = mk("TextButton", {
+				Size = UDim2.new(1, 0, 0, 30),
+				BackgroundColor3 = c[2],
+				BorderSizePixel = 0,
+				Text = c[1],
+				TextColor3 = WHITE,
+				TextSize = 17,
+				Font = FONT,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				AutoButtonColor = false,
+				LayoutOrder = i,
+			}, catFrame)
+			corner(btn, 15)
+			mk("UIPadding", { PaddingLeft = UDim.new(0, 30) }, btn)
+			pixels(btn, ICONS[c[1]], WHITE, 2, UDim2.fromOffset(-22, 7))
+			catButtons[c[1]] = btn
+			btn.MouseButton1Click:Connect(function()
+				showCat(c[1])
+			end)
+		end
+
+		refreshCats = function()
+			local first
+			for _, c in ipairs(cats) do
+				local any = false
+				for _, def in ipairs(defs) do
+					if def.cat == c[1] and visible(def) then
+						any = true
+						break
+					end
+				end
+				catButtons[c[1]].Visible = any
+				if any and not first then
+					first = c[1]
+				end
+			end
+			if curCat and catButtons[curCat].Visible then
+				showCat(curCat)
+			else
+				showCat(first)
+			end
+		end
+
+		local function fill(tpl, def, v)
+			return (tpl:gsub("{(%w+)}", function(k)
+				local s = v[k] or ""
+				if def.q and def.q[k] then
+					s = '"' .. (s:gsub("\\", "\\\\"):gsub('"', '\\"')) .. '"'
+				end
+				return s
+			end))
+		end
+
+		local function linesOf(def, v)
+			if def.gen then
+				return def.gen(v)
+			end
+			return string.split(fill(def.head, def, v), "\n")
+		end
+
+		local function emit(list, depth, out)
+			local ind = string.rep("\t", depth)
+			for _, b in ipairs(list) do
+				local def = b.def
+				for _, l in ipairs(linesOf(def, b.v)) do
+					out[#out + 1] = ind .. l
+				end
+				if def.slots > 0 then
+					for s = 1, def.slots do
+						if s > 1 then
+							out[#out + 1] = ind .. "else"
+						end
+						emit(b.kids[s], depth + (def.indent or 1), out)
+					end
+					for _, l in ipairs(string.split(fill(def.close or "end", def, b.v), "\n")) do
+						out[#out + 1] = ind .. l
+					end
+				end
+			end
+		end
+
+		local outPanel = mk("Frame", {
+			Size = UDim2.new(1, 0, 1, 0),
+			BackgroundColor3 = Theme.GroupBackground,
+			BorderSizePixel = 0,
+			Visible = false,
+			ZIndex = 10,
+		}, area)
+		corner(outPanel, 10)
+		Style.stroke(outPanel, Theme.Border, 1)
+
+		local outScroll = mk("ScrollingFrame", {
+			Size = UDim2.new(1, -12, 1, -12),
+			Position = UDim2.fromOffset(6, 6),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 4,
+			ScrollBarImageColor3 = Theme.Border,
+			AutomaticCanvasSize = AY,
+			CanvasSize = UDim2.new(),
+			ZIndex = 11,
+		}, outPanel)
+
+		local outBox = mk("TextBox", {
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = AY,
+			BackgroundTransparency = 1,
+			Text = "",
+			TextColor3 = Theme.Text,
+			TextSize = 15,
+			Font = Enum.Font.Code,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			TextWrapped = true,
+			MultiLine = true,
+			ClearTextOnFocus = false,
+			TextEditable = true,
+			ZIndex = 12,
+		}, outScroll)
+		pad(outBox, 4)
+
+		local btnRow = mk("Frame", {
+			Size = UDim2.new(1, 0, 0, 34),
+			Position = UDim2.new(0, 0, 1, -34),
+			BackgroundTransparency = 1,
+		}, body)
+		mk("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 6),
+		}, btnRow)
+
+		local function libButton(text, order)
+			local b = mk("TextButton", {
+				Size = UDim2.new(1 / 3, -4, 1, 0),
+				BackgroundColor3 = Theme.Element,
+				Text = text,
+				TextColor3 = Theme.Text,
+				TextSize = 16,
+				Font = FONT,
+				AutoButtonColor = false,
+				BorderSizePixel = 0,
+				LayoutOrder = order,
+			}, btnRow)
+			corner(b, 10)
+			Style.stroke(b, Theme.Border, 1)
+			Style.surfaceGradient(b)
+			Style.innerBevel(b)
+			b.MouseEnter:Connect(function()
+				TweenSvc:Create(b, TweenInfo.new(0.12), { BackgroundColor3 = Theme.AccentHover }):Play()
+			end)
+			b.MouseLeave:Connect(function()
+				TweenSvc:Create(b, TweenInfo.new(0.14), { BackgroundColor3 = Theme.Element }):Play()
+			end)
+			return b
+		end
+
+		local convertBtn = libButton("Convert", 1)
+		local copyBtn = libButton("Copy", 2)
+		local clearBtn = libButton("Clear", 3)
+
+		convertBtn.MouseButton1Click:Connect(function()
+			if outPanel.Visible then
+				outPanel.Visible = false
+				convertBtn.Text = "Convert"
+				return
+			end
+			local out = {}
+			emit(rootList, 0, out)
+			outBox.Text = table.concat(out, "\n")
+			outPanel.Visible = true
+			convertBtn.Text = "Edit"
+		end)
+
+		copyBtn.MouseButton1Click:Connect(function()
+			local out = {}
+			emit(rootList, 0, out)
+			local code = table.concat(out, "\n")
+			outBox.Text = code
+			local fn = setclipboard or toclipboard or set_clipboard
+			if fn then
+				pcall(fn, code)
+			end
+			outPanel.Visible = true
+			convertBtn.Text = "Edit"
+			outBox:CaptureFocus()
+		end)
+
+		clearBtn.MouseButton1Click:Connect(function()
+			for i = #rootList, 1, -1 do
+				rootList[i] = nil
+			end
+			target = rootList
+			outBox.Text = ""
+			render()
+		end)
+
+		local grip = mk("TextButton", {
+			Size = UDim2.fromOffset(22, 22),
+			Position = UDim2.new(1, -22, 1, -22),
+			BackgroundTransparency = 1,
+			Text = "",
+			TextColor3 = Theme.SubText,
+			TextSize = 16,
+			Font = FONT,
+			AutoButtonColor = false,
+			ZIndex = 20,
+		}, main)
+		pixels(grip, ICONS.resize, Theme.SubText, 2, UDim2.fromOffset(9, 9))
+
+		grip.InputBegan:Connect(function(input)
+			if drag or not isPress(input) then
+				return
+			end
+			local sp = v2(input.Position)
+			local sSize = main.AbsoluteSize
+			drag = {
+				move = function(p)
+					local d = p - sp
+					main.Size = UDim2.fromOffset(math.max(340, sSize.X + d.X), math.max(260, sSize.Y + d.Y))
+				end,
+				finish = function() end,
+			}
+		end)
+
+		closeBtn.MouseButton1Click:Connect(function()
+			if toggleObj then
+				toggleObj:Set(false)
+			end
+		end)
+
+		refreshCats()
+		render()
+
+		win = main
+		built = true
+	end
+
+	local function openEditor()
+		if opened then
+			return
+		end
+		if not built then
+			buildWindow()
+		end
+		opened = true
+		win.Visible = true
+	end
+
+	local function closeEditor()
+		if not opened then
+			return
+		end
+		opened = false
+		drag = nil
+		if dropLine then
+			dropLine.Visible = false
+		end
+		if win then
+			win.Visible = false
+		end
+	end
+
+	local Group = NS:AddGroup({
+		Name = "Script Block Editor",
+		Info = "Script Block Editor",
+		Side = "Left",
+	})
+
+	toggleObj = Group:AddToggle({
+		Name = "Script Block Editor",
+		Info = "Open the draggable block editor window",
+		Default = false,
+		Callback = function(value)
+			if value then
+				openEditor()
+			else
+				closeEditor()
+			end
+		end,
+	})
+end)
+
 local CCOG = OG:AddGroup({
 	Name = "Customize🖌",
 	Info = "Customize🖌",
