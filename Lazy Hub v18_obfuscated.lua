@@ -443,6 +443,491 @@ local player = Players.LocalPlayer
 
 local Library = {}
 
+local LangDict = {}
+local function LT(en, es, pt)
+	LangDict[en] = { es = es, pt = pt }
+end
+
+LT("Break Bkit using enlighten", "Romper bkit usando enlighten", "Quebrar bkit usando enlighten")
+LT("Breaks bkit using enlighten", "Rompe bkit usando enlighten", "Quebra bkit usando enlighten")
+LT("Reset", "Reiniciar", "Reiniciar")
+LT("Resets urself", "Te reinicia a ti mismo", "Reinicia você mesmo")
+LT("Customize Blocks using enlighten", "Personalizar bloques usando enlighten", "Personalizar blocos usando enlighten")
+LT("Customize blocks using enlighten", "Personaliza bloques usando enlighten", "Personaliza blocos usando enlighten")
+LT("Stop Customize Blocks", "Detener personalizar bloques", "Parar personalizar blocos")
+LT("Fly", "Volar", "Voar")
+LT("Fly bro", "Vuela, bro", "Voa, mano")
+LT("Mute Boomboxes", "Silenciar boomboxes", "Silenciar boomboxes")
+LT("mute all boomboxes", "silencia todos los boomboxes", "silencia todos os boomboxes")
+LT("Unmute Boomboxes", "Reactivar boomboxes", "Reativar boomboxes")
+LT("unmute all boomboxes", "reactiva todos los boomboxes", "reativa todos os boomboxes")
+LT("Mute taco song", "Silenciar canción taco", "Silenciar música taco")
+LT("Mute that annoying song", "Silencia esa canción molesta", "Silencia essa música chata")
+LT("Unmute Taco Song", "Reactivar canción taco", "Reativar música taco")
+LT("unmute that annoying song", "reactiva esa canción molesta", "reativa essa música chata")
+LT("Delete all unanchor blocks", "Eliminar todos los bloques unanchor", "Excluir todos os blocos unanchor")
+LT("This deletes all unanchored blocks using CFrame, this can be buggy", "Esto elimina todos los bloques sin anclar usando CFrame, puede tener bugs", "Isto exclui todos os blocos desancorados usando CFrame, pode ter bugs")
+LT("Prevent fall with noclip", "Evitar caer con noclip", "Evitar cair com noclip")
+LT("This prevents u from falling with noclip", "Esto evita que caigas usando noclip", "Isto evita que você caia usando noclip")
+LT("Boombox Control interface", "Interfaz de control de boombox", "Interface de controle de boombox")
+LT("open the boombox control interface", "abre la interfaz de control de boombox", "abre a interface de controle de boombox")
+LT("Open console", "Abrir consola", "Abrir console")
+LT("open the console of roblox", "abre la consola de roblox", "abre o console do roblox")
+LT("Anti client kick", "Anti kick de cliente", "Anti kick de cliente")
+LT("ChatSpy", "ChatSpy", "ChatSpy")
+LT("Chatspy", "Chatspy", "Chatspy")
+LT("ChatSpy logger", "Registro de ChatSpy", "Registro de ChatSpy")
+LT("ChatSpy Logger", "Registro de ChatSpy", "Registro de ChatSpy")
+LT("Alert System", "Sistema de alerta", "Sistema de alerta")
+LT("alert System for protecting ur server", "sistema de alerta para proteger tu servidor", "sistema de alerta para proteger seu servidor")
+LT("Chat spam Ad", "Spam de anuncio en el chat", "Spam de anúncio no chat")
+LT("Spam our advertisement", "Spamea nuestro anuncio", "Spama nosso anúncio")
+LT("Stop ad spam", "Detener spam de anuncio", "Parar spam de anúncio")
+LT("Stop spamming our advertisement", "Deja de spamear nuestro anuncio", "Para de spamar nosso anúncio")
+LT("Send ad", "Enviar anuncio", "Enviar anúncio")
+LT("Send our advertisement", "Envía nuestro anuncio", "Envia nosso anúncio")
+LT("Create Area", "Crear área", "Criar área")
+LT("Create the area for the first method to crash", "Crea el área para el primer método de crash", "Cria a área para o primeiro método de crash")
+LT("Start First Process", "Iniciar primer proceso", "Iniciar primeiro processo")
+LT("Start first process for the method 1", "Inicia el primer proceso para el método 1", "Inicia o primeiro processo para o método 1")
+LT("Start Second Process", "Iniciar segundo proceso", "Iniciar segundo processo")
+LT("Second Process of the method 1", "Segundo proceso del método 1", "Segundo processo do método 1")
+LT("Cancel Second Process", "Cancelar segundo proceso", "Cancelar segundo processo")
+LT("Stop the second process", "Detiene el segundo proceso", "Para o segundo processo")
+LT("Anti mute interface", "Interfaz anti mute", "Interface anti mute")
+LT("Opens the anti mute interface", "Abre la interfaz anti mute", "Abre a interface anti mute")
+LT("Old time", "Reloj antiguo", "Relógio antigo")
+LT("This gives u the old timer of tco", "Esto te da el reloj antiguo de tco", "Isto te dá o relógio antigo do tco")
+LT("Old paint interface", "Interfaz de pintura antigua", "Interface de pintura antiga")
+LT("This mades ur paint tool have the old interface of tco", "Esto hace que tu paint tool tenga la interfaz antigua de tco", "Isto faz sua paint tool ter a interface antiga do tco")
+LT("Polish tool", "Pulir tool", "Polir tool")
+LT("The old way to paint blocks with material", "La forma antigua de pintar bloques con material", "A forma antiga de pintar blocos com material")
+LT("Old build and delete texture", "Textura antigua de build y delete", "Textura antiga de build e delete")
+LT("Old build and Delete texture of the og tco", "Textura antigua de build y delete del tco original", "Textura antiga de build e delete do tco original")
+LT("Enlighten Stash", "Enlighten Stash", "Enlighten Stash")
+LT("Stash ur enlighten", "Guarda tu enlighten", "Guarde seu enlighten")
+LT("TP to area", "TP al área", "TP para a área")
+LT("TP to the stash area", "TP al área de stash", "TP para a área de stash")
+LT("Make a Nextbot interface", "Interfaz para crear un Nextbot", "Interface para criar um Nextbot")
+LT("Make a nextbot using unanchored blocks", "Crea un nextbot usando bloques sin anclar", "Cria um nextbot usando blocos desancorados")
+LT("Disable Delete Sound", "Desactivar sonido de delete", "Desativar som de delete")
+LT("Disables the delete sound effect", "Desactiva el efecto de sonido de delete", "Desativa o efeito sonoro de delete")
+LT("Fix B-Kit interfaces", "Arreglar interfaces de B-Kit", "Corrigir interfaces de B-Kit")
+LT("This fixes every interface bugged of bkit", "Esto arregla todas las interfaces bugueadas de bkit", "Isto corrige todas as interfaces bugadas do bkit")
+LT("Customize brick", "Personalizar brick", "Personalizar brick")
+LT("Customize the brick of replicated storage", "Personaliza el brick de replicated storage", "Personaliza o brick do replicated storage")
+LT("Stop brick customize", "Detener personalización de brick", "Parar personalização de brick")
+LT("Stop customizing", "Dejar de personalizar", "Parar de personalizar")
+LT("Scrxptdev", "Scrxptdev", "Scrxptdev")
+LT("Another script maded by a collaborator[friend] of me(is in spanish only, no english translation)", "Otro script hecho por un colaborador[amigo] mío (está solo en español, sin traducción al inglés)", "Outro script feito por um colaborador[amigo] meu (está só em espanhol, sem tradução para inglês)")
+LT("Customize rich text interface", "Interfaz para personalizar texto enriquecido", "Interface para personalizar texto rico")
+LT("Customize ur sign or spray texts using this interface", "Personaliza tus textos de sign o spray usando esta interfaz", "Personalize seus textos de sign ou spray usando esta interface")
+LT("Tagify", "Tagify", "Tagify")
+LT("Bypass every text u want to spray or sign", "Haz bypass a cualquier texto que quieras spray o sign", "Faça bypass em qualquer texto que queira spray ou sign")
+LT("Decal tool", "Decal tool", "Decal tool")
+LT("Spray every image u want, u need enlighten", "Haz spray de cualquier imagen que quieras, necesitas enlighten", "Faça spray de qualquer imagem que quiser, precisa de enlighten")
+LT("Command Brick interface", "Interfaz de Command Brick", "Interface de Command Brick")
+LT("Opens a interface to make a real functional button", "Abre una interfaz para crear un botón realmente funcional", "Abre uma interface para criar um botão realmente funcional")
+LT("Unanchor tool control", "Control de unanchor tool", "Controle de unanchor tool")
+LT("Control unanchored blocks with a tool", "Controla bloques sin anclar con un tool", "Controle blocos desancorados com um tool")
+LT("Legacy service 2", "Legacy Service 2", "Legacy Service 2")
+LT("A complement for Legacy Service[this will get deleted soon, all his content will be stay in Legacy Service", "Un complemento para Legacy Service [esto se eliminará pronto, todo su contenido se quedará en Legacy Service]", "Um complemento para Legacy Service [isto será removido em breve, todo o conteúdo ficará em Legacy Service]")
+LT("Crash Machine with bkit", "Crash Machine con bkit", "Crash Machine com bkit")
+LT("Crash machine using bkit", "Crash machine usando bkit", "Crash machine usando bkit")
+LT("Clear Json", "Limpiar Json", "Limpar Json")
+LT("Clears the JSON textbox", "Limpia el cuadro de texto del JSON", "Limpa a caixa de texto do JSON")
+LT("Side to Side", "De lado a lado", "De lado a lado")
+LT("Bottom to Top", "De abajo hacia arriba", "De baixo para cima")
+LT("Rotate X 90°", "Rotar X 90°", "Girar X 90°")
+LT("Rotate Y 90°", "Rotar Y 90°", "Girar Y 90°")
+LT("Rotate Z 90°", "Rotar Z 90°", "Girar Z 90°")
+LT("Select Corners", "Seleccionar esquinas", "Selecionar cantos")
+LT("Tap two opposite corner bricks of a canvas that already exists. Corner 1 gets a red outline and corner 2 a green one", "Toca dos bricks de esquinas opuestas de un canvas que ya existe. La esquina 1 queda marcada en rojo y la esquina 2 en verde", "Toque dois bricks de cantos opostos de um canvas que já existe. O canto 1 fica marcado em vermelho e o canto 2 em verde")
+LT("Confirm Import", "Confirmar importación", "Confirmar importação")
+LT("Imports every brick between the two selected corners as a canvas you can paint", "Importa todos los bricks entre las dos esquinas seleccionadas como un canvas que puedes pintar", "Importa todos os bricks entre os dois cantos selecionados como um canvas que você pode pintar")
+LT("Start Canvas", "Iniciar Canvas", "Iniciar Canvas")
+LT("Start building the canvas", "Comienza a construir el canvas", "Começa a construir o canvas")
+LT("Stop Canvas", "Detener Canvas", "Parar Canvas")
+LT("Stop building the canvas", "Detiene la construcción del canvas", "Para a construção do canvas")
+LT("Continue Canvas", "Continuar Canvas", "Continuar Canvas")
+LT("Continues the last canvas from where it stopped after dying or pressing Stop", "Continúa el último canvas desde donde se quedó tras morir o presionar Stop", "Continua o último canvas de onde parou após morrer ou pressionar Stop")
+LT("Next Canvas", "Siguiente Canvas", "Próximo Canvas")
+LT("Switches to the next saved canvas", "Cambia al siguiente canvas guardado", "Muda para o próximo canvas salvo")
+LT("Previous Canvas", "Canvas anterior", "Canvas anterior")
+LT("Switches to the previous saved canvas", "Cambia al canvas guardado anterior", "Muda para o canvas salvo anterior")
+LT("Paint Method", "Método de pintura", "Método de pintura")
+LT("Cycles between the Paint tool with teleport, the PaintBucket remote and the Paint aura (stands within range, no teleport per brick)", "Alterna entre el Paint tool con teletransporte, el remote de PaintBucket y el aura de pintura (se queda dentro del rango, sin teletransportarse por cada brick)", "Alterna entre a Paint tool com teleporte, o remote do PaintBucket e a aura de pintura (fica dentro do alcance, sem teleportar a cada brick)")
+LT("Paint Canvas", "Pintar Canvas", "Pintar Canvas")
+LT("Paints the saved canvas bricks using the pasted JSON with the selected paint method", "Pinta los bricks del canvas guardado usando el JSON pegado con el método de pintura seleccionado", "Pinta os bricks do canvas salvo usando o JSON colado com o método de pintura selecionado")
+LT("Paint Text", "Pintar texto", "Pintar texto")
+LT("Draws the text above as pixel art fitted to the canvas, with smaller letters and several lines if needed, keeping upper and lower case, then paints it", "Dibuja el texto de arriba como pixel art ajustado al canvas, con letras más pequeñas y varias líneas si hace falta, respetando mayúsculas y minúsculas, y luego lo pinta", "Desenha o texto acima como pixel art ajustado ao canvas, com letras menores e várias linhas se necessário, respeitando maiúsculas e minúsculas, e depois pinta")
+LT("Next Frame", "Siguiente frame", "Próximo frame")
+LT("Paints the next frame of the animation using the selected paint method", "Pinta el siguiente frame de la animación usando el método de pintura seleccionado", "Pinta o próximo frame da animação usando o método de pintura selecionado")
+LT("Previous Frame", "Frame anterior", "Frame anterior")
+LT("Paints the previous frame of the animation using the selected paint method", "Pinta el frame anterior de la animación usando el método de pintura seleccionado", "Pinta o frame anterior da animação usando o método de pintura selecionado")
+LT("Play Animation", "Reproducir animación", "Reproduzir animação")
+LT("Paints every frame in a loop using the fps from the JSON until you press Stop Paint", "Pinta cada frame en bucle usando los fps del JSON hasta que presiones Stop Paint", "Pinta cada frame em loop usando o fps do JSON até você pressionar Stop Paint")
+LT("Clear Canvas", "Limpiar Canvas", "Limpar Canvas")
+LT("Paints the whole saved canvas white using the selected paint method", "Pinta todo el canvas guardado de blanco usando el método de pintura seleccionado", "Pinta todo o canvas salvo de branco usando o método de pintura selecionado")
+LT("Stop Paint", "Detener pintura", "Parar pintura")
+LT("Stops painting and keeps the saved bricks and what is already painted", "Detiene la pintura y conserva los bricks guardados y lo que ya está pintado", "Para a pintura e mantém os bricks salvos e o que já foi pintado")
+LT("Mirror Image", "Espejar imagen", "Espelhar imagem")
+LT("Flips the image horizontally if it comes out reversed", "Voltea la imagen horizontalmente si sale al revés", "Inverte a imagem horizontalmente se sair ao contrário")
+LT("SAVE BUILD", "GUARDAR BUILD", "SALVAR BUILD")
+LT("Saves current bricks with the name entered above", "Guarda los bricks actuales con el nombre ingresado arriba", "Salva os bricks atuais com o nome inserido acima")
+LT("EXPORT SELECTED", "EXPORTAR SELECCIONADO", "EXPORTAR SELECIONADO")
+LT("Copies selected build JSON to clipboard", "Copia el JSON del build seleccionado al portapapeles", "Copia o JSON do build selecionado para a área de transferência")
+LT("IMPORT JSON", "IMPORTAR JSON", "IMPORTAR JSON")
+LT("Opens window to paste and import JSON", "Abre una ventana para pegar e importar JSON", "Abre uma janela para colar e importar JSON")
+LT("REFRESH BUILDS LIST", "ACTUALIZAR LISTA DE BUILDS", "ATUALIZAR LISTA DE BUILDS")
+LT("Reloads saved builds creating dynamic buttons", "Recarga los builds guardados creando botones dinámicos", "Recarrega os builds salvos criando botões dinâmicos")
+LT("LOAD SELECTED BUILD", "CARGAR BUILD SELECCIONADO", "CARREGAR BUILD SELECIONADO")
+LT("Starts building the last clicked build from list", "Empieza a construir el último build que seleccionaste de la lista", "Começa a construir o último build que você selecionou na lista")
+LT("STOP AUTOBUILD", "DETENER AUTOBUILD", "PARAR AUTOBUILD")
+LT("Stops current loading process immediately", "Detiene de inmediato el proceso de carga actual", "Para imediatamente o processo de carregamento atual")
+LT("SET OFFSET HERE", "ESTABLECER OFFSET AQUÍ", "DEFINIR OFFSET AQUI")
+LT("Uses current position as origin for future loads", "Usa tu posición actual como origen para las próximas cargas", "Usa sua posição atual como origem para os próximos carregamentos")
+LT("RESET OFFSET", "RESTABLECER OFFSET", "RESETAR OFFSET")
+LT("Resets origin to (0,0,0)", "Restablece el origen a (0,0,0)", "Reseta a origem para (0,0,0)")
+LT("OPTIMIZE ALL SAVES", "OPTIMIZAR TODOS LOS GUARDADOS", "OTIMIZAR TODOS OS SALVAMENTOS")
+LT("Reduces size of all JSON files", "Reduce el tamaño de todos los archivos JSON", "Reduz o tamanho de todos os arquivos JSON")
+LT("DELETE SELECTED SAVE", "ELIMINAR GUARDADO SELECCIONADO", "EXCLUIR SALVAMENTO SELECIONADO")
+LT("Deletes file of the last clicked build", "Elimina el archivo del último build que seleccionaste", "Exclui o arquivo do último build que você selecionou")
+LT("Color: White", "Color: Blanco", "Cor: Branco")
+LT("Select white color", "Selecciona el color blanco", "Selecione a cor branco")
+LT("Color: Red", "Color: Rojo", "Cor: Vermelho")
+LT("Select red color", "Selecciona el color rojo", "Selecione a cor vermelho")
+LT("Color: Blue", "Color: Azul", "Cor: Azul")
+LT("Select blue color", "Selecciona el color azul", "Selecione a cor azul")
+LT("Color: Green", "Color: Verde", "Cor: Verde")
+LT("Select green color", "Selecciona el color verde", "Selecione a cor verde")
+LT("Color: Black", "Color: Negro", "Cor: Preto")
+LT("Select black color", "Selecciona el color negro", "Selecione a cor preto")
+LT("Color: Yellow", "Color: Amarillo", "Cor: Amarelo")
+LT("Select yellow color", "Selecciona el color amarillo", "Selecione a cor amarelo")
+LT("Color: Cyan", "Color: Cian", "Cor: Ciano")
+LT("Select cyan color", "Selecciona el color cian", "Selecione a cor ciano")
+LT("Color: Purple", "Color: Morado", "Cor: Roxo")
+LT("Select purple color", "Selecciona el color morado", "Selecione a cor roxo")
+LT("Paint All Blocks", "Pintar todos los bloques", "Pintar todos os blocos")
+LT("Paint all blocks using PaintBucket", "Pinta todos los bloques usando PaintBucket", "Pinta todos os blocos usando PaintBucket")
+LT("Get PaintBucket Gear", "Obtener gear PaintBucket", "Obter gear PaintBucket")
+LT("Request PaintBucket gear via chat", "Pide el gear de PaintBucket por el chat", "Peça o gear do PaintBucket pelo chat")
+LT("Copy Job ID", "Copiar Job ID", "Copiar Job ID")
+LT("Copies server Job ID to clipboard", "Copia el Job ID del servidor al portapapeles", "Copia o Job ID do servidor para a área de transferência")
+LT("Copy Place ID", "Copiar Place ID", "Copiar Place ID")
+LT("Copies game Place ID to clipboard", "Copia el Place ID del juego al portapapeles", "Copia o Place ID do jogo para a área de transferência")
+LT("Rejoin Server", "Reunirse al servidor", "Reentrar no servidor")
+LT("Rejoin current server", "Vuelve a unirte al servidor actual", "Reentra no servidor atual")
+LT("Del Clones", "Eliminar clones", "Excluir clones")
+LT("Send delete clones command", "Envía el comando para eliminar clones", "Envia o comando para excluir clones")
+LT("Get Server Stats", "Obtener estadísticas del servidor", "Obter estatísticas do servidor")
+LT("Show current player count", "Muestra la cantidad actual de jugadores", "Mostra a quantidade atual de jogadores")
+LT("Find Players", "Buscar jugadores", "Buscar jogadores")
+LT("Scan and list all players", "Escanea y lista a todos los jugadores", "Escaneia e lista todos os jogadores")
+LT("Teleport to Player", "Teletransportar a jugador", "Teletransportar para jogador")
+LT("Teleport to random player", "Teletransporta a un jugador aleatorio", "Teletransporta para um jogador aleatório")
+LT("Get My Position", "Obtener mi posición", "Obter minha posição")
+LT("Get current player position", "Obtiene tu posición actual", "Obtém sua posição atual")
+LT("List All Players", "Listar todos los jugadores", "Listar todos os jogadores")
+LT("Get all player names", "Obtiene los nombres de todos los jugadores", "Obtém os nomes de todos os jogadores")
+LT("Click to select this build", "Toca para seleccionar este build", "Toque para selecionar este build")
+LT("Stop All Auras", "Detener todas las auras", "Parar todas as auras")
+LT("Turns off every aura of this group", "Desactiva todas las auras de este grupo", "Desativa todas as auras deste grupo")
+LT("Medieval[Default]", "Medieval [Predeterminado]", "Medieval [Padrão]")
+LT("Dark charcoal panels with dark metal borders and copper accents", "Paneles de carbón oscuro con bordes metálicos oscuros y detalles de cobre", "Painéis de carvão escuro com bordas metálicas escuras e detalhes de cobre")
+LT("Aqua", "Aqua", "Aqua")
+LT("Underwater look with bubbles, waves, light rays and glassy blue panels", "Aspecto submarino con burbujas, olas, rayos de luz y paneles azules de vidrio", "Visual subaquático com bolhas, ondas, raios de luz e painéis azuis de vidro")
+LT("Retro", "Retro", "Retrô")
+LT("Neon purple and magenta with VHS scanlines, tracking bar, glitches and tape overlay", "Morado y magenta neón con líneas de escaneo tipo VHS, barra de tracking, glitches y textura de cinta", "Roxo e magenta neon com linhas de scan estilo VHS, barra de tracking, glitches e textura de fita")
+LT("Wii", "Wii", "Wii")
+LT("Clean white and sky blue glossy panels with soft rounded corners and floating light orbs", "Paneles blancos y azul cielo brillantes, con esquinas suaves redondeadas y esferas de luz flotantes", "Painéis brancos e azul-céu brilhantes, com cantos suaves arredondados e esferas de luz flutuantes")
+LT("Dark Relax", "Relax oscuro", "Relax escuro")
+LT("Calm deep blue night mode with a slow aurora, twinkling stars, a soft moon and shooting stars", "Modo nocturno azul oscuro y tranquilo con una aurora lenta, estrellas titilantes, una luna suave y estrellas fugaces", "Modo noturno azul escuro e calmo com uma aurora lenta, estrelas cintilantes, uma lua suave e estrelas cadentes")
+LT("Cafeteria", "Cafetería", "Cafeteria")
+LT("Warm espresso and cream colors with a soft lamp glow and rising steam", "Colores cálidos de espresso y crema, con un suave brillo de lámpara y vapor que sube", "Cores quentes de espresso e creme, com um brilho suave de lâmpada e vapor subindo")
+LT("Realistic", "Realista", "Realista")
+LT("Frosted graphite glass with rain droplets, bokeh lights, a light beam with dust and soft shadows", "Vidrio grafito esmerilado con gotas de lluvia, luces bokeh, un haz de luz con polvo y sombras suaves", "Vidro grafite fosco com gotas de chuva, luzes bokeh, um feixe de luz com poeira e sombras suaves")
+LT("Send request to alt", "Enviar solicitud a la alt", "Enviar pedido para a alt")
+LT("View linked alts", "Ver alts vinculadas", "Ver alts vinculadas")
+LT("Unlink all", "Desvincular todas", "Desvincular todas")
+LT("TP alts", "TP alts", "TP alts")
+LT("Bring (bring alts to me)", "Traer (traer alts hacia mí)", "Trazer (trazer alts até mim)")
+LT("Refresh canvas bricks", "Actualizar bricks del canvas", "Atualizar bricks do canvas")
+LT("Rescans the canvas including your alts' bricks", "Vuelve a escanear el canvas incluyendo los bricks de tus alts", "Reescaneia o canvas incluindo os bricks das suas alts")
+LT("Co-op Canvas", "Canvas cooperativo", "Canvas cooperativo")
+LT("Splits the canvas into column strips and every account builds one. Set size and options in the Canvas group first", "Divide el canvas en tiras de columnas y cada cuenta construye una. Antes configura el tamaño y las opciones en el grupo Canvas", "Divide o canvas em faixas de colunas e cada conta constrói uma. Antes configure o tamanho e as opções no grupo Canvas")
+LT("Co-op Auto Build", "Auto Build cooperativo", "Auto Build cooperativo")
+LT("Splits the selected build between all accounts. Alts don't need the file: you send each one its part", "Divide el build seleccionado entre todas las cuentas. Las alts no necesitan el archivo: tú les envías la parte de cada una", "Divide o build selecionado entre todas as contas. As alts não precisam do arquivo: você envia a parte de cada uma")
+LT("Stop Co-op", "Detener cooperativo", "Parar cooperativo")
+LT("Stop everything on alts", "Detiene todo en las alts", "Para tudo nas alts")
+LT("Spawn a Shadow block Bug Glitch", "Generar un glitch de bloque sombra", "Gerar um glitch de bloco sombra")
+LT("Spawns a black shadow block that makes the brightness glitch for players on max graphics", "Genera un bloque sombra negro que hace glitchear el brillo a los jugadores con gráficos al máximo", "Gera um bloco sombra preto que faz o brilho dar glitch nos jogadores com gráficos no máximo")
+LT("/Kick command", "Comando /Kick", "Comando /Kick")
+LT("Kick people using the crash method, needs bkit and enlighten", "Expulsa gente usando el método de crash, necesita bkit y enlighten", "Expulsa pessoas usando o método de crash, precisa de bkit e enlighten")
+LT("Anti Crash Machine Lag", "Anti lag de Crash Machine", "Anti lag de Crash Machine")
+LT("Removes overlapping bricks to reduce crash machine lag", "Elimina bricks superpuestos para reducir el lag de la crash machine", "Remove bricks sobrepostos para reduzir o lag da crash machine")
+LT("Crash machine with bkit v2", "Crash machine con bkit v2", "Crash machine com bkit v2")
+LT("Paint Spam in Terrain", "Spam de pintura en Terrain", "Spam de pintura em Terrain")
+LT("Spams the paint in the terrain", "Spamea la pintura en el terrain", "Spama a pintura no terrain")
+LT("Stop Paint Spam in terrain", "Detener spam de pintura en terrain", "Parar spam de pintura em terrain")
+LT("Stops the paint spam in the terrain", "Detiene el spam de pintura en el terrain", "Para o spam de pintura no terrain")
+LT("Toxify Aura", "Aura Toxify", "Aura Toxify")
+LT("Toxify aura", "Aura toxify", "Aura toxify")
+LT("Stop Toxify Aura", "Detener aura Toxify", "Parar aura Toxify")
+LT("Stops the toxify aura", "Detiene el aura toxify", "Para a aura toxify")
+LT("Advanced Paint", "Pintura avanzada", "Pintura avançada")
+LT("Advanced paint interface", "Interfaz de pintura avanzada", "Interface de pintura avançada")
+LT("Alternate Day Skybox", "Skybox de día alternativo", "Skybox de dia alternativo")
+LT("Neeeds enlighten", "Necesita enlighten", "Precisa de enlighten")
+LT("Needs enlighten", "Necesita enlighten", "Precisa de enlighten")
+LT("Alternate Night Skybox", "Skybox de noche alternativo", "Skybox de noite alternativo")
+LT("create platform", "crear plataforma", "criar plataforma")
+LT("Creates the stash platform", "Crea la plataforma de stash", "Cria a plataforma de stash")
+LT("Stash ur bkit", "Guarda tu bkit", "Guarde seu bkit")
+LT("Stash your bkit", "Guarda tu bkit", "Guarde seu bkit")
+LT("Tp to stash", "TP al stash", "TP para o stash")
+LT("Teleports to the stash", "Te teletransporta al stash", "Teletransporta para o stash")
+LT("ItaScript V2(By itakito)", "ItaScript V2 (por itakito)", "ItaScript V2 (por itakito)")
+LT("Third party script by itakito, the key is not provided", "Script de terceros hecho por itakito, la key no está incluida", "Script de terceiros feito por itakito, a key não é fornecida")
+LT("Copy Jobid", "Copiar Jobid", "Copiar Jobid")
+LT("Copies the job id", "Copia el job id", "Copia o job id")
+LT("Copy placeid", "Copiar placeid", "Copiar placeid")
+LT("Copies the place id", "Copia el place id", "Copia o place id")
+LT("SkyBox customize[Bkit needed]", "Personalizar SkyBox [Se necesita Bkit]", "Personalizar SkyBox [Precisa de Bkit]")
+LT("Skybox customize, needs bkit", "Personaliza el skybox, necesita bkit", "Personaliza o skybox, precisa de bkit")
+LT("Topbar", "Barra superior", "Barra superior")
+LT("Show a bar that opens each group as a draggable window", "Muestra una barra que abre cada grupo como una ventana que puedes arrastrar", "Mostra uma barra que abre cada grupo como uma janela arrastável")
+LT("Grief", "Grief", "Grief")
+LT("Grief in a radius of 200 studs using bkit", "Haz grief en un radio de 200 studs usando bkit", "Faça grief em um raio de 200 studs usando bkit")
+LT("Auto Abuse", "Auto Abuse", "Auto Abuse")
+LT("This starts abusing ur admin/enIighten, u need admin or enlighten", "Esto empieza a abusar de tu admin/enlighten, necesitas admin o enlighten", "Isto começa a abusar do seu admin/enlighten, precisa de admin ou enlighten")
+LT("Protect from gears", "Protegerse de gears", "Proteger-se de gears")
+LT("Protects ur server from dangerous gears using admin[u need it]", "Protege tu servidor de gears peligrosos usando admin [lo necesitas]", "Protege seu servidor de gears perigosos usando admin [você precisa dele]")
+LT("Paint Raid", "Raid de pintura", "Raid de pintura")
+LT("This spams paint", "Esto spamea pintura", "Isto spama pintura")
+LT("Unanchor Raid", "Raid de unanchor", "Raid de unanchor")
+LT("Unanchor everything using bkit", "Desancla todo usando bkit", "Desancora tudo usando bkit")
+LT("Build Aura spam", "Spam de aura de build", "Spam de aura de build")
+LT("Spams Build tool", "Spamea la Build tool", "Spama a Build tool")
+LT("Spam Paint [Beach]", "Spam de pintura [Beach]", "Spam de pintura [Beach]")
+LT("Spams the paint tool in the beach part of the map", "Spamea la paint tool en la parte de playa del mapa", "Spama a paint tool na parte de praia do mapa")
+LT("Paint spam (terrain)", "Spam de pintura (terrain)", "Spam de pintura (terrain)")
+LT("Spams paint tool in the terrain part", "Spamea la paint tool en la parte de terrain", "Spama a paint tool na parte de terrain")
+LT("Delete Aura", "Aura de delete", "Aura de delete")
+LT("Delete aura", "Aura de delete", "Aura de delete")
+LT("Delete Bypass", "Bypass de delete", "Bypass de delete")
+LT("Use delete tool without equiping it", "Usa el delete tool sin equiparlo", "Usa o delete tool sem equipá-lo")
+LT("Paint bypass", "Bypass de pintura", "Bypass de pintura")
+LT("use Paint tool without equiping it", "usa el Paint tool sin equiparlo", "usa a Paint tool sem equipá-la")
+LT("Shape Bypass", "Bypass de shape", "Bypass de shape")
+LT("use shape tool without equiping it", "usa el shape tool sin equiparlo", "usa o shape tool sem equipá-lo")
+LT("Shovel Bypass", "Bypass de shovel", "Bypass de shovel")
+LT("use shovel tool without equiping it", "usa el shovel tool sin equiparlo", "usa o shovel tool sem equipá-lo")
+LT("Anti Maptide Nan", "Anti Maptide Nan", "Anti Maptide Nan")
+LT("Anti Maptide nan", "Anti Maptide nan", "Anti Maptide nan")
+LT("Anti Jail", "Anti Jail", "Anti Jail")
+LT("Anti KnockBack", "Anti KnockBack", "Anti KnockBack")
+LT("Anti Ragdoll", "Anti Ragdoll", "Anti Ragdoll")
+LT("Anti RagDoll", "Anti RagDoll", "Anti RagDoll")
+LT("Anti Teleport", "Anti Teleport", "Anti Teleport")
+LT("Anti Vampire", "Anti Vampire", "Anti Vampire")
+LT("Prevent Enlighten Drop", "Prevenir drop de Enlighten", "Prevenir drop de Enlighten")
+LT("Prevent enlighten Drop", "Prevenir drop de enlighten", "Prevenir drop de enlighten")
+LT("Anti AFK", "Anti AFK", "Anti AFK")
+LT("Anti Fling", "Anti Fling", "Anti Fling")
+LT("Anti Freeze", "Anti Freeze", "Anti Freeze")
+LT("Protects u from freeze!", "¡Te protege de quedar freeze!", "Te protege de ficar freeze!")
+LT("Anti Void Fall", "Anti caída al vacío", "Anti queda no vazio")
+LT("Protects u from falling", "Te protege de caer", "Te protege de cair")
+LT("Anti Visuals", "Anti Visuals", "Anti Visuals")
+LT("Anti Glitch", "Anti Glitch", "Anti Glitch")
+LT("Make u Unglitched Automatic", "Te deja sin glitch de forma automática", "Te deixa sem glitch automaticamente")
+LT("Griefs in a radius of 200 studs", "Hace grief en un radio de 200 studs", "Faz grief em um raio de 200 studs")
+LT("Build Aura Spam", "Spam de aura de build", "Spam de aura de build")
+LT("Spams the build tool in a aura", "Spamea la build tool en un aura", "Spama a build tool em uma aura")
+LT("Anti Blind", "Anti Blind", "Anti Blind")
+LT("Anti Blind UI", "Interfaz Anti Blind", "Interface Anti Blind")
+LT("Anti Bkit Breaker", "Anti Bkit Breaker", "Anti Bkit Breaker")
+LT("Anti freeze", "Anti freeze", "Anti freeze")
+LT("Anti Blur", "Anti Blur", "Anti Blur")
+LT("Anti blur", "Anti blur", "Anti blur")
+LT("Anti Colorless", "Anti Colorless", "Anti Colorless")
+LT("Anti Fog", "Anti Fog", "Anti Fog")
+LT("Anti Toxify", "Anti Toxify", "Anti Toxify")
+LT("Chunks", "Chunks", "Chunks")
+LT("Build the canvas in square chunks that adapt to the width and height", "Construye el canvas en chunks cuadrados que se adaptan al ancho y alto", "Constrói o canvas em chunks quadrados que se adaptam à largura e altura")
+LT("Fast Mode", "Modo rápido", "Modo rápido")
+LT("Always looks for the fastest route: stands in the middle of reach sized tiles and places every brick of the tile from one spot, shrinking the tiles on its own if bricks are missing. Works with or without Chunks", "Siempre busca la ruta más rápida: se para en medio de tiles del tamaño de tu alcance y coloca cada brick del tile desde un solo punto, reduciendo los tiles por su cuenta si faltan bricks. Funciona con o sin Chunks", "Sempre busca a rota mais rápida: fica no meio de tiles do tamanho do seu alcance e coloca cada brick do tile a partir de um só ponto, reduzindo os tiles sozinho se faltarem bricks. Funciona com ou sem Chunks")
+LT("Detail Bricks", "Bricks de detalle", "Bricks de detalhe")
+LT("On: detail bricks (1 stud, finest canvas). Off: normal bricks (4 studs, bigger pixels)", "Activado: bricks de detalle (1 stud, canvas más fino). Desactivado: bricks normales (4 studs, pixeles más grandes)", "Ativado: bricks de detalhe (1 stud, canvas mais fino). Desativado: bricks normais (4 studs, pixels maiores)")
+LT("Server Mode Save", "Guardado en modo servidor", "Salvamento em modo servidor")
+LT("ON: Scans all server models. OFF: Only your local bricks.", "ACTIVADO: escanea todos los models del servidor. DESACTIVADO: solo tus bricks locales.", "ATIVADO: escaneia todos os models do servidor. DESATIVADO: apenas seus bricks locais.")
+LT("Teleport While Building", "Teletransportarse al construir", "Teletransportar ao construir")
+LT("Apply Colors", "Aplicar colores", "Aplicar cores")
+LT("Random Paint Loop", "Bucle de pintura aleatoria", "Loop de pintura aleatória")
+LT("Anti Gravity", "Anti gravedad", "Anti gravidade")
+LT("Keeps the gravity at its normal value", "Mantiene la gravedad en su valor normal", "Mantém a gravidade no seu valor normal")
+LT("Anti Drag", "Anti arrastre", "Anti arraste")
+LT("Prevents other players from dragging you", "Evita que otros jugadores te arrastren", "Evita que outros jogadores te arrastem")
+LT("Anti Invisible", "Anti invisible", "Anti invisível")
+LT("Asks to reset you when your body gets invisible", "Te pide reiniciarte cuando tu cuerpo se vuelve invisible", "Pede para te resetar quando seu corpo fica invisível")
+LT("Anti Stun", "Anti stun", "Anti stun")
+LT("Asks to untackle you when you get stunned", "Te pide liberarte cuando quedas stuneado", "Pede para te soltar quando você fica stunado")
+LT("Anti Farlands", "Anti Farlands", "Anti Farlands")
+LT("Brings you back to the map if you get flung too far away", "Te trae de vuelta al mapa si sales volando muy lejos", "Te traz de volta ao mapa se você for lançado muito longe")
+LT("Anti Cursed", "Anti Cursed", "Anti Cursed")
+LT("Disables the cursed lighting effects", "Desactiva los efectos de iluminación cursed", "Desativa os efeitos de iluminação cursed")
+LT("Noclip", "Noclip", "Noclip")
+LT("Walk through blocks and walls", "Camina a través de bloques y paredes", "Caminhe através de blocos e paredes")
+LT("Rainbow Terrain", "Terrain arcoíris", "Terrain arco-íris")
+LT("Rainbow Aura also paints the terrain and ground parts", "El aura arcoíris también pinta el terrain y las partes del suelo", "A aura arco-íris também pinta o terrain e as partes do chão")
+LT("Day/Night Cycle", "Ciclo de día y noche", "Ciclo de dia e noite")
+LT("Smoothly cycles day and night overriding the game", "Alterna suavemente entre día y noche anulando al juego", "Alterna suavemente entre dia e noite substituindo o jogo")
+LT("Show Legacy Users", "Mostrar usuarios de Legacy", "Mostrar usuários de Legacy")
+LT("Shows a card over players using Legacy Service in this server", "Muestra una tarjeta sobre los jugadores que usan Legacy Service en este servidor", "Mostra um cartão sobre os jogadores que usam Legacy Service neste servidor")
+LT("Show Me To Others", "Mostrarme a otros", "Mostrar-me para outros")
+LT("Lets other Legacy Service users see the card over your head", "Deja que otros usuarios de Legacy Service vean la tarjeta sobre tu cabeza", "Permite que outros usuários do Legacy Service vejam o cartão sobre sua cabeça")
+LT("Connect (alt or controller)", "Conectar (alt o controlador)", "Conectar (alt ou controlador)")
+LT("Turn it on in ALL accounts. Alts will see the accept popup.", "Actívalo en TODAS las cuentas. Las alts verán el popup para aceptar.", "Ative em TODAS as contas. As alts verão o popup para aceitar.")
+LT("Trail (alt train)", "Trail (tren de alts)", "Trail (trem de alts)")
+LT("Each alt follows the previous one; the first follows you", "Cada alt sigue a la anterior; la primera te sigue a ti", "Cada alt segue a anterior; a primeira te segue")
+LT("Trail Dance (/e dance2)", "Trail Dance (/e dance2)", "Trail Dance (/e dance2)")
+LT("Alts slide to you with a tween while playing the dance2 emote", "Las alts se deslizan hacia ti con un tween mientras hacen la emote dance2", "As alts deslizam até você com um tween enquanto fazem a emote dance2")
+LT("Auto Donate (;donate to me)", "Auto Donate (;donate to me)", "Auto Donate (;donate to me)")
+LT("Each alt donates the amount to you when its leaderboard Time reaches that number", "Cada alt te dona la cantidad cuando su Time del leaderboard llega a ese número", "Cada alt te doa a quantidade quando o Time do leaderboard dela chega a esse número")
+LT("Optimize alts", "Optimizar alts", "Otimizar alts")
+LT("Alts only: black screen, 3D rendering off, low FPS cap, decorations removed from workspace. Turn off to restore everything", "Solo alts: pantalla negra, render 3D desactivado, límite de fps bajo, decoraciones eliminadas del workspace. Desactívalo para restaurar todo", "Apenas alts: tela preta, renderização 3D desativada, limite de fps baixo, decorações removidas do workspace. Desative para restaurar tudo")
+LT("Include me in co-op", "Incluirme en el cooperativo", "Incluir-me no cooperativo")
+LT("ON: you also build your own part. OFF: only the alts build", "ACTIVADO: tú también construyes tu propia parte. DESACTIVADO: solo construyen las alts", "ATIVADO: você também constrói sua própria parte. DESATIVADO: só as alts constroem")
+LT("Use alts' bricks in canvas", "Usar los bricks de las alts en el canvas", "Usar os bricks das alts no canvas")
+LT("The canvas (paint, text, etc.) also takes the bricks your linked alts placed", "El canvas (pintura, texto, etc.) también toma los bricks que colocaron tus alts vinculadas", "O canvas (pintura, texto, etc.) também considera os bricks colocados pelas suas alts vinculadas")
+LT("Build Speed", "Velocidad de construcción", "Velocidade de construção")
+LT("Resize Wait", "Espera de redimensionado", "Espera de redimensionamento")
+LT("History Max", "Historial máximo", "Histórico máximo")
+LT("Walk Speed", "Velocidad al caminar", "Velocidade ao caminhar")
+LT("Set your character walk speed", "Establece la velocidad al caminar de tu personaje", "Define a velocidade de caminhada do seu personagem")
+LT("Jump Power", "Fuerza de salto", "Força do pulo")
+LT("Set your character jump power", "Establece la fuerza de salto de tu personaje", "Define a força do pulo do seu personagem")
+LT("Aura Range", "Alcance del aura", "Alcance da aura")
+LT("Cube radius around you affected by the auras", "Radio cúbico a tu alrededor afectado por las auras", "Raio cúbico ao seu redor afetado pelas auras")
+LT("Aura Speed", "Velocidad del aura", "Velocidade da aura")
+LT("Blocks processed per second by each aura", "Bloques procesados por segundo por cada aura", "Blocos processados por segundo por cada aura")
+LT("Cycle Speed", "Velocidad del ciclo", "Velocidade do ciclo")
+LT("In game hours per real second", "Horas del juego por segundo real", "Horas do jogo por segundo real")
+LT("Canvas width", "Ancho del canvas", "Largura do canvas")
+LT("Width...", "Ancho...", "Largura...")
+LT("Canvas height", "Alto del canvas", "Altura do canvas")
+LT("Height...", "Alto...", "Altura...")
+LT("Paste the JSON code from the pixel art website here", "Pega aquí el código JSON de la página de pixel art", "Cole aqui o código JSON do site de pixel art")
+LT("JSON here", "JSON aquí", "JSON aqui")
+LT("Text to paint as pixel art on the canvas. Keeps upper and lower case and shrinks the letters and uses several lines if it does not fit", "Texto para pintar como pixel art en el canvas. Respeta mayúsculas y minúsculas, achica las letras y usa varias líneas si no cabe", "Texto para pintar como pixel art no canvas. Respeita maiúsculas e minúsculas, diminui as letras e usa várias linhas se não couber")
+LT("Text to draw", "Texto a dibujar", "Texto a desenhar")
+LT("Save Name", "Nombre para guardar", "Nome para salvar")
+LT("Enter build name to save...", "Ingresa el nombre del build para guardar...", "Digite o nome do build para salvar...")
+LT("Alt username", "Usuario de la alt", "Usuário da alt")
+LT("TP: target player (empty = me)", "TP: jugador objetivo (vacío = yo)", "TP: jogador alvo (vazio = eu)")
+LT("Time amount (e.g. 40)", "Cantidad de Time (ej. 40)", "Quantidade de Time (ex. 40)")
+LT("Main🌐", "Principal🌐", "Principal🌐")
+LT("Chat💬", "Chat💬", "Chat💬")
+LT("Raid🧨", "Raid🧨", "Raid🧨")
+LT("Chat🧨", "Chat🧨", "Chat🧨")
+LT("Tools⚒️", "Tools⚒️", "Tools⚒️")
+LT("Crash Machine💥", "Crash Machine💥", "Crash Machine💥")
+LT("Crash machines💥", "Crash machines💥", "Crash machines💥")
+LT("Bypass Tools🔨", "Bypass Tools🔨", "Bypass Tools🔨")
+LT("Antis🛡", "Antis🛡", "Antis🛡")
+LT("Nostalgia🚬", "Nostalgia🚬", "Nostalgia🚬")
+LT("Enlighten Stash📥", "Enlighten Stash📥", "Enlighten Stash📥")
+LT("Unanchor Abuse📀", "Unanchor Abuse📀", "Unanchor Abuse📀")
+LT("Local Player👤", "Jugador Local👤", "Jogador Local👤")
+LT("Canvas📜", "Canvas📜", "Canvas📜")
+LT("Building🏗", "Construcción🏗", "Construção🏗")
+LT("Gears🚧", "Gears🚧", "Gears🚧")
+LT("Utils⛏️", "Utilidades⛏️", "Utilidades⛏️")
+LT("Utilidades⛏️", "Utilidades⛏️", "Utilidades⛏️")
+LT("Customize🖌", "Personalizar🖌", "Personalizar🖌")
+LT("Griefing💣", "Griefing💣", "Griefing💣")
+LT("Extras🛒", "Extras🛒", "Extras🛒")
+LT("Extras", "Extras", "Extras")
+LT("Themes📚", "Temas📚", "Temas📚")
+LT("Auras🌀", "Auras🌀", "Auras🌀")
+LT("World🌅", "Mundo🌅", "Mundo🌅")
+LT("Users🌐", "Usuarios🌐", "Usuários🌐")
+LT("Skybox🌌", "Skybox🌌", "Skybox🌌")
+LT("Alt Manager🤖", "Gestor de Alts🤖", "Gerenciador de Alts🤖")
+LT("Control your alts (they must accept the request)", "Controla tus alts (deben aceptar la solicitud)", "Controle suas alts (elas precisam aceitar o pedido)")
+LT("📂Normal Server", "📂Servidor Normal", "📂Servidor Normal")
+LT("💼OG Server", "💼Servidor OG", "💼Servidor OG")
+LT("🛒Extras", "🛒Extras", "🛒Extras")
+LT("⚙️Settings", "⚙️Ajustes", "⚙️Configurações")
+LT("Paint: no saved canvas", "Pintura: no hay canvas guardado", "Pintura: nenhum canvas salvo")
+LT("Link", "Enlace", "Link")
+LT("Controls", "Controles", "Controles")
+LT("Auto Donate", "Auto Donate", "Auto Donate")
+LT("Performance", "Rendimiento", "Desempenho")
+LT("Co-op Mode", "Modo cooperativo", "Modo cooperativo")
+LT("Language", "Idioma", "Idioma")
+LT("Choose the language of Legacy Service. Changes apply immediately", "Elige el idioma de Legacy Service. Los cambios se aplican al instante", "Escolha o idioma do Legacy Service. As mudanças se aplicam na hora")
+LT("Current language: English", "Idioma actual: English", "Idioma atual: English")
+
+local LegacyLangFolder = "LegacyService"
+local LegacyLangFile = "LegacyService/Language.txt"
+local CurrentLang = "en"
+
+pcall(function()
+	if isfile and isfile(LegacyLangFile) then
+		local saved = readfile(LegacyLangFile)
+		if saved == "es" or saved == "pt" or saved == "en" then
+			CurrentLang = saved
+		end
+	end
+end)
+
+local function Lt(text)
+	if not text or CurrentLang == "en" then
+		return text
+	end
+	local entry = LangDict[text]
+	if entry then
+		return entry[CurrentLang] or text
+	end
+	return text
+end
+
+local LangRegistry = {}
+
+local function LReg(inst, field, key)
+	if inst and key then
+		LangRegistry[#LangRegistry + 1] = { inst = inst, field = field, key = key }
+	end
+end
+
+local function LApplyAll()
+	for _, r in ipairs(LangRegistry) do
+		pcall(function()
+			if r.inst and r.inst.Parent then
+				r.inst[r.field] = Lt(r.key)
+			end
+		end)
+	end
+end
+
+local function SaveLang(value)
+	CurrentLang = value
+	pcall(function()
+		if writefile then
+			pcall(function()
+				if isfolder and not isfolder(LegacyLangFolder) and makefolder then
+					makefolder(LegacyLangFolder)
+				end
+			end)
+			writefile(LegacyLangFile, value)
+		end
+	end)
+	LApplyAll()
+end
+
 local tabChangeSound = Instance.new("Sound")
 tabChangeSound.SoundId = "rbxassetid://82125543037296"
 tabChangeSound.Volume = 0.5
@@ -852,7 +1337,7 @@ function Library:CreateWindow(options)
 			tooltipConnection = nil
 		end
 
-		text = tostring(text)
+		text = tostring(Lt(text))
 
 		local paddingX = 18
 		local paddingY = 14
@@ -3122,7 +3607,8 @@ function Library:CreateWindow(options)
 		tabButton.Size = UDim2.new(1,0,0,34)
 		tabButton.BackgroundColor3 = Library.Theme.Element
 		tabButton.BackgroundTransparency = 1
-		tabButton.Text = name
+		tabButton.Text = Lt(name)
+		LReg(tabButton, "Text", name)
 		tabButton.TextColor3 = Library.Theme.SubText
 		tabButton.TextSize = 14
 		tabButton.Font = Enum.Font.Garamond
@@ -3721,7 +4207,8 @@ function Library:CreateWindow(options)
 				groupTitle.Name = "Title"
 				groupTitle.Size = UDim2.new(1,0,0,24)
 				groupTitle.BackgroundTransparency = 1
-				groupTitle.Text = config.Name
+				groupTitle.Text = Lt(config.Name)
+				LReg(groupTitle, "Text", config.Name)
 				groupTitle.TextColor3 = Library.Theme.Text
 				groupTitle.TextSize = 15
 				groupTitle.Font = Enum.Font.Garamond
@@ -3734,7 +4221,8 @@ function Library:CreateWindow(options)
 					groupInfo.Name = "Info"
 					groupInfo.Size = UDim2.new(1,0,0,16)
 					groupInfo.BackgroundTransparency = 1
-					groupInfo.Text = config.Info
+					groupInfo.Text = Lt(config.Info)
+					LReg(groupInfo, "Text", config.Info)
 					groupInfo.TextColor3 = Library.Theme.SubText
 					groupInfo.TextSize = 11
 					groupInfo.Font = Enum.Font.Garamond
@@ -3762,7 +4250,9 @@ function Library:CreateWindow(options)
 				button.AutomaticSize = Enum.AutomaticSize.Y
 button.TextWrapped = true
 				button.BackgroundColor3 = Library.Theme.Element
-				button.Text = buttonConfig.Name or "Button"
+				local buttonNameKey = buttonConfig.Name or "Button"
+				button.Text = Lt(buttonNameKey)
+				LReg(button, "Text", buttonNameKey)
 				button.TextColor3 = Library.Theme.Text
 				button.TextSize = 14
 				button.Font = Enum.Font.Garamond
@@ -3795,7 +4285,9 @@ button.TextWrapped = true
 				local label = Instance.new("TextLabel")
 				label.Size = UDim2.new(1,0,0,25)
 				label.BackgroundTransparency = 1
-				label.Text = tostring(text or "")
+				local labelTextKey = tostring(text or "")
+				label.Text = Lt(labelTextKey)
+				LReg(label, "Text", labelTextKey)
 				label.TextColor3 = Library.Theme.SubText
 				label.TextSize = 13
 				label.Font = Enum.Font.Garamond
@@ -3816,7 +4308,9 @@ button.TextWrapped = true
 				local section = Instance.new("TextLabel")
 				section.Size = UDim2.new(1,0,0,23)
 				section.BackgroundTransparency = 1
-				section.Text = tostring(text or "")
+				local sectionTextKey = tostring(text or "")
+				section.Text = Lt(sectionTextKey)
+				LReg(section, "Text", sectionTextKey)
 				section.TextColor3 = Library.Theme.Text
 				section.TextSize = 13
 				section.Font = Enum.Font.Garamond
@@ -3844,7 +4338,9 @@ button.TextWrapped = true
 				label.Size = UDim2.new(1,-55,1,0)
 				label.Position = UDim2.new(0,10,0,0)
 				label.BackgroundTransparency = 1
-				label.Text = toggleConfig.Name or "Toggle"
+				local toggleNameKey = toggleConfig.Name or "Toggle"
+				label.Text = Lt(toggleNameKey)
+				LReg(label, "Text", toggleNameKey)
 				label.TextColor3 = Library.Theme.Text
 				label.TextSize = 14
 				label.Font = Enum.Font.Garamond
@@ -3956,7 +4452,9 @@ button.TextWrapped = true
 				box.BackgroundColor3 = Library.Theme.Secondary
 				box.BorderSizePixel = 0
 				box.Text = textboxConfig.Default or ""
-				box.PlaceholderText = textboxConfig.Placeholder or "Text..."
+				local placeholderKey = textboxConfig.Placeholder or "Text..."
+				box.PlaceholderText = Lt(placeholderKey)
+				LReg(box, "PlaceholderText", placeholderKey)
 				box.PlaceholderColor3 = Library.Theme.SubText
 				box.TextColor3 = Library.Theme.Text
 				box.TextSize = 14
@@ -4017,7 +4515,9 @@ button.TextWrapped = true
 				label.Size = UDim2.new(1,-55,0,20)
 				label.Position = UDim2.new(0,8,0,3)
 				label.BackgroundTransparency = 1
-				label.Text = sliderConfig.Name or "Slider"
+				local sliderNameKey = sliderConfig.Name or "Slider"
+				label.Text = Lt(sliderNameKey)
+				LReg(label, "Text", sliderNameKey)
 				label.TextColor3 = Library.Theme.Text
 				label.TextSize = 13
 				label.Font = Enum.Font.Garamond
@@ -7182,10 +7682,6 @@ pcall(function()
 			Status:Set("Text to Build: write something first")
 			return
 		end
-		if (utf8.len(text) or #text) > 60 then
-			Status:Set("Text to Build: text too long (max 60)")
-			return
-		end
 
 		local scale = math.clamp(math.floor(tonumber(SizeSlider:Get()) or 1), 1, 6)
 
@@ -7430,6 +7926,150 @@ TopbarGroup:AddToggle({
 		Window:SetTopbarVisible(value)
 	end
 })
+
+local LanguageGroup = Settings:AddGroup({
+	Name = "Language",
+	Info = "Choose the language of Legacy Service. Changes apply immediately",
+	Side = "Left"
+})
+
+local function miniFlag(parent, kind)
+	local holder = Instance.new("Frame")
+	holder.Name = "Flag"
+	holder.Size = UDim2.new(0, 22, 0, 16)
+	holder.Position = UDim2.new(0, 10, 0.5, -8)
+	holder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	holder.BorderSizePixel = 0
+	holder.ClipsDescendants = true
+	holder.Parent = parent
+
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 3)
+	c.Parent = holder
+
+	local function bar(x, y, w, h, color)
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.Position = UDim2.new(x, 0, y, 0)
+		f.Size = UDim2.new(w, 0, h, 0)
+		f.BackgroundColor3 = color
+		f.Parent = holder
+		return f
+	end
+
+	if kind == "en" then
+		local W, H = 22, 16
+		local function piece(w, h, color, rot)
+			local f = Instance.new("Frame")
+			f.AnchorPoint = Vector2.new(0.5, 0.5)
+			f.Position = UDim2.new(0, W / 2, 0, H / 2)
+			f.Size = UDim2.new(0, w, 0, h)
+			f.Rotation = rot or 0
+			f.BackgroundColor3 = color
+			f.BorderSizePixel = 0
+			f.Parent = holder
+			return f
+		end
+		local blue = Color3.fromRGB(1, 33, 105)
+		local white = Color3.fromRGB(255, 255, 255)
+		local red = Color3.fromRGB(200, 16, 46)
+		local diag = math.deg(math.atan2(H, W))
+		local len = math.sqrt(W * W + H * H)
+		piece(W, H, blue, 0)
+		piece(len, 4, white, diag)
+		piece(len, 4, white, -diag)
+		piece(len, 1.5, red, diag)
+		piece(len, 1.5, red, -diag)
+		piece(W, 6, white, 0)
+		piece(6, H, white, 0)
+		piece(W, 3, red, 0)
+		piece(3, H, red, 0)
+	elseif kind == "es" then
+		bar(0, 0, 1, 0.25, Color3.fromRGB(170, 20, 30))
+		bar(0, 0.25, 1, 0.5, Color3.fromRGB(240, 190, 60))
+		bar(0, 0.75, 1, 0.25, Color3.fromRGB(170, 20, 30))
+	elseif kind == "pt" then
+		bar(0, 0, 0.4, 1, Color3.fromRGB(30, 120, 60))
+		bar(0.4, 0, 0.6, 1, Color3.fromRGB(190, 30, 30))
+		local dot = Instance.new("Frame")
+		dot.AnchorPoint = Vector2.new(0.5, 0.5)
+		dot.Position = UDim2.new(0.4, 0, 0.5, 0)
+		dot.Size = UDim2.new(0, 7, 0, 7)
+		dot.BackgroundColor3 = Color3.fromRGB(240, 200, 40)
+		dot.BorderSizePixel = 0
+		dot.Parent = holder
+		local dc = Instance.new("UICorner")
+		dc.CornerRadius = UDim.new(1, 0)
+		dc.Parent = dot
+	end
+
+	return holder
+end
+
+local LanguageStatus = LanguageGroup:AddLabel("Current language: English")
+
+local function statusText()
+	if CurrentLang == "es" then
+		return "Idioma actual: English"
+	elseif CurrentLang == "pt" then
+		return "Idioma atual: English"
+	end
+	return "Current language: English"
+end
+
+local function refreshLanguageStatus()
+	if CurrentLang == "es" then
+		LanguageStatus:Set("Idioma actual: Español")
+	elseif CurrentLang == "pt" then
+		LanguageStatus:Set("Idioma atual: Português")
+	else
+		LanguageStatus:Set("Current language: English")
+	end
+end
+
+local function pickLanguage(code)
+	SaveLang(code)
+	refreshLanguageStatus()
+end
+
+local EnglishBtn = LanguageGroup:AddButton({
+	Name = "English",
+	Info = "Switch Legacy Service to English",
+	Callback = function()
+		pickLanguage("en")
+	end
+})
+miniFlag(EnglishBtn, "en")
+local p1 = Instance.new("UIPadding")
+p1.PaddingLeft = UDim.new(0, 34)
+p1.Parent = EnglishBtn
+
+local SpanishBtn = LanguageGroup:AddButton({
+	Name = "Español",
+	Info = "Cambiar Legacy Service a Español",
+	Callback = function()
+		pickLanguage("es")
+	end
+})
+miniFlag(SpanishBtn, "es")
+local p2 = Instance.new("UIPadding")
+p2.PaddingLeft = UDim.new(0, 34)
+p2.Parent = SpanishBtn
+
+local PortugueseBtn = LanguageGroup:AddButton({
+	Name = "Português",
+	Info = "Mudar o Legacy Service para Português",
+	Callback = function()
+		pickLanguage("pt")
+	end
+})
+miniFlag(PortugueseBtn, "pt")
+local p3 = Instance.new("UIPadding")
+p3.PaddingLeft = UDim.new(0, 34)
+p3.Parent = PortugueseBtn
+
+refreshLanguageStatus()
+
 
 Main67:AddToggle({
 	Name = "Grief",
