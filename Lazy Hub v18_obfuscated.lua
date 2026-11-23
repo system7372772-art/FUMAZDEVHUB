@@ -5119,6 +5119,271 @@ pcall(function()
 		return '"' .. (s:gsub("\\", "\\\\"):gsub('"', '\\"')) .. '"'
 	end
 
+	local L = {}
+	local lang = "en"
+
+	local function T(en, es, pt)
+		L[en] = { es = es, pt = pt }
+	end
+
+	local function tr(s)
+		if lang ~= "en" then
+			local e = L[s]
+			if e then
+				return e[lang]
+			end
+		end
+		return (s:gsub("|.*$", ""))
+	end
+
+	T("Script Block Editor", "Editor de Bloques de Script", "Editor de Blocos de Script")
+	T("Mode: Simple", "Modo: Simple", "Modo: Simples")
+	T("Mode: Luau", "Modo: Luau", "Modo: Luau")
+	T("Convert", "Convertir", "Converter")
+	T("Edit", "Editar", "Editar")
+	T("Copy", "Copiar", "Copiar")
+	T("Clear", "Limpiar", "Limpar")
+	T("Tap or drag a block here", "Toca o arrastra un bloque aquí", "Toque ou arraste um bloco aqui")
+
+	T("Player", "Jugador", "Jogador")
+	T("World", "Mundo", "Mundo")
+	T("Parts", "Partes", "Peças")
+	T("Sound", "Sonido", "Som")
+	T("Messages", "Mensajes", "Mensagens")
+	T("Variables", "Variables", "Variáveis")
+	T("Values", "Valores", "Valores")
+	T("Strings", "Textos", "Textos")
+	T("Operators", "Operadores", "Operadores")
+	T("Control", "Control", "Controle")
+	T("Loops", "Bucles", "Laços")
+	T("Functions", "Funciones", "Funções")
+	T("Events", "Eventos", "Eventos")
+	T("Objects", "Objetos", "Objetos")
+	T("Collections", "Colecciones", "Coleções")
+	T("Output", "Salida", "Saída")
+	T("Comments", "Comentarios", "Comentários")
+
+	T("me", "yo", "eu")
+	T("everyone", "todos", "todos")
+	T("others", "otros", "outros")
+	T("random", "aleatorio", "aleatório")
+	T("invisible", "invisible", "invisível")
+	T("visible", "visible", "visível")
+
+	T("kill", "matar", "matar")
+	T("heal", "curar", "curar")
+	T("set", "establecer", "definir")
+	T("health to", "salud a", "vida para")
+	T("walk speed to", "velocidad al caminar a", "velocidade de caminhada para")
+	T("jump power to", "fuerza de salto a", "força do pulo para")
+	T("make", "hacer", "fazer")
+	T("jump", "saltar", "pular")
+	T("sit", "sentarse", "sentar")
+	T("teleport", "teletransportar", "teletransportar")
+	T("to x", "a x", "para x")
+	T("to player", "a jugador", "para jogador")
+	T("freeze", "congelar", "congelar")
+	T("unfreeze", "descongelar", "descongelar")
+	T("give", "dar", "dar")
+	T("a forcefield", "un campo de fuerza", "um campo de força")
+	T("remove forcefield from", "quitar campo de fuerza de", "remover campo de força de")
+
+	T("set gravity to", "establecer gravedad a", "definir gravidade para")
+	T("set time of day to", "establecer hora del día a", "definir hora do dia para")
+	T("o'clock", "en punto", "horas")
+	T("set brightness to", "establecer brillo a", "definir brilho para")
+	T("set fog distance to", "establecer distancia de niebla a", "definir distância da névoa para")
+	T("set ambient color to", "establecer color ambiental a", "definir cor ambiente para")
+	T("set field of view to", "establecer campo de visión a", "definir campo de visão para")
+	T("set my max zoom to", "establecer mi zoom máximo a", "definir meu zoom máximo para")
+	T("remove", "quitar", "remover")
+	T("from workspace", "de workspace", "do workspace")
+
+	T("create part", "crear parte", "criar peça")
+	T("at x", "en x", "em x")
+	T("move", "mover", "mover")
+	T("set size of", "establecer tamaño de", "definir tamanho de")
+	T("to", "a", "para")
+	T("set color of", "establecer color de", "definir cor de")
+	T("set material of", "establecer material de", "definir material de")
+	T("set transparency of", "establecer transparencia de", "definir transparência de")
+	T("anchored to", "anclado a", "ancorado para")
+	T("collide to", "colisión a", "colisão para")
+	T("destroy", "destruir", "destruir")
+	T("spawn", "generar", "gerar")
+	T("random parts above the map", "partes aleatorias sobre el mapa", "peças aleatórias acima do mapa")
+
+	T("play sound id", "reproducir sonido id", "tocar som id")
+	T("volume", "volumen", "volume")
+	T("stop all sounds", "detener todos los sonidos", "parar todos os sons")
+	T("say", "decir", "dizer")
+	T("in chat", "en el chat", "no chat")
+	T("show notification", "mostrar notificación", "mostrar notificação")
+
+	T("when key", "cuando la tecla", "quando a tecla")
+	T("is pressed", "es presionada", "for pressionada")
+	T("every", "cada", "a cada")
+	T("seconds", "segundos", "segundos")
+	T("when my character spawns", "cuando mi personaje aparece", "quando meu personagem aparece")
+	T("when I die", "cuando yo muera", "quando eu morrer")
+	T("when part", "cuando la parte", "quando a peça")
+	T("is touched", "es tocada", "for tocada")
+
+	T("remember", "recordar", "lembrar")
+	T("as", "como", "como")
+	T("local", "local", "local")
+	T("change", "cambiar", "alterar")
+	T("by", "en", "em")
+	T("global", "global", "global")
+	T("multiply", "multiplicar", "multiplicar")
+	T("by|mul", "por", "por")
+	T("append", "añadir", "adicionar")
+	T("to|add", "a", "a")
+
+	T("number", "número", "número")
+	T("text", "texto", "texto")
+	T("boolean", "booleano", "booleano")
+	T("nil", "nulo", "nulo")
+	T("time", "tiempo", "tempo")
+	T("random generator", "generador aleatorio", "gerador aleatório")
+	T("now", "ahora", "agora")
+
+	T("join", "unir", "unir")
+	T("= upper", "= mayúsculas", "= maiúsculas")
+	T("= lower", "= minúsculas", "= minúsculas")
+	T("= length of", "= longitud de", "= comprimento de")
+	T("= sub", "= subtexto", "= subtexto")
+	T("= find", "= buscar", "= buscar")
+	T("in", "en", "em")
+	T("= replace", "= reemplazar", "= substituir")
+	T("with", "con", "com")
+	T("= split", "= dividir", "= dividir")
+	T("= format", "= formatear", "= formatar")
+	T("= tostring", "= a texto", "= para texto")
+	T("= tonumber", "= a número", "= para número")
+	T("= repeat", "= repetir", "= repetir")
+	T("times", "veces", "vezes")
+
+	T("= not", "= no", "= não")
+	T("= random", "= aleatorio", "= aleatório")
+	T("to|range", "hasta", "até")
+	T("= clamp", "= limitar", "= limitar")
+	T("between", "entre", "entre")
+	T("and", "y", "e")
+	T("of", "de", "de")
+	T("= lerp", "= interpolar", "= interpolar")
+	T("by|lerp", "factor", "fator")
+	T("= distance", "= distancia", "= distância")
+
+	T("if", "si", "se")
+	T("then", "entonces", "então")
+	T("then / else", "entonces / si no", "então / senão")
+	T("else", "si no", "senão")
+	T("wait", "esperar", "esperar")
+	T("return", "devolver", "retornar")
+	T("break", "romper", "interromper")
+	T("continue", "continuar", "continuar")
+	T("run in parallel", "ejecutar en paralelo", "executar em paralelo")
+	T("try (pcall)", "intentar (pcall)", "tentar (pcall)")
+	T("try", "intentar", "tentar")
+	T("after", "después de", "depois de")
+	T("run next frame", "ejecutar en el siguiente frame", "executar no próximo frame")
+	T("error", "error", "erro")
+	T("assert", "afirmar", "afirmar")
+	T("raw code", "código directo", "código direto")
+	T("raw block", "bloque directo", "bloco direto")
+
+	T("repeat", "repetir", "repetir")
+	T("while", "mientras", "enquanto")
+	T("forever", "por siempre", "para sempre")
+	T("while waiting", "mientras espera", "enquanto espera")
+	T("for", "para", "para")
+	T("from|range", "desde", "de")
+	T("step", "paso", "passo")
+	T("repeat until", "repetir hasta", "repetir até")
+	T("for each child of", "para cada hijo de", "para cada filho de")
+	T("for each descendant of", "para cada descendiente de", "para cada descendente de")
+	T("for each player as", "para cada jugador como", "para cada jogador como")
+	T("for each", "para cada", "para cada")
+	T("in list", "en lista", "em lista")
+	T("in dictionary", "en diccionario", "em dicionário")
+
+	T("function", "función", "função")
+	T("call", "llamar", "chamar")
+	T("= call", "= llamar", "= chamar")
+	T("call in parallel", "llamar en paralelo", "chamar em paralelo")
+	T("require", "requerir", "requerer")
+	T("type of", "tipo de", "tipo de")
+	T("wrap in coroutine", "envolver en corrutina", "envolver em corrotina")
+
+	T("on event", "al evento", "no evento")
+	T("when player joins", "cuando un jugador entra", "quando um jogador entra")
+	T("when player leaves", "cuando un jugador sale", "quando um jogador sai")
+	T("every frame", "cada frame", "a cada frame")
+	T("every render frame", "cada frame de render", "a cada frame de renderização")
+	T("when touched", "cuando es tocado", "quando for tocado")
+	T("when clicked", "cuando se hace clic", "quando for clicado")
+	T("when activated", "cuando se activa", "quando for ativado")
+	T("when key pressed", "cuando se presiona una tecla", "quando uma tecla for pressionada")
+	T("when key released", "cuando se suelta una tecla", "quando uma tecla for solta")
+	T("when", "cuando", "quando")
+	T("dies", "muere", "morre")
+	T("changes", "cambia", "mudar")
+	T("when character of", "cuando el personaje de", "quando o personagem de")
+	T("spawns", "aparece", "aparece")
+	T("when prompt triggered", "cuando se activa el prompt", "quando o prompt for ativado")
+	T("when detector clicked", "cuando se hace clic en el detector", "quando o detector for clicado")
+	T("fire server", "enviar al servidor", "enviar ao servidor")
+	T("on client event", "al evento del cliente", "no evento do cliente")
+	T("disconnect", "desconectar", "desconectar")
+	T("save connection", "guardar conexión", "salvar conexão")
+	T("= event", "= evento", "= evento")
+
+	T("create", "crear", "criar")
+	T("property", "propiedad", "propriedade")
+	T("parent of", "padre de", "pai de")
+	T("service", "servicio", "serviço")
+	T("find", "buscar", "buscar")
+	T("find descendant", "buscar descendiente", "buscar descendente")
+	T("wait for child", "esperar hijo", "esperar filho")
+	T("clone", "clonar", "clonar")
+	T("method", "método", "método")
+	T("set attribute", "establecer atributo", "definir atributo")
+	T("get attribute", "obtener atributo", "obter atributo")
+	T("is", "comprobar", "verificar")
+	T("a", "de tipo", "do tipo")
+	T("local player", "jugador local", "jogador local")
+	T("character of", "personaje de", "personagem de")
+	T("humanoid of", "humanoide de", "humanoide de")
+	T("root part of", "parte raíz de", "peça raiz de")
+	T("player named", "jugador llamado", "jogador chamado")
+	T("tween", "animar", "animar")
+	T("seconds to", "segundos a", "segundos para")
+	T("raycast", "trazar rayo", "lançar raio")
+	T("from", "de", "de")
+	T("direction", "dirección", "direção")
+	T("= local player mouse", "= mouse del jugador local", "= mouse do jogador local")
+
+	T("table", "tabla", "tabela")
+	T("table with", "tabla con", "tabela com")
+	T("insert", "insertar", "inserir")
+	T("into", "en", "em")
+	T("remove index", "quitar índice", "remover índice")
+	T("get", "obtener", "obter")
+	T("size", "tamaño", "tamanho")
+	T("sort", "ordenar", "ordenar")
+	T("clear", "vaciar", "esvaziar")
+	T("copy", "copiar", "copiar")
+	T("random item of", "elemento aleatorio de", "item aleatório de")
+
+	T("print text", "imprimir texto", "imprimir texto")
+	T("print value", "imprimir valor", "imprimir valor")
+	T("warn text", "advertir texto", "avisar texto")
+	T("warn value", "advertir valor", "avisar valor")
+	T("comment", "comentario", "comentário")
+	T("block comment", "comentario en bloque", "comentário em bloco")
+	T("section", "sección", "seção")
+
 	local WHO = { "me", "everyone", "others", "random" }
 
 	local function W()
@@ -5394,8 +5659,8 @@ pcall(function()
 	B("Variables", { "change", I("n", "variable"), "by", I("v", "1") }, "{n} += {v}", { mode = "both" })
 	B("Variables", { "local", I("a", "a"), ",", I("b", "b"), "=", I("x", "1"), ",", I("y", "2") }, "local {a}, {b} = {x}, {y}")
 	B("Variables", { "global", I("n", "variable"), "=", I("v", "0") }, 'getgenv()["{n}"] = {v}')
-	B("Variables", { "multiply", I("n", "variable"), "by", I("v", "2") }, "{n} *= {v}")
-	B("Variables", { "append", I("v", "text"), "to", I("n", "variable") }, "{n} ..= {v}")
+	B("Variables", { "multiply", I("n", "variable"), "by|mul", I("v", "2") }, "{n} *= {v}")
+	B("Variables", { "append", I("v", "text"), "to|add", I("n", "variable") }, "{n} ..= {v}")
 
 	B("Values", { "number", I("n", "number"), "=", I("v", "10") }, "local {n} = {v}")
 	B("Values", { "text", I("n", "text"), "=", I("v", "Hello") }, "local {n} = {v}", { q = { v = true } })
@@ -5415,7 +5680,7 @@ pcall(function()
 	B("Strings", { I("n", "text"), "= upper", I("a", '"abc"') }, "local {n} = string.upper({a})")
 	B("Strings", { I("n", "text"), "= lower", I("a", '"ABC"') }, "local {n} = string.lower({a})")
 	B("Strings", { I("n", "len"), "= length of", I("a", '"abc"') }, "local {n} = #{a}")
-	B("Strings", { I("n", "part"), "= sub", I("a", '"abcdef"'), I("i", "1"), "to", I("j", "3") }, "local {n} = string.sub({a}, {i}, {j})")
+	B("Strings", { I("n", "part"), "= sub", I("a", '"abcdef"'), I("i", "1"), "to|range", I("j", "3") }, "local {n} = string.sub({a}, {i}, {j})")
 	B("Strings", { I("n", "pos"), "= find", I("p", '"b"'), "in", I("a", '"abc"') }, "local {n} = string.find({a}, {p})")
 	B("Strings", { I("n", "text"), "= replace", I("p", '"a"'), "with", I("r", '"b"'), "in", I("a", '"abc"') }, "local {n} = string.gsub({a}, {p}, {r})")
 	B("Strings", { I("n", "words"), "= split", I("a", '"a b c"'), "by", I("s", '" "') }, "local {n} = string.split({a}, {s})")
@@ -5428,11 +5693,11 @@ pcall(function()
 	B("Operators", { I("n", "result"), "=", I("a", "1"), I("o", "==", { "==", "~=", "<", ">", "<=", ">=", "and", "or" }), I("b", "1") }, "{n} = {a} {o} {b}")
 	B("Operators", { I("n", "result"), "= not", I("a", "true") }, "{n} = not {a}")
 	B("Operators", { I("n", "result"), "= math.", I("f", "floor", { "floor", "ceil", "round", "abs", "sqrt", "sin", "cos", "tan", "sign", "log", "exp", "rad", "deg" }), I("a", "1") }, "{n} = math.{f}({a})")
-	B("Operators", { I("n", "result"), "= random", I("a", "1"), "to", I("b", "10") }, "{n} = math.random({a}, {b})")
+	B("Operators", { I("n", "result"), "= random", I("a", "1"), "to|range", I("b", "10") }, "{n} = math.random({a}, {b})")
 	B("Operators", { I("n", "result"), "= clamp", I("a", "5"), "between", I("b", "0"), "and", I("c", "10") }, "{n} = math.clamp({a}, {b}, {c})")
 	B("Operators", { I("n", "result"), "=", I("f", "max", { "max", "min" }), "of", I("a", "1"), "and", I("b", "2") }, "{n} = math.{f}({a}, {b})")
-	B("Operators", { I("n", "result"), "= lerp", I("a", "0"), "to", I("b", "10"), "by", I("t", "0.5") }, "{n} = {a} + ({b} - {a}) * {t}")
-	B("Operators", { I("n", "dist"), "= distance", I("a", "posA"), "to", I("b", "posB") }, "local {n} = ({a} - {b}).Magnitude")
+	B("Operators", { I("n", "result"), "= lerp", I("a", "0"), "to|range", I("b", "10"), "by|lerp", I("t", "0.5") }, "{n} = {a} + ({b} - {a}) * {t}")
+	B("Operators", { I("n", "dist"), "= distance", I("a", "posA"), "to|range", I("b", "posB") }, "local {n} = ({a} - {b}).Magnitude")
 	B("Operators", { I("n", "result"), "= bit", I("f", "band", { "band", "bor", "bxor", "lshift", "rshift" }), I("a", "1"), I("b", "2") }, "{n} = bit32.{f}({a}, {b})")
 
 	B("Control", { "if", I("c", "true"), "then" }, "if {c} then", { slots = 1, mode = "both" })
@@ -5455,7 +5720,7 @@ pcall(function()
 	B("Loops", { "while", I("c", "true") }, "while {c} do", { slots = 1, mode = "both" })
 	B("Loops", { "forever" }, "while true do", { slots = 1, mode = "both" })
 	B("Loops", { "while waiting", I("n", "1"), "seconds" }, "while task.wait({n}) do", { slots = 1 })
-	B("Loops", { "for", I("i", "i"), "from", I("a", "1"), "to", I("b", "10"), "step", I("s", "1") }, "for {i} = {a}, {b}, {s} do", { slots = 1 })
+	B("Loops", { "for", I("i", "i"), "from|range", I("a", "1"), "to|range", I("b", "10"), "step", I("s", "1") }, "for {i} = {a}, {b}, {s} do", { slots = 1 })
 	B("Loops", { "repeat until", I("c", "true") }, "repeat", { slots = 1, close = "until {c}" })
 	B("Loops", { "for each child of", I("o", "workspace"), "as", I("v", "child") }, "for _, {v} in ipairs({o}:GetChildren()) do", { slots = 1 })
 	B("Loops", { "for each descendant of", I("o", "workspace"), "as", I("v", "item") }, "for _, {v} in ipairs({o}:GetDescendants()) do", { slots = 1 })
@@ -5482,7 +5747,7 @@ pcall(function()
 	B("Events", { "when key released" }, 'game:GetService("UserInputService").InputEnded:Connect(function(input, processed)', { slots = 1, close = "end)" })
 	B("Events", { "when", I("o", "humanoid"), "dies" }, "{o}.Died:Connect(function()", { slots = 1, close = "end)" })
 	B("Events", { "when", I("o", "object"), "changes", I("p", "Name") }, '{o}:GetPropertyChangedSignal("{p}"):Connect(function()', { slots = 1, close = "end)" })
-	B("Events", { "when", I("o", "player"), "character spawns" }, "{o}.CharacterAdded:Connect(function(char)", { slots = 1, close = "end)" })
+	B("Events", { "when character of", I("o", "player"), "spawns" }, "{o}.CharacterAdded:Connect(function(char)", { slots = 1, close = "end)" })
 	B("Events", { "when prompt triggered", I("o", "prompt") }, "{o}.Triggered:Connect(function(plr)", { slots = 1, close = "end)" })
 	B("Events", { "when detector clicked", I("o", "detector") }, "{o}.MouseClick:Connect(function(plr)", { slots = 1, close = "end)" })
 	B("Events", { "fire server", I("o", "remote"), "(", I("a", ""), ")" }, "{o}:FireServer({a})")
@@ -5576,6 +5841,7 @@ pcall(function()
 		local Players = game:GetService("Players")
 		local mode = "simple"
 		local refreshCats
+		local applyLang
 		local curCat
 
 		for _, parent in ipairs({ game:GetService("CoreGui"), Players.LocalPlayer:FindFirstChild("PlayerGui") }) do
@@ -5634,8 +5900,8 @@ pcall(function()
 
 		pixels(top, ICONS.logo, Theme.Accent, 2, UDim2.fromOffset(12, 11))
 
-		mk("TextLabel", {
-			Size = UDim2.new(1, -190, 1, 0),
+		local titleLabel = mk("TextLabel", {
+			Size = UDim2.new(1, -244, 1, 0),
 			Position = UDim2.fromOffset(36, 0),
 			BackgroundTransparency = 1,
 			Text = "Script Block Editor",
@@ -5672,7 +5938,7 @@ pcall(function()
 			Size = UDim2.fromOffset(108, 28),
 			Position = UDim2.new(1, -150, 0, 5),
 			BackgroundColor3 = Theme.Element,
-			Text = "Mode: Simple",
+			Text = tr("Mode: Simple"),
 			TextColor3 = Theme.Text,
 			TextSize = 15,
 			Font = FONT,
@@ -5690,8 +5956,33 @@ pcall(function()
 		end)
 		modeBtn.MouseButton1Click:Connect(function()
 			mode = mode == "simple" and "luau" or "simple"
-			modeBtn.Text = mode == "simple" and "Mode: Simple" or "Mode: Luau"
+			modeBtn.Text = mode == "simple" and tr("Mode: Simple") or tr("Mode: Luau")
 			refreshCats()
+		end)
+
+		local langBtn = mk("TextButton", {
+			Size = UDim2.fromOffset(42, 28),
+			Position = UDim2.new(1, -198, 0, 5),
+			BackgroundColor3 = Theme.Element,
+			Text = "EN",
+			TextColor3 = Theme.Text,
+			TextSize = 15,
+			Font = FONT,
+			AutoButtonColor = false,
+			BorderSizePixel = 0,
+		}, top)
+		corner(langBtn, 8)
+		Style.stroke(langBtn, Theme.Border, 1)
+		Style.surfaceGradient(langBtn)
+		langBtn.MouseEnter:Connect(function()
+			TweenSvc:Create(langBtn, TweenInfo.new(0.12), { BackgroundColor3 = Theme.AccentHover }):Play()
+		end)
+		langBtn.MouseLeave:Connect(function()
+			TweenSvc:Create(langBtn, TweenInfo.new(0.14), { BackgroundColor3 = Theme.Element }):Play()
+		end)
+		langBtn.MouseButton1Click:Connect(function()
+			lang = lang == "en" and "es" or (lang == "es" and "pt" or "en")
+			applyLang()
 		end)
 
 		top.InputBegan:Connect(function(input)
@@ -5819,6 +6110,20 @@ pcall(function()
 			blocksReg = {}
 			rootStroke.Enabled = target == rootList
 			build(rootList, rootBtn)
+			if #rootList == 0 then
+				mk("TextLabel", {
+					Size = UDim2.fromOffset(180, 0),
+					AutomaticSize = AY,
+					BackgroundTransparency = 1,
+					Text = tr("Tap or drag a block here"),
+					TextColor3 = Theme.SubText,
+					TextSize = 16,
+					Font = FONT,
+					TextWrapped = true,
+					TextXAlignment = Enum.TextXAlignment.Left,
+					LayoutOrder = 1,
+				}, rootBtn)
+			end
 		end
 
 		local function label(text, parent, order)
@@ -5826,7 +6131,7 @@ pcall(function()
 				BackgroundTransparency = 1,
 				AutomaticSize = AXY,
 				Size = UDim2.fromOffset(0, 24),
-				Text = text,
+				Text = tr(text),
 				TextColor3 = WHITE,
 				TextSize = 17,
 				Font = FONT,
@@ -5852,7 +6157,9 @@ pcall(function()
 			local t = {}
 			for _, part in ipairs(def.parts) do
 				if type(part) == "string" then
-					t[#t + 1] = part
+					t[#t + 1] = tr(part)
+				elseif part.o then
+					t[#t + 1] = "[" .. tr(part.d) .. "]"
 				elseif part.d == "" then
 					t[#t + 1] = "[ ]"
 				elseif #part.d <= 9 then
@@ -6040,7 +6347,7 @@ pcall(function()
 						AutomaticSize = AX,
 						Size = UDim2.fromOffset(30, 24),
 						BackgroundColor3 = Theme.Element,
-						Text = b.v[part.k],
+						Text = tr(b.v[part.k]),
 						TextColor3 = Theme.Text,
 						TextSize = 16,
 						Font = FONT,
@@ -6053,7 +6360,7 @@ pcall(function()
 						local idx = table.find(part.o, b.v[part.k]) or 0
 						idx = idx % #part.o + 1
 						b.v[part.k] = part.o[idx]
-						cb.Text = b.v[part.k]
+						cb.Text = tr(b.v[part.k])
 					end)
 				else
 					local tb = mk("TextBox", {
@@ -6242,7 +6549,7 @@ pcall(function()
 				Size = UDim2.new(1, 0, 0, 30),
 				BackgroundColor3 = c[2],
 				BorderSizePixel = 0,
-				Text = c[1],
+				Text = tr(c[1]),
 				TextColor3 = WHITE,
 				TextSize = 17,
 				Font = FONT,
@@ -6395,21 +6702,21 @@ pcall(function()
 			return b
 		end
 
-		local convertBtn = libButton("Convert", 1)
-		local copyBtn = libButton("Copy", 2)
-		local clearBtn = libButton("Clear", 3)
+		local convertBtn = libButton(tr("Convert"), 1)
+		local copyBtn = libButton(tr("Copy"), 2)
+		local clearBtn = libButton(tr("Clear"), 3)
 
 		convertBtn.MouseButton1Click:Connect(function()
 			if outPanel.Visible then
 				outPanel.Visible = false
-				convertBtn.Text = "Convert"
+				convertBtn.Text = tr("Convert")
 				return
 			end
 			local out = {}
 			emit(rootList, 0, out)
 			outBox.Text = table.concat(out, "\n")
 			outPanel.Visible = true
-			convertBtn.Text = "Edit"
+			convertBtn.Text = tr("Edit")
 		end)
 
 		copyBtn.MouseButton1Click:Connect(function()
@@ -6422,7 +6729,7 @@ pcall(function()
 				pcall(fn, code)
 			end
 			outPanel.Visible = true
-			convertBtn.Text = "Edit"
+			convertBtn.Text = tr("Edit")
 			outBox:CaptureFocus()
 		end)
 
@@ -6469,8 +6776,21 @@ pcall(function()
 			end
 		end)
 
-		refreshCats()
-		render()
+		applyLang = function()
+			langBtn.Text = string.upper(lang)
+			titleLabel.Text = tr("Script Block Editor")
+			modeBtn.Text = mode == "simple" and tr("Mode: Simple") or tr("Mode: Luau")
+			convertBtn.Text = outPanel.Visible and tr("Edit") or tr("Convert")
+			copyBtn.Text = tr("Copy")
+			clearBtn.Text = tr("Clear")
+			for _, c in ipairs(cats) do
+				catButtons[c[1]].Text = tr(c[1])
+			end
+			refreshCats()
+			render()
+		end
+
+		applyLang()
 
 		win = main
 		built = true
@@ -6517,6 +6837,551 @@ pcall(function()
 			else
 				closeEditor()
 			end
+		end,
+	})
+end)
+
+pcall(function()
+	local RunService = game:GetService("RunService")
+	local Players = game:GetService("Players")
+
+	local GRID = 4
+	local MAX_BRICKS = 2500
+	local MAX_FIX_ROUNDS = 6
+	local GLYPH_W = 5
+	local GLYPH_H = 11
+	local SPACE_W = 3
+
+	local function E(top, rows)
+		local out = {}
+		for i = 1, GLYPH_H do
+			out[i] = "....."
+		end
+		for i, r in ipairs(rows) do
+			out[top + i - 1] = r
+		end
+		return out
+	end
+
+	local FONT = {}
+
+	local CAPS = {
+		["A"] = { ".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#" },
+		["B"] = { "####.", "#...#", "#...#", "####.", "#...#", "#...#", "####." },
+		["C"] = { ".####", "#....", "#....", "#....", "#....", "#....", ".####" },
+		["D"] = { "####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####." },
+		["E"] = { "#####", "#....", "#....", "####.", "#....", "#....", "#####" },
+		["F"] = { "#####", "#....", "#....", "####.", "#....", "#....", "#...." },
+		["G"] = { ".####", "#....", "#....", "#..##", "#...#", "#...#", ".####" },
+		["H"] = { "#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#" },
+		["I"] = { "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "#####" },
+		["J"] = { "..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.." },
+		["K"] = { "#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#" },
+		["L"] = { "#....", "#....", "#....", "#....", "#....", "#....", "#####" },
+		["M"] = { "#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#" },
+		["N"] = { "#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#" },
+		["O"] = { ".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." },
+		["P"] = { "####.", "#...#", "#...#", "####.", "#....", "#....", "#...." },
+		["Q"] = { ".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#" },
+		["R"] = { "####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#" },
+		["S"] = { ".####", "#....", "#....", ".###.", "....#", "....#", "####." },
+		["T"] = { "#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.." },
+		["U"] = { "#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###." },
+		["V"] = { "#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.." },
+		["W"] = { "#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#" },
+		["X"] = { "#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#" },
+		["Y"] = { "#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.." },
+		["Z"] = { "#####", "....#", "...#.", "..#..", ".#...", "#....", "#####" },
+		["0"] = { ".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###." },
+		["1"] = { "..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###." },
+		["2"] = { ".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####" },
+		["3"] = { "####.", "....#", "....#", ".###.", "....#", "....#", "####." },
+		["4"] = { "#...#", "#...#", "#...#", "#####", "....#", "....#", "....#" },
+		["5"] = { "#####", "#....", "####.", "....#", "....#", "#...#", ".###." },
+		["6"] = { ".###.", "#....", "#....", "####.", "#...#", "#...#", ".###." },
+		["7"] = { "#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..." },
+		["8"] = { ".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###." },
+		["9"] = { ".###.", "#...#", "#...#", ".####", "....#", "....#", ".###." },
+		["!"] = { "..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#.." },
+		["?"] = { ".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.." },
+		["."] = { ".....", ".....", ".....", ".....", ".....", ".....", "..#.." },
+		[","] = { ".....", ".....", ".....", ".....", "..#..", "..#..", ".#..." },
+		[";"] = { ".....", "..#..", ".....", ".....", "..#..", "..#..", ".#..." },
+		[":"] = { ".....", "..#..", ".....", ".....", ".....", "..#..", "....." },
+		["-"] = { ".....", ".....", ".....", "#####", ".....", ".....", "....." },
+		["+"] = { ".....", "..#..", "..#..", "#####", "..#..", "..#..", "....." },
+		["="] = { ".....", "#####", ".....", "#####", ".....", ".....", "....." },
+		["_"] = { ".....", ".....", ".....", ".....", ".....", ".....", "#####" },
+		["'"] = { "..#..", "..#..", ".....", ".....", ".....", ".....", "....." },
+		["\""] = { ".#.#.", ".#.#.", ".....", ".....", ".....", ".....", "....." },
+		["/"] = { "....#", "....#", "...#.", "..#..", ".#...", "#....", "#...." },
+		["\\"] = { "#....", "#....", ".#...", "..#..", "...#.", "....#", "....#" },
+		["("] = { "...#.", "..#..", ".#...", ".#...", ".#...", "..#..", "...#." },
+		[")"] = { ".#...", "..#..", "...#.", "...#.", "...#.", "..#..", ".#..." },
+		["["] = { "..###", "..#..", "..#..", "..#..", "..#..", "..#..", "..###" },
+		["]"] = { "###..", "..#..", "..#..", "..#..", "..#..", "..#..", "###.." },
+		["<"] = { "...#.", "..#..", ".#...", "#....", ".#...", "..#..", "...#." },
+		[">"] = { ".#...", "..#..", "...#.", "....#", "...#.", "..#..", ".#..." },
+		["*"] = { ".....", "#.#.#", ".###.", "#####", ".###.", "#.#.#", "....." },
+		["#"] = { ".#.#.", "#####", ".#.#.", ".#.#.", "#####", ".#.#.", ".#.#." },
+		["%"] = { "##..#", "##..#", "...#.", "..#..", ".#...", "#..##", "#..##" },
+		["¡"] = { "..#..", ".....", "..#..", "..#..", "..#..", "..#..", "..#.." },
+		["¿"] = { "..#..", ".....", "..#..", ".#...", "#....", "#...#", ".###." },
+	}
+
+	for ch, rows in pairs(CAPS) do
+		FONT[ch] = E(3, rows)
+	end
+
+	FONT["Ç"] = E(3, { ".####", "#....", "#....", "#....", "#....", "#....", ".####", "..#..", ".##.." })
+
+	local LOWER = {
+		a = { 5, { ".###.", "....#", ".####", "#...#", ".####" } },
+		b = { 3, { "#....", "#....", "####.", "#...#", "#...#", "#...#", "####." } },
+		c = { 5, { ".###.", "#...#", "#....", "#...#", ".###." } },
+		d = { 3, { "....#", "....#", ".####", "#...#", "#...#", "#...#", ".####" } },
+		e = { 5, { ".###.", "#...#", "#####", "#....", ".###." } },
+		f = { 3, { "..##.", ".#..#", ".#...", "####.", ".#...", ".#...", ".#..." } },
+		g = { 5, { ".####", "#...#", "#...#", "#...#", ".####", "....#", ".###." } },
+		h = { 3, { "#....", "#....", "#.##.", "##..#", "#...#", "#...#", "#...#" } },
+		i = { 3, { "..#..", ".....", ".##..", "..#..", "..#..", "..#..", ".###." } },
+		j = { 3, { "...#.", ".....", "..##.", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.." } },
+		k = { 3, { "#....", "#....", "#..#.", "#.#..", "##...", "#.#..", "#..#." } },
+		l = { 3, { ".##..", "..#..", "..#..", "..#..", "..#..", "..#..", ".###." } },
+		m = { 5, { "##.#.", "#.#.#", "#.#.#", "#.#.#", "#...#" } },
+		n = { 5, { "####.", "#...#", "#...#", "#...#", "#...#" } },
+		o = { 5, { ".###.", "#...#", "#...#", "#...#", ".###." } },
+		p = { 5, { "####.", "#...#", "#...#", "#...#", "####.", "#....", "#...." } },
+		q = { 5, { ".####", "#...#", "#...#", "#...#", ".####", "....#", "....#" } },
+		r = { 5, { "#.##.", "##..#", "#....", "#....", "#...." } },
+		s = { 5, { ".####", "#....", ".###.", "....#", "####." } },
+		t = { 3, { ".#...", ".#...", "####.", ".#...", ".#...", ".#..#", "..##." } },
+		u = { 5, { "#...#", "#...#", "#...#", "#..##", ".##.#" } },
+		v = { 5, { "#...#", "#...#", "#...#", ".#.#.", "..#.." } },
+		w = { 5, { "#...#", "#...#", "#.#.#", "#.#.#", ".#.#." } },
+		x = { 5, { "#...#", ".#.#.", "..#..", ".#.#.", "#...#" } },
+		y = { 5, { "#...#", "#...#", "#...#", ".####", "....#", "....#", ".###." } },
+		z = { 5, { "#####", "...#.", "..#..", ".#...", "#####" } },
+	}
+
+	for ch, d in pairs(LOWER) do
+		FONT[ch] = E(d[1], d[2])
+	end
+
+	FONT["ç"] = E(5, { ".###.", "#...#", "#....", "#...#", ".###.", "..#..", ".##.." })
+
+	local ACCENTS = {
+		acute = { "...#.", "..#.." },
+		grave = { ".#...", "..#.." },
+		circ = { "..#..", ".#.#." },
+		tilde = { ".##.#", "#.##." },
+		diaer = { ".#.#.", "....." },
+	}
+
+	local ACCENTED = {
+		acute = { "á", "a", "é", "e", "í", "i", "ó", "o", "ú", "u", "Á", "A", "É", "E", "Í", "I", "Ó", "O", "Ú", "U" },
+		grave = { "à", "a", "è", "e", "ì", "i", "ò", "o", "ù", "u", "À", "A", "È", "E", "Ì", "I", "Ò", "O", "Ù", "U" },
+		circ = { "â", "a", "ê", "e", "î", "i", "ô", "o", "û", "u", "Â", "A", "Ê", "E", "Î", "I", "Ô", "O", "Û", "U" },
+		tilde = { "ã", "a", "õ", "o", "ñ", "n", "Ã", "A", "Õ", "O", "Ñ", "N" },
+		diaer = { "ä", "a", "ë", "e", "ï", "i", "ö", "o", "ü", "u", "Ä", "A", "Ë", "E", "Ï", "I", "Ö", "O", "Ü", "U" },
+	}
+
+	for kind, list in pairs(ACCENTED) do
+		for i = 1, #list, 2 do
+			local base = FONT[list[i + 1]]
+			if base then
+				local g = table.clone(base)
+				local upper = list[i + 1]:match("%u") ~= nil
+				local at = upper and 0 or 2
+				g[at + 1] = ACCENTS[kind][1]
+				g[at + 2] = ACCENTS[kind][2]
+				FONT[list[i]] = g
+			end
+		end
+	end
+
+	local function charsOf(line)
+		local t = {}
+		local ok = pcall(function()
+			for _, c in utf8.codes(line) do
+				t[#t + 1] = utf8.char(c)
+			end
+		end)
+		if not ok then
+			t = {}
+			for i = 1, #line do
+				t[i] = line:sub(i, i)
+			end
+		end
+		return t
+	end
+
+	local function lineWidth(list)
+		local w = 0
+		for i, ch in ipairs(list) do
+			if i > 1 then
+				w += 1
+			end
+			w += ch == " " and SPACE_W or GLYPH_W
+		end
+		return w
+	end
+
+	local function makeCells(text, scale)
+		local lines = {}
+		for _, raw in ipairs(string.split(text, "|")) do
+			lines[#lines + 1] = charsOf(raw)
+		end
+
+		local widest = 0
+		for _, list in ipairs(lines) do
+			widest = math.max(widest, lineWidth(list))
+		end
+
+		local base = {}
+		for li, list in ipairs(lines) do
+			local x = math.floor((widest - lineWidth(list)) / 2)
+			local top = (li - 1) * GLYPH_H
+			for i, ch in ipairs(list) do
+				if i > 1 then
+					x += 1
+				end
+				if ch == " " then
+					x += SPACE_W
+				else
+					local glyph = FONT[ch] or FONT["?"]
+					for r = 1, GLYPH_H do
+						local row = glyph[r]
+						for c = 1, GLYPH_W do
+							if row:sub(c, c) == "#" then
+								base[#base + 1] = { col = x + c - 1, row = top + r - 1 }
+							end
+						end
+					end
+					x += GLYPH_W
+				end
+			end
+		end
+
+		if #base == 0 then
+			return nil
+		end
+
+		local minC, maxC, minR, maxR = math.huge, -math.huge, math.huge, -math.huge
+		for _, c in ipairs(base) do
+			minC = math.min(minC, c.col)
+			maxC = math.max(maxC, c.col)
+			minR = math.min(minR, c.row)
+			maxR = math.max(maxR, c.row)
+		end
+
+		local cells = {}
+		for _, c in ipairs(base) do
+			for i = 0, scale - 1 do
+				for j = 0, scale - 1 do
+					cells[#cells + 1] = {
+						col = (c.col - minC) * scale + i,
+						row = (c.row - minR) * scale + j,
+					}
+				end
+			end
+		end
+
+		table.sort(cells, function(a, b)
+			if a.col ~= b.col then
+				return a.col < b.col
+			end
+			return a.row < b.row
+		end)
+
+		return cells, (maxC - minC + 1) * scale, (maxR - minR + 1) * scale
+	end
+
+	local function snap(n)
+		return math.round((n - 2) / GRID) * GRID + 2
+	end
+
+	local function snapVec(v)
+		return Vector3.new(snap(v.X), snap(v.Y), snap(v.Z))
+	end
+
+	local function bucketKey(x, y, z)
+		return x .. "," .. y .. "," .. z
+	end
+
+	local function scanBricks(folder)
+		local buckets = {}
+		for _, obj in ipairs(folder:GetChildren()) do
+			if obj.Name == "Brick" and obj:IsA("BasePart") then
+				local p = obj.Position
+				local k = bucketKey(math.floor(p.X / GRID), math.floor(p.Y / GRID), math.floor(p.Z / GRID))
+				local list = buckets[k]
+				if not list then
+					list = {}
+					buckets[k] = list
+				end
+				list[#list + 1] = p
+			end
+		end
+		return buckets
+	end
+
+	local function hasBrick(buckets, pos)
+		local bx = math.floor(pos.X / GRID)
+		local by = math.floor(pos.Y / GRID)
+		local bz = math.floor(pos.Z / GRID)
+		for dx = -1, 1 do
+			for dy = -1, 1 do
+				for dz = -1, 1 do
+					local list = buckets[bucketKey(bx + dx, by + dy, bz + dz)]
+					if list then
+						for _, p in ipairs(list) do
+							if (p - pos).Magnitude < 1.6 then
+								return true
+							end
+						end
+					end
+				end
+			end
+		end
+		return false
+	end
+
+	local TB = NS:AddGroup({
+		Name = "Text to Build",
+		Info = "Text to Build",
+		Side = "Right",
+	})
+
+	local TextInput = TB:AddTextbox({
+		Placeholder = "Text here (use | for a new line)",
+		Info = "Respects uppercase and lowercase. Use | to start a new line",
+	})
+
+	local SizeSlider = TB:AddSlider({
+		Name = "Text Size",
+		Min = 1,
+		Max = 6,
+		Step = 1,
+		Default = 1,
+	})
+
+	local Status = TB:AddLabel("Text to Build: idle")
+
+	local function run()
+		if _G.TextBuildRunning then
+			return
+		end
+		if _G.CanvaRunning then
+			Status:Set("Text to Build: stop the canvas first")
+			return
+		end
+
+		local text = tostring(TextInput:Get() or "")
+		if text:gsub("[%s|]", "") == "" then
+			Status:Set("Text to Build: write something first")
+			return
+		end
+		if (utf8.len(text) or #text) > 60 then
+			Status:Set("Text to Build: text too long (max 60)")
+			return
+		end
+
+		local scale = math.clamp(math.floor(tonumber(SizeSlider:Get()) or 1), 1, 6)
+
+		local cells, cols, rows = makeCells(text, scale)
+		if not cells then
+			Status:Set("Text to Build: nothing to build")
+			return
+		end
+		if #cells > MAX_BRICKS then
+			Status:Set("Text to Build: too many bricks (" .. #cells .. "/" .. MAX_BRICKS .. "), lower the size")
+			return
+		end
+
+		_G.TextBuildRunning = true
+
+		task.spawn(function()
+			local player = Players.LocalPlayer
+			local character = player.Character or player.CharacterAdded:Wait()
+			local hrp = character:WaitForChild("HumanoidRootPart")
+			local humanoid = character:WaitForChild("Humanoid")
+
+			local tool = character:FindFirstChild("Build") or player.Backpack:FindFirstChild("Build")
+			if not tool then
+				_G.TextBuildRunning = false
+				Status:Set("Text to Build: Build tool not found")
+				return
+			end
+
+			tool.Parent = character
+			task.wait(0.4)
+
+			local event = safeChain(tool, "Script", "Event")
+			local bricksFolder = safeChain(workspace, "Bricks", player.Name)
+			if not (event and bricksFolder) then
+				_G.TextBuildRunning = false
+				Status:Set("Text to Build: Build tool not ready")
+				return
+			end
+
+			local look = hrp.CFrame.LookVector
+			local forward
+			if math.abs(look.X) > math.abs(look.Z) then
+				forward = Vector3.new(look.X > 0 and 1 or -1, 0, 0)
+			else
+				forward = Vector3.new(0, 0, look.Z > 0 and 1 or -1)
+			end
+			local right = forward:Cross(Vector3.new(0, 1, 0))
+
+			local reach = GRID * (3 + math.ceil(scale / 2))
+			local anchor = snapVec(hrp.Position + forward * reach)
+			local baseY = snap(hrp.Position.Y)
+
+			local targets = {}
+			for i, cell in ipairs(cells) do
+				local across = (cell.col - (cols - 1) / 2) * GRID
+				local up = (rows - 1 - cell.row) * GRID
+				local p = anchor + right * across
+				targets[i] = snapVec(Vector3.new(p.X, baseY + up, p.Z))
+			end
+
+			local oldWalkSpeed = humanoid.WalkSpeed
+			local oldJumpPower = humanoid.JumpPower
+			local oldAutoRotate = humanoid.AutoRotate
+			local oldPlatformStand = humanoid.PlatformStand
+
+			humanoid.WalkSpeed = 0
+			humanoid.JumpPower = 0
+			humanoid.AutoRotate = false
+			humanoid.PlatformStand = true
+
+			local hold = RunService.Heartbeat:Connect(function()
+				if hrp.Parent then
+					hrp.AssemblyLinearVelocity = Vector3.zero
+					hrp.AssemblyAngularVelocity = Vector3.zero
+				end
+			end)
+
+			local lastStand
+
+			local function alive()
+				return _G.TextBuildRunning and humanoid.Health > 0 and hrp.Parent ~= nil
+			end
+
+			local function placeAt(position)
+				local stand = position - forward * 7 + Vector3.new(0, 1, 0)
+				if not lastStand or (stand - lastStand).Magnitude > 14 then
+					hrp.CFrame = CFrame.lookAt(stand, stand + forward)
+					lastStand = stand
+					task.wait(0.08)
+				end
+				if not alive() then
+					return false
+				end
+				event:FireServer(workspace.Terrain, Enum.NormalId.Top, position, "normal")
+				task.wait(0.04)
+				return true
+			end
+
+			local total = #targets
+			local done = 0
+			local existing = scanBricks(bricksFolder)
+
+			for _, position in ipairs(targets) do
+				if not alive() then
+					break
+				end
+				if not hasBrick(existing, position) then
+					if not placeAt(position) then
+						break
+					end
+				end
+				done += 1
+				Status:Set("Text to Build: " .. done .. "/" .. total)
+			end
+
+			local missingCount = 0
+
+			if alive() then
+				for round = 1, MAX_FIX_ROUNDS do
+					task.wait(0.6)
+					if not alive() then
+						break
+					end
+
+					local current = scanBricks(bricksFolder)
+					local missing = {}
+					for _, position in ipairs(targets) do
+						if not hasBrick(current, position) then
+							missing[#missing + 1] = position
+						end
+					end
+
+					missingCount = #missing
+					if missingCount == 0 then
+						break
+					end
+					if round == MAX_FIX_ROUNDS then
+						break
+					end
+
+					Status:Set("Text to Build: fixing " .. missingCount .. " missing")
+					lastStand = nil
+					for _, position in ipairs(missing) do
+						if not placeAt(position) then
+							break
+						end
+					end
+				end
+			end
+
+			hold:Disconnect()
+
+			humanoid.WalkSpeed = oldWalkSpeed
+			humanoid.JumpPower = oldJumpPower
+			humanoid.AutoRotate = oldAutoRotate
+			humanoid.PlatformStand = oldPlatformStand
+
+			if hrp.Parent then
+				hrp.AssemblyLinearVelocity = Vector3.zero
+				hrp.AssemblyAngularVelocity = Vector3.zero
+			end
+
+			local finished = done >= total
+			_G.TextBuildRunning = false
+
+			if not finished then
+				Status:Set("Text to Build: stopped")
+			elseif missingCount == 0 then
+				Status:Set("Text to Build: done")
+			else
+				Status:Set("Text to Build: done, " .. missingCount .. " missing")
+			end
+		end)
+	end
+
+	TB:AddButton({
+		Name = "Build Text",
+		Info = "Builds the text with normal bricks in front of you, using the same placement as Canvas. Missing bricks are checked and fixed",
+		Callback = run,
+	})
+
+	TB:AddButton({
+		Name = "Stop",
+		Info = "Stops the text build",
+		Callback = function()
+			if _G.TextBuildRunning then
+				_G.TextBuildRunning = false
+			end
+		end,
+	})
+
+	TB:AddButton({
+		Name = "Clear Text",
+		Info = "Clears the textbox",
+		Callback = function()
+			TextInput:Set("")
 		end,
 	})
 end)
@@ -14085,6 +14950,12 @@ local FastToggle = Canvas:AddToggle({
     Default = false
 })
 
+local DetailToggle = Canvas:AddToggle({
+    Name = "Detail Bricks",
+    Info = "On: detail bricks (1 stud, finest canvas). Off: normal bricks (4 studs, bigger pixels)",
+    Default = true
+})
+
 local CP = {
     bricks = {},
     painted = {},
@@ -14142,6 +15013,7 @@ function CP.snapshot()
         W = CP.W,
         H = CP.H,
         axis = CP.axis,
+        grid = CP.grid,
         center = CP.center,
         rotation = CP.rotation,
         jsonText = CP.jsonText,
@@ -14166,6 +15038,7 @@ function CP.load(i)
     CP.folder = c.folder
     CP.imported = c.imported
     CP.W, CP.H, CP.axis = c.W, c.H, c.axis
+    CP.grid = c.grid
     CP.center, CP.rotation = c.center, c.rotation
     CP.jsonText = c.jsonText
     CP.pixels, CP.jw, CP.jh = c.pixels, c.jw, c.jh
@@ -14219,17 +15092,18 @@ function CP.rescan()
     end
 
     local inv = CP.rotation:Inverse()
+    local g = CP.grid or 1
     local pts = {}
     local total = 0
 
     for _, obj in ipairs(CP.gather(folder, root)) do
         if obj:IsA("BasePart") then
             total += 1
-            local rel = inv * (obj.Position - CP.center)
+            local rel = (inv * (obj.Position - CP.center)) / g
 
             if math.abs(rel.X) <= CP.W / 2 + 2 and math.abs(rel.Y) <= CP.H / 2 + 2 then
                 local sz = obj.Size
-                local unit = sz.X > 0.9 and sz.X < 1.1 and sz.Y > 0.9 and sz.Y < 1.1 and sz.Z > 0.9 and sz.Z < 1.1
+                local unit = sz.X > 0.9 * g and sz.X < 1.1 * g and sz.Y > 0.9 * g and sz.Y < 1.1 * g and sz.Z > 0.9 * g and sz.Z < 1.1 * g
                 pts[#pts + 1] = {obj = obj, x = rel.X, y = rel.Y, z = rel.Z, unit = unit}
             end
         end
@@ -14722,6 +15596,16 @@ local function StartCanvas(resume, coop)
         useFast = coop.fast == true
     end
 
+    local detailMode = DetailToggle:Get() ~= false
+
+    if resume and CP.session and CP.session.detail ~= nil then
+        detailMode = CP.session.detail
+    end
+
+    if coop and coop.detail ~= nil then
+        detailMode = coop.detail
+    end
+
     _G.CanvaRunning = true
 
     task.spawn(function()
@@ -14752,7 +15636,8 @@ local function StartCanvas(resume, coop)
             return
         end
 
-        local GRID = 1
+        local GRID = detailMode and 1 or 4
+        local BRICK_MODE = detailMode and "detail" or "normal"
         local origin = hrp.Position
 
         local center = Vector3.new(
@@ -14869,6 +15754,28 @@ local function StartCanvas(resume, coop)
             mode = CP.session.mode
         end
 
+        if not resume and not coop and GRID ~= 1 then
+            local cornerOffset = rotation * Vector3.new(
+                -(WIDTH - 1) / 2 * GRID,
+                -(HEIGHT - 1) / 2 * GRID,
+                0
+            )
+
+            local corner = center + cornerOffset
+
+            local function snapAxis(n)
+                return math.round((n - 2) / GRID) * GRID + 2
+            end
+
+            corner = Vector3.new(
+                snapAxis(corner.X),
+                snapAxis(corner.Y),
+                snapAxis(corner.Z)
+            )
+
+            center = corner - cornerOffset
+        end
+
         if CP.conn then
             CP.conn:Disconnect()
             CP.conn = nil
@@ -14883,6 +15790,7 @@ local function StartCanvas(resume, coop)
             CP.painted = {}
             CP.count = 0
             CP.W, CP.H, CP.axis = WIDTH, HEIGHT, rotationAxis
+            CP.grid = GRID
             CP.folder = nil
             CP.imported = nil
             CP.center, CP.rotation = center, rotation
@@ -14891,7 +15799,8 @@ local function StartCanvas(resume, coop)
                 H = HEIGHT,
                 center = center,
                 rotation = rotation,
-                mode = mode
+                mode = mode,
+                detail = detailMode
             }
             PaintStatus:Set(CP.tag() .. "Saved bricks: 0")
         end
@@ -14990,7 +15899,7 @@ local function StartCanvas(resume, coop)
                 workspace.Terrain,
                 Enum.NormalId.Top,
                 position,
-                "detail"
+                BRICK_MODE
             )
 
             placed[k] = true
@@ -15188,7 +16097,7 @@ local function StartCanvas(resume, coop)
                 workspace.Terrain,
                 Enum.NormalId.Top,
                 positionFor(x,y),
-                "detail"
+                BRICK_MODE
             )
 
             placed[k] = true
@@ -15288,7 +16197,7 @@ local function StartCanvas(resume, coop)
 
         if useFast then
 
-            local tiles = {10,6,3}
+            local tiles = GRID == 1 and {10,6,3} or {3,2,1}
             local startIndex = 1
 
             for index,value in ipairs(tiles) do
@@ -15481,7 +16390,8 @@ _G.AltCoop.canvasInfo = function()
         chunks = ChunksToggle:Get() == true,
         fast = FastToggle:Get() == true,
         axis = rotationAxis,
-        mode = buildMode
+        mode = buildMode,
+        detail = DetailToggle:Get() ~= false
     }
 end
 
@@ -15521,6 +16431,7 @@ _G.AltCoop.canvasPrepare = function(coop)
     CP.painted = {}
     CP.count = 0
     CP.W, CP.H, CP.axis = coop.W, coop.H, coop.axis
+    CP.grid = coop.detail == false and 4 or 1
     CP.folder = nil
     CP.imported = nil
     CP.center, CP.rotation = center, rot
@@ -15529,7 +16440,8 @@ _G.AltCoop.canvasPrepare = function(coop)
         H = coop.H,
         center = center,
         rotation = rot,
-        mode = coop.mode
+        mode = coop.mode,
+        detail = coop.detail ~= false
     }
 end
 
